@@ -10,8 +10,8 @@
 ## Приоритеты
 
 - **P0 — DS Builder:** UI direction · key screens · Builder shell · Project/DS/Theme · Tenant Model UI v1 · RBAC UI MVP · access states · подготовка первых dev slices.
-- **P1 — SDDS Portal MVP:** минимальная entry page · CTA «Открыть Builder» · вход в документацию · базовая навигация · auth / no access.
-- **P2 — не делаем:** полноценный портал · расширенный onboarding · все edge cases Builder · продвинутая ролевая админка · полный polished handoff · Modal/Drawer.
+- **P1 — SDDS Portal MVP:** минимальная entry page · CTA «Открыть Builder» · базовая навигация · auth / no access · **онбординг и документация MVP (Ася)** — отрисовка публичных разделов по спекам.
+- **P2 — не делаем:** полноценный портал · онбординг/документация сверх MVP (полный каталог ~80 компонентов, прогресс онбординга вне раздела) · все edge cases Builder · продвинутая ролевая админка · полный polished handoff · Modal/Drawer.
 
 ## Опорные материалы для всего спринта
 
@@ -52,6 +52,20 @@
 | Auth / no access | Кадры 08, 08s (ошибка), m8 (телефон) | Отрисовать по кадрам |
 | Не расширять сверх MVP | Раздел «что не берём» в [scope портала](../deliverables/04-sdds-portal-mvp-scope.md#7-что-пока-не-берём) | Держаться рамки |
 
+### [S15] Onboarding & Documentation UI — Ася · P1
+
+Отрисовка публичных разделов **онбординга** и **документации** по готовым спекам. Поведение уже собрано в прототипе (Storybook-дока перестроена по итогам юзертестов раунда 1), нужен финальный визуал в рамках MVP — без расширений.
+
+| Критерий | Что уже есть | Что делать |
+|---|---|---|
+| Онбординг: маршруты дизайнера и разработчика | Спека [public-onboarding](../design-spec/screens/public-onboarding.md) + прототип (переключатель маршрутов, шаги со статусами, сохранение прогресса) | Отрисовать маршрут дизайнера (шаг в работе), разработчика, «шаг выполнен · дальше» |
+| Документация: развилка «Компоненты» | Спека [public-components-hub](../design-spec/screens/public-components-hub.md) + прототип (плитки общей доки + 10 компонентов с живым превью) | Отрисовать развилку по спеке |
+| Страница компонента | Спека [public-component-page](../design-spec/screens/public-component-page.md) + прототип (боковая навигация, крошки, превью, свойства, «Открыть в Builder») | Отрисовать по Storybook-паттерну |
+| Мобильные | Телефонные состояния в каждой спеке | Отрисовать свёрнутые виды |
+| Рамка MVP | 10 из ~80 компонентов; полный каталог и прогресс онбординга вне раздела — не берём ([scope портала §7](../deliverables/04-sdds-portal-mvp-scope.md#7-что-пока-не-берём)) | Держаться MVP; расширения — в future |
+
+⚠️ Из юзертестов сохранить обязательно: Storybook-паттерн документации и честную подпись «показаны 10 из ~80» — это проверенные решения раунда 1.
+
 ### [S15] Tenant Model UI v1 — Лиза · P0
 
 | Критерий | Что уже есть | Что делать |
@@ -67,17 +81,17 @@
 
 ## Синхронизации
 
-1. **Kick-off** — переход в acceleration mode; Builder главный, Portal не расширяем; цель — UI key screens и Draft v1.
+1. **Kick-off** — переход в acceleration mode; Builder главный; Portal — только MVP (entry page + онбординг/документация по спекам, без расширений); цель — UI key screens и Draft v1.
 2. **Builder UI Sync** (Руслан, Лиза, PM/dev) — shell, сущности, порядок handoff, RBAC states MVP, блокеры. *Готовая повестка: незакрытые решения (CLI, props компонентов, вход) — они держат часть handoff.*
 3. **Design 2.0 Review** — отдельный трек.
 4. **Support Check** (Руслан, Ася).
-5. **S15 Review** (+PM/dev) — direction, key screens, Tenant UI v1, RBAC MVP, entry page, шаблон v1, Draft v1 ×6, список handoff S16, риски.
+5. **S15 Review** (+PM/dev) — direction, key screens, Tenant UI v1, RBAC MVP, entry page, онбординг/документация MVP, шаблон v1, Draft v1 ×6, список handoff S16, риски.
 
 ## Definition of Done (Builder/Portal-часть)
 
 - есть первые реальные UI-макеты Builder и зафиксирован UI direction;
 - Tenant Model — в UI v1; RBAC — на уровне MVP-контракта;
-- Portal ограничен entry page MVP;
+- Portal ограничен MVP: entry page + онбординг и документация отрисованы по спекам;
 - понятно, что идёт в handoff S16 и что переносится в future/Q4.
 
 ## Риски и как готовые материалы их снижают
