@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 680 460" role="img" font-family="system-ui, -apple-system, sans-serif">
+  <title>Архитектура SDDS в пяти слоях</title>
+  <desc>Вертикальная стопка из пяти слоёв: Raw Values, Semantic Tokens (Foundation) и Elements, Component Library, Product Themes (System).</desc>
+
+  <text x="340" y="30" text-anchor="middle" font-size="12" fill="#5F5E5A">ближе к продукту</text>
+
+  <rect x="140" y="50" width="400" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+  <text x="340" y="78" text-anchor="middle" font-size="14" font-weight="500" fill="#3C3489">Product Themes</text>
+  <text x="340" y="96" text-anchor="middle" font-size="12" fill="#534AB7">бренд / продукт</text>
+
+  <rect x="140" y="122" width="400" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+  <text x="340" y="150" text-anchor="middle" font-size="14" font-weight="500" fill="#3C3489">Component Library</text>
+  <text x="340" y="168" text-anchor="middle" font-size="12" fill="#534AB7">~60 компонентов</text>
+
+  <rect x="140" y="194" width="400" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+  <text x="340" y="222" text-anchor="middle" font-size="14" font-weight="500" fill="#3C3489">Elements</text>
+  <text x="340" y="240" text-anchor="middle" font-size="12" fill="#534AB7">слоты и атомарные части</text>
+
+  <rect x="140" y="266" width="400" height="56" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+  <text x="340" y="294" text-anchor="middle" font-size="14" font-weight="500" fill="#444441">Semantic Tokens</text>
+  <text x="340" y="312" text-anchor="middle" font-size="12" fill="#5F5E5A">осмысленные имена ролей</text>
+
+  <rect x="140" y="338" width="400" height="56" rx="8" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="0.5"/>
+  <text x="340" y="366" text-anchor="middle" font-size="14" font-weight="500" fill="#444441">Raw Values</text>
+  <text x="340" y="384" text-anchor="middle" font-size="12" fill="#5F5E5A">Figma Variables: цвета, числа</text>
+
+  <text x="340" y="416" text-anchor="middle" font-size="12" fill="#5F5E5A">ближе к универсальному</text>
+
+  <line x1="100" y1="50" x2="100" y2="250" stroke="#5F5E5A" stroke-width="0.5" opacity="0.4"/>
+  <text x="92" y="153" text-anchor="end" font-size="12" fill="#5F5E5A">System</text>
+
+  <line x1="100" y1="266" x2="100" y2="394" stroke="#5F5E5A" stroke-width="0.5" opacity="0.4"/>
+  <text x="92" y="333" text-anchor="end" font-size="12" fill="#5F5E5A">Foundation</text>
+</svg>

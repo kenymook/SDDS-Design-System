@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 680 360" role="img" font-family="system-ui, -apple-system, sans-serif">
+  <title>Анатомия имени семантического токена SDDS</title>
+  <desc>Пять сегментов токена с примером Surfaces/Default/Status/Solid/Negative и описанием каждого сегмента.</desc>
+
+  <text x="340" y="40" text-anchor="middle" font-size="12" fill="#5F5E5A">пример: поверхность ошибки</text>
+
+  <rect x="22" y="60" width="118" height="48" rx="6" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
+  <text x="81" y="89" text-anchor="middle" font-size="14" font-weight="500" fill="#712B13">Surfaces</text>
+
+  <rect x="150" y="60" width="118" height="48" rx="6" fill="#E6F1FB" stroke="#185FA5" stroke-width="0.5"/>
+  <text x="209" y="89" text-anchor="middle" font-size="14" font-weight="500" fill="#0C447C">Default</text>
+
+  <rect x="278" y="60" width="118" height="48" rx="6" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+  <text x="337" y="89" text-anchor="middle" font-size="14" font-weight="500" fill="#3C3489">Status</text>
+
+  <rect x="406" y="60" width="118" height="48" rx="6" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+  <text x="465" y="89" text-anchor="middle" font-size="14" font-weight="500" fill="#085041">Solid</text>
+
+  <rect x="534" y="60" width="118" height="48" rx="6" fill="#FBEAF0" stroke="#993556" stroke-width="0.5"/>
+  <text x="593" y="89" text-anchor="middle" font-size="14" font-weight="500" fill="#72243E">Negative</text>
+
+  <text x="144" y="89" text-anchor="middle" font-size="12" fill="#888780">/</text>
+  <text x="272" y="89" text-anchor="middle" font-size="12" fill="#888780">/</text>
+  <text x="400" y="89" text-anchor="middle" font-size="12" fill="#888780">/</text>
+  <text x="528" y="89" text-anchor="middle" font-size="12" fill="#888780">/</text>
+
+  <line x1="81" y1="118" x2="81" y2="138" stroke="#5F5E5A" stroke-width="0.5" opacity="0.4"/>
+  <line x1="209" y1="118" x2="209" y2="138" stroke="#5F5E5A" stroke-width="0.5" opacity="0.4"/>
+  <line x1="337" y1="118" x2="337" y2="138" stroke="#5F5E5A" stroke-width="0.5" opacity="0.4"/>
+  <line x1="465" y1="118" x2="465" y2="138" stroke="#5F5E5A" stroke-width="0.5" opacity="0.4"/>
+  <line x1="593" y1="118" x2="593" y2="138" stroke="#5F5E5A" stroke-width="0.5" opacity="0.4"/>
+
+  <text x="81" y="155" text-anchor="middle" font-size="14" font-weight="500" fill="#1A1A1A">Категория</text>
+  <text x="81" y="175" text-anchor="middle" font-size="12" fill="#5F5E5A">какой слой</text>
+  <text x="81" y="191" text-anchor="middle" font-size="12" fill="#5F5E5A">интерфейса</text>
+
+  <text x="209" y="155" text-anchor="middle" font-size="14" font-weight="500" fill="#1A1A1A">Контекст</text>
+  <text x="209" y="175" text-anchor="middle" font-size="12" fill="#5F5E5A">на какой</text>
+  <text x="209" y="191" text-anchor="middle" font-size="12" fill="#5F5E5A">поверхности</text>
+
+  <text x="337" y="155" text-anchor="middle" font-size="14" font-weight="500" fill="#1A1A1A">Группа</text>
+  <text x="337" y="175" text-anchor="middle" font-size="12" fill="#5F5E5A">бренд / нейтр.</text>
+  <text x="337" y="191" text-anchor="middle" font-size="12" fill="#5F5E5A">/ статус</text>
+
+  <text x="465" y="155" text-anchor="middle" font-size="14" font-weight="500" fill="#1A1A1A">Тип</text>
+  <text x="465" y="175" text-anchor="middle" font-size="12" fill="#5F5E5A">прозрачный</text>
+  <text x="465" y="191" text-anchor="middle" font-size="12" fill="#5F5E5A">или нет</text>
+
+  <text x="593" y="155" text-anchor="middle" font-size="14" font-weight="500" fill="#1A1A1A">Вариант</text>
+  <text x="593" y="175" text-anchor="middle" font-size="12" fill="#5F5E5A">конкретная</text>
+  <text x="593" y="191" text-anchor="middle" font-size="12" fill="#5F5E5A">роль</text>
+
+  <line x1="40" y1="220" x2="640" y2="220" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="4 4" opacity="0.3"/>
+
+  <text x="40" y="248" font-size="12" fill="#5F5E5A">альтернативные значения каждого сегмента:</text>
+
+  <text x="40" y="274" font-size="12" fill="#5F5E5A">Категория:</text>
+  <text x="120" y="274" font-size="14" fill="#1A1A1A">Text&amp;Icons · Surfaces · Outlines · BG · Overlay</text>
+
+  <text x="40" y="296" font-size="12" fill="#5F5E5A">Контекст:</text>
+  <text x="120" y="296" font-size="14" fill="#1A1A1A">Default · Inverse · onDark · onLight</text>
+
+  <text x="40" y="318" font-size="12" fill="#5F5E5A">Группа:</text>
+  <text x="120" y="318" font-size="14" fill="#1A1A1A">General · Accent · Status</text>
+
+  <text x="40" y="340" font-size="12" fill="#5F5E5A">Вариант:</text>
+  <text x="120" y="340" font-size="14" fill="#1A1A1A">Primary · Secondary · Negative · Positive · Warning · …</text>
+</svg>

@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 680 580" role="img" font-family="system-ui, -apple-system, sans-serif">
+  <title>Шкала отступов SDDS — все девять значений</title>
+  <desc>Визуальная линейка от 4 до 40 пикселей. Каждая ступень показана горизонтальной полосой с подписью применения.</desc>
+
+  <text x="40" y="40" font-size="12" fill="#5F5E5A">базовый шаг — 4px, значения вне шкалы не допускаются</text>
+
+  <rect x="40" y="70" width="4" height="20" fill="#7F77DD"/>
+  <text x="120" y="84" font-size="14" font-weight="500" fill="#1A1A1A">4px</text>
+  <text x="170" y="84" font-size="12" fill="#5F5E5A">внутри Badge / Chip — между иконкой и счётчиком</text>
+
+  <rect x="40" y="100" width="8" height="20" fill="#7F77DD"/>
+  <text x="120" y="114" font-size="14" font-weight="500" fill="#1A1A1A">8px</text>
+  <text x="170" y="114" font-size="12" fill="#5F5E5A">иконка и лейбл внутри компонента, кнопки в группе</text>
+
+  <rect x="40" y="130" width="12" height="20" fill="#5DCAA5"/>
+  <text x="120" y="144" font-size="14" font-weight="500" fill="#1A1A1A">12px</text>
+  <text x="170" y="144" font-size="12" fill="#5F5E5A">внутренний padding XS-компонентов (32px)</text>
+
+  <rect x="40" y="160" width="16" height="20" fill="#5DCAA5"/>
+  <text x="120" y="174" font-size="14" font-weight="500" fill="#1A1A1A">16px</text>
+  <text x="170" y="174" font-size="12" fill="#5F5E5A">padding S-компонентов · поля в форме</text>
+
+  <rect x="40" y="190" width="20" height="20" fill="#5DCAA5"/>
+  <text x="120" y="204" font-size="14" font-weight="500" fill="#1A1A1A">20px</text>
+  <text x="170" y="204" font-size="12" fill="#5F5E5A">padding M-компонентов (48px) — дефолтный</text>
+
+  <rect x="40" y="220" width="24" height="20" fill="#EF9F27"/>
+  <text x="120" y="234" font-size="14" font-weight="500" fill="#1A1A1A">24px</text>
+  <text x="170" y="234" font-size="12" fill="#5F5E5A">padding L-компонентов · группы полей</text>
+
+  <rect x="40" y="250" width="28" height="20" fill="#EF9F27"/>
+  <text x="120" y="264" font-size="14" font-weight="500" fill="#1A1A1A">28px</text>
+  <text x="170" y="264" font-size="12" fill="#5F5E5A">padding XL-компонентов (64px)</text>
+
+  <rect x="40" y="280" width="32" height="20" fill="#D85A30"/>
+  <text x="120" y="294" font-size="14" font-weight="500" fill="#1A1A1A">32px</text>
+  <text x="170" y="294" font-size="12" fill="#5F5E5A">между крупными блоками · gap между секциями</text>
+
+  <rect x="40" y="310" width="40" height="20" fill="#D85A30"/>
+  <text x="120" y="324" font-size="14" font-weight="500" fill="#1A1A1A">40px</text>
+  <text x="170" y="324" font-size="12" fill="#5F5E5A">секционный отступ · разделение смысловых групп</text>
+
+  <line x1="40" y1="356" x2="640" y2="356" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="4 4" opacity="0.3"/>
+
+  <rect x="40" y="376" width="12" height="12" rx="2" fill="#7F77DD"/>
+  <text x="60" y="388" font-size="12" fill="#5F5E5A">внутри одного компонента</text>
+
+  <rect x="240" y="376" width="12" height="12" rx="2" fill="#5DCAA5"/>
+  <text x="260" y="388" font-size="12" fill="#5F5E5A">внутри одной группы</text>
+
+  <rect x="430" y="376" width="12" height="12" rx="2" fill="#EF9F27"/>
+  <text x="450" y="388" font-size="12" fill="#5F5E5A">между группами</text>
+
+  <rect x="40" y="402" width="12" height="12" rx="2" fill="#D85A30"/>
+  <text x="60" y="414" font-size="12" fill="#5F5E5A">между секциями</text>
+
+  <line x1="40" y1="442" x2="640" y2="442" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="4 4" opacity="0.3"/>
+
+  <text x="40" y="468" font-size="12" fill="#5F5E5A">типичные ошибки и почему они выпадают из шкалы:</text>
+
+  <text x="40" y="496" font-size="14" fill="#A32D2D">10px</text>
+  <text x="100" y="496" font-size="12" fill="#5F5E5A">не кратно 4 — берите 8 или 12</text>
+
+  <text x="40" y="520" font-size="14" fill="#A32D2D">15px</text>
+  <text x="100" y="520" font-size="12" fill="#5F5E5A">не кратно 4 — берите 16</text>
+
+  <text x="40" y="544" font-size="14" fill="#A32D2D">«пусть будет 18px чтобы выглядело уютнее»</text>
+  <text x="430" y="544" font-size="12" fill="#5F5E5A">шкалу нельзя ломать «по вкусу»</text>
+</svg>

@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 680 540" role="img" font-family="system-ui, -apple-system, sans-serif">
+  <title>Дерево выбора компонента уведомления</title>
+  <desc>Три развилки: требует ли реакции, исчезает ли само, нужны ли действия. Конечные узлы — Toast, Notification, Tooltip, Popover.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <rect x="240" y="30" width="200" height="44" rx="8" fill="#F1EFE8" stroke="#888780" stroke-width="0.5"/>
+  <text x="340" y="58" text-anchor="middle" font-size="14" font-weight="500" fill="#1A1A1A">Сообщить пользователю</text>
+
+  <line x1="340" y1="74" x2="340" y2="100" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="200" y="100" width="280" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+  <text x="340" y="124" text-anchor="middle" font-size="14" font-weight="500" fill="#3C3489">Требует реакции пользователя?</text>
+  <text x="340" y="144" text-anchor="middle" font-size="12" fill="#534AB7">нужно ли подтвердить или закрыть</text>
+
+  <path d="M 280 156 L 280 180 L 130 180 L 130 200" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="190" y="174" text-anchor="middle" font-size="12" fill="#5F5E5A">да</text>
+
+  <path d="M 400 156 L 400 180 L 550 180 L 550 200" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="490" y="174" text-anchor="middle" font-size="12" fill="#5F5E5A">нет</text>
+
+  <rect x="40" y="200" width="180" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+  <text x="130" y="224" text-anchor="middle" font-size="14" font-weight="500" fill="#085041">Notification</text>
+  <text x="130" y="244" text-anchor="middle" font-size="12" fill="#0F6E56">остаётся до взаимодействия</text>
+
+  <rect x="410" y="200" width="280" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+  <text x="550" y="224" text-anchor="middle" font-size="14" font-weight="500" fill="#3C3489">Исчезает само через секунды?</text>
+  <text x="550" y="244" text-anchor="middle" font-size="12" fill="#534AB7">временное или постоянное</text>
+
+  <path d="M 490 256 L 490 290 L 340 290 L 340 320" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="400" y="282" text-anchor="middle" font-size="12" fill="#5F5E5A">да</text>
+
+  <path d="M 610 256 L 610 290 L 610 320" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="630" y="282" font-size="12" fill="#5F5E5A">нет</text>
+
+  <rect x="250" y="320" width="180" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+  <text x="340" y="344" text-anchor="middle" font-size="14" font-weight="500" fill="#085041">Toast</text>
+  <text x="340" y="364" text-anchor="middle" font-size="12" fill="#0F6E56">временное, без действий</text>
+
+  <rect x="470" y="320" width="190" height="56" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+  <text x="565" y="344" text-anchor="middle" font-size="14" font-weight="500" fill="#3C3489">Нужны действия внутри?</text>
+  <text x="565" y="364" text-anchor="middle" font-size="12" fill="#534AB7">кнопки, ссылки, форма</text>
+
+  <path d="M 530 376 L 530 410 L 380 410 L 380 440" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="440" y="402" text-anchor="middle" font-size="12" fill="#5F5E5A">да</text>
+
+  <path d="M 600 376 L 600 410 L 600 440" fill="none" stroke="#5F5E5A" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="620" y="402" font-size="12" fill="#5F5E5A">нет</text>
+
+  <rect x="290" y="440" width="180" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+  <text x="380" y="464" text-anchor="middle" font-size="14" font-weight="500" fill="#085041">Popover</text>
+  <text x="380" y="484" text-anchor="middle" font-size="12" fill="#0F6E56">интерактивный popup</text>
+
+  <rect x="510" y="440" width="180" height="56" rx="8" fill="#E1F5EE" stroke="#0F6E56" stroke-width="0.5"/>
+  <text x="600" y="464" text-anchor="middle" font-size="14" font-weight="500" fill="#085041">Tooltip</text>
+  <text x="600" y="484" text-anchor="middle" font-size="12" fill="#0F6E56">подсказка при наведении</text>
+</svg>

@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 680 600" role="img" font-family="system-ui, -apple-system, sans-serif">
+  <title>Слоты у форм, кнопок и Chip</title>
+  <desc>Три семейства компонентов: поля ввода, кнопки, Chip. У каждого слота показан управляющий проп.</desc>
+
+  <text x="40" y="40" font-size="14" font-weight="500" fill="#1A1A1A">Поля ввода</text>
+  <text x="40" y="58" font-size="12" fill="#5F5E5A">TextField, Select, TextArea, Autocomplete</text>
+
+  <text x="40" y="86" font-size="12" fill="#5F5E5A">label slot</text>
+  <text x="640" y="86" text-anchor="end" font-size="12" fill="#5F5E5A" opacity="0.8">LabelPlacement=Outer</text>
+  <line x1="40" y1="92" x2="640" y2="92" stroke="#5F5E5A" stroke-width="0.5" opacity="0.15"/>
+
+  <rect x="40" y="100" width="600" height="48" rx="8" fill="#F1EFE8" stroke="#888780" stroke-width="0.5" opacity="0.5"/>
+
+  <rect x="56" y="116" width="20" height="20" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+  <text x="66" y="164" text-anchor="middle" font-size="12" fill="#5F5E5A">contentLeft</text>
+  <text x="66" y="178" text-anchor="middle" font-size="12" fill="#888780">ContentLeft</text>
+
+  <rect x="100" y="116" width="380" height="20" rx="3" fill="#5F5E5A" opacity="0.1"/>
+  <text x="290" y="164" text-anchor="middle" font-size="12" fill="#5F5E5A">control</text>
+  <text x="290" y="178" text-anchor="middle" font-size="12" fill="#888780">обязателен</text>
+
+  <rect x="500" y="116" width="20" height="20" rx="4" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+  <text x="510" y="164" text-anchor="middle" font-size="12" fill="#5F5E5A">contentRight</text>
+  <text x="510" y="178" text-anchor="middle" font-size="12" fill="#888780">ContentRight</text>
+
+  <text x="610" y="124" font-size="12" fill="#A32D2D">*</text>
+  <text x="610" y="164" text-anchor="middle" font-size="12" fill="#5F5E5A">requiredMarker</text>
+  <text x="610" y="178" text-anchor="middle" font-size="12" fill="#888780">Required</text>
+
+  <text x="40" y="204" font-size="12" fill="#5F5E5A">hint slot</text>
+  <text x="640" y="204" text-anchor="end" font-size="12" fill="#5F5E5A" opacity="0.8">HintPlacement=Outer</text>
+
+  <line x1="40" y1="220" x2="640" y2="220" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="4 4" opacity="0.3"/>
+
+  <text x="40" y="252" font-size="14" font-weight="500" fill="#1A1A1A">Кнопки</text>
+  <text x="40" y="270" font-size="12" fill="#5F5E5A">BasicButton, EmbeddedButton</text>
+
+  <rect x="200" y="290" width="280" height="48" rx="8" fill="#185FA5"/>
+
+  <rect x="220" y="306" width="20" height="20" rx="4" fill="#FFFFFF" opacity="0.4"/>
+  <text x="230" y="362" text-anchor="middle" font-size="12" fill="#5F5E5A">contentLeft</text>
+  <text x="230" y="376" text-anchor="middle" font-size="12" fill="#888780">ContentLeft</text>
+
+  <rect x="260" y="306" width="160" height="20" rx="3" fill="#FFFFFF" opacity="0.5"/>
+  <text x="340" y="362" text-anchor="middle" font-size="12" fill="#5F5E5A">label</text>
+  <text x="340" y="376" text-anchor="middle" font-size="12" fill="#888780">обязателен</text>
+
+  <rect x="440" y="306" width="20" height="20" rx="4" fill="#FFFFFF" opacity="0.4"/>
+  <text x="450" y="362" text-anchor="middle" font-size="12" fill="#5F5E5A">contentRight</text>
+  <text x="450" y="376" text-anchor="middle" font-size="12" fill="#888780">ContentRight</text>
+
+  <line x1="40" y1="412" x2="640" y2="412" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="4 4" opacity="0.3"/>
+
+  <text x="40" y="442" font-size="14" font-weight="500" fill="#1A1A1A">Chip</text>
+  <text x="40" y="460" font-size="12" fill="#5F5E5A">тег / фильтр</text>
+
+  <rect x="200" y="480" width="280" height="40" rx="20" fill="#F1EFE8" stroke="#888780" stroke-width="0.5"/>
+
+  <circle cx="220" cy="500" r="10" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+  <text x="220" y="544" text-anchor="middle" font-size="12" fill="#5F5E5A">contentBefore</text>
+  <text x="220" y="558" text-anchor="middle" font-size="12" fill="#888780">Avatar / Icon</text>
+
+  <rect x="244" y="491" width="160" height="18" rx="3" fill="#5F5E5A" opacity="0.1"/>
+  <text x="324" y="544" text-anchor="middle" font-size="12" fill="#5F5E5A">label</text>
+  <text x="324" y="558" text-anchor="middle" font-size="12" fill="#888780">текст</text>
+
+  <text x="450" y="504" text-anchor="middle" font-size="14" fill="#888780">×</text>
+  <text x="450" y="544" text-anchor="middle" font-size="12" fill="#5F5E5A">closeButton</text>
+  <text x="450" y="558" text-anchor="middle" font-size="12" fill="#888780">hasClose</text>
+
+  <line x1="56" y1="125" x2="56" y2="158" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.4"/>
+  <line x1="510" y1="125" x2="510" y2="158" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.4"/>
+  <line x1="610" y1="135" x2="610" y2="158" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.4"/>
+  <line x1="290" y1="135" x2="290" y2="158" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.4"/>
+
+  <line x1="230" y1="328" x2="230" y2="358" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.4"/>
+  <line x1="340" y1="328" x2="340" y2="358" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.4"/>
+  <line x1="450" y1="328" x2="450" y2="358" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.4"/>
+
+  <line x1="220" y1="512" x2="220" y2="540" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.4"/>
+  <line x1="324" y1="510" x2="324" y2="540" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.4"/>
+  <line x1="450" y1="512" x2="450" y2="540" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.4"/>
+</svg>

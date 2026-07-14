@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 680 480" role="img" font-family="system-ui, -apple-system, sans-serif">
+  <title>Сравнение Disabled, ReadOnly и Loading по поведению</title>
+  <desc>Три колонки: Disabled, ReadOnly, Loading. Каждая строка — критерий поведения с ответом «да» или «нет».</desc>
+
+  <rect x="160" y="40" width="160" height="44" rx="8" fill="#FAECE7" stroke="#993C1D" stroke-width="0.5"/>
+  <text x="240" y="60" text-anchor="middle" font-size="14" font-weight="500" fill="#712B13">Disabled</text>
+  <text x="240" y="78" text-anchor="middle" font-size="12" fill="#993C1D">«нельзя трогать»</text>
+
+  <rect x="340" y="40" width="160" height="44" rx="8" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+  <text x="420" y="60" text-anchor="middle" font-size="14" font-weight="500" fill="#3C3489">ReadOnly</text>
+  <text x="420" y="78" text-anchor="middle" font-size="12" fill="#534AB7">«только смотреть»</text>
+
+  <rect x="520" y="40" width="120" height="44" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+  <text x="580" y="60" text-anchor="middle" font-size="14" font-weight="500" fill="#633806">Loading</text>
+  <text x="580" y="78" text-anchor="middle" font-size="12" fill="#854F0B">«идёт работа»</text>
+
+  <line x1="20" y1="100" x2="640" y2="100" stroke="#5F5E5A" stroke-width="0.5" opacity="0.2"/>
+
+  <text x="20" y="135" font-size="14" fill="#1A1A1A">Принимает ввод</text>
+  <text x="240" y="135" text-anchor="middle" font-size="14" fill="#A32D2D">нет</text>
+  <text x="420" y="135" text-anchor="middle" font-size="14" fill="#A32D2D">нет</text>
+  <text x="580" y="135" text-anchor="middle" font-size="14" fill="#A32D2D">нет</text>
+  <line x1="20" y1="148" x2="640" y2="148" stroke="#5F5E5A" stroke-width="0.5" opacity="0.15"/>
+
+  <text x="20" y="180" font-size="14" fill="#1A1A1A">В tab-order</text>
+  <text x="240" y="180" text-anchor="middle" font-size="14" fill="#A32D2D">нет</text>
+  <text x="420" y="180" text-anchor="middle" font-size="14" fill="#0F6E56">да</text>
+  <text x="580" y="180" text-anchor="middle" font-size="14" fill="#0F6E56">да</text>
+  <line x1="20" y1="193" x2="640" y2="193" stroke="#5F5E5A" stroke-width="0.5" opacity="0.15"/>
+
+  <text x="20" y="225" font-size="14" fill="#1A1A1A">Значение копируется</text>
+  <text x="240" y="225" text-anchor="middle" font-size="14" fill="#A32D2D">нет</text>
+  <text x="420" y="225" text-anchor="middle" font-size="14" fill="#0F6E56">да</text>
+  <text x="580" y="225" text-anchor="middle" font-size="14" fill="#888780">—</text>
+  <line x1="20" y1="238" x2="640" y2="238" stroke="#5F5E5A" stroke-width="0.5" opacity="0.15"/>
+
+  <text x="20" y="270" font-size="14" fill="#1A1A1A">Принимает focus</text>
+  <text x="240" y="270" text-anchor="middle" font-size="14" fill="#A32D2D">нет</text>
+  <text x="420" y="270" text-anchor="middle" font-size="14" fill="#0F6E56">да</text>
+  <text x="580" y="270" text-anchor="middle" font-size="14" fill="#A32D2D">нет</text>
+  <line x1="20" y1="283" x2="640" y2="283" stroke="#5F5E5A" stroke-width="0.5" opacity="0.15"/>
+
+  <text x="20" y="315" font-size="14" fill="#1A1A1A">Временное состояние</text>
+  <text x="240" y="315" text-anchor="middle" font-size="14" fill="#A32D2D">нет</text>
+  <text x="420" y="315" text-anchor="middle" font-size="14" fill="#A32D2D">нет</text>
+  <text x="580" y="315" text-anchor="middle" font-size="14" fill="#0F6E56">да</text>
+  <line x1="20" y1="328" x2="640" y2="328" stroke="#5F5E5A" stroke-width="0.5" opacity="0.15"/>
+
+  <text x="20" y="360" font-size="14" fill="#1A1A1A">ARIA в DOM</text>
+  <text x="240" y="360" text-anchor="middle" font-size="12" fill="#5F5E5A">disabled</text>
+  <text x="420" y="360" text-anchor="middle" font-size="12" fill="#5F5E5A">readonly</text>
+  <text x="580" y="360" text-anchor="middle" font-size="12" fill="#5F5E5A">aria-busy="true"</text>
+
+  <line x1="20" y1="394" x2="640" y2="394" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="4 4" opacity="0.3"/>
+
+  <text x="20" y="420" font-size="12" fill="#5F5E5A">Когда что выбирать:</text>
+  <text x="20" y="446" font-size="12" fill="#5F5E5A">Disabled — когда поле или кнопка вообще не применима в этом контексте</text>
+  <text x="20" y="466" font-size="12" fill="#5F5E5A">ReadOnly — когда значение важно показать, но менять его сейчас нельзя</text>
+</svg>

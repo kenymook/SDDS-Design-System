@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 680 440" role="img" font-family="system-ui, -apple-system, sans-serif">
+  <title>View на полях ввода и на компонентах: разные наборы значений</title>
+  <desc>Слева поля ввода используют error/success, справа компоненты используют negative/positive. Warning встречается в обоих наборах.</desc>
+
+  <text x="170" y="40" text-anchor="middle" font-size="14" font-weight="500" fill="#1A1A1A">Поля ввода</text>
+  <text x="170" y="58" text-anchor="middle" font-size="12" fill="#5F5E5A">«данные невалидны»</text>
+
+  <text x="510" y="40" text-anchor="middle" font-size="14" font-weight="500" fill="#1A1A1A">Компоненты</text>
+  <text x="510" y="58" text-anchor="middle" font-size="12" fill="#5F5E5A">«действие негативно по характеру»</text>
+
+  <line x1="340" y1="80" x2="340" y2="380" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="4 4" opacity="0.3"/>
+
+  <rect x="50" y="100" width="240" height="60" rx="8" fill="#FCEBEB" stroke="#A32D2D" stroke-width="0.5"/>
+  <text x="170" y="128" text-anchor="middle" font-size="14" font-weight="500" fill="#791F1F">view="error"</text>
+  <text x="170" y="148" text-anchor="middle" font-size="12" fill="#A32D2D">«введённое значение невалидно»</text>
+
+  <rect x="390" y="100" width="240" height="60" rx="8" fill="#FCEBEB" stroke="#A32D2D" stroke-width="0.5"/>
+  <text x="510" y="128" text-anchor="middle" font-size="14" font-weight="500" fill="#791F1F">view="negative"</text>
+  <text x="510" y="148" text-anchor="middle" font-size="12" fill="#A32D2D">«это действие деструктивное»</text>
+
+  <rect x="50" y="180" width="240" height="60" rx="8" fill="#EAF3DE" stroke="#3B6D11" stroke-width="0.5"/>
+  <text x="170" y="208" text-anchor="middle" font-size="14" font-weight="500" fill="#27500A">view="success"</text>
+  <text x="170" y="228" text-anchor="middle" font-size="12" fill="#3B6D11">«проверка прошла успешно»</text>
+
+  <rect x="390" y="180" width="240" height="60" rx="8" fill="#EAF3DE" stroke="#3B6D11" stroke-width="0.5"/>
+  <text x="510" y="208" text-anchor="middle" font-size="14" font-weight="500" fill="#27500A">view="positive"</text>
+  <text x="510" y="228" text-anchor="middle" font-size="12" fill="#3B6D11">«действие позитивное»</text>
+
+  <rect x="50" y="260" width="580" height="60" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+  <text x="340" y="288" text-anchor="middle" font-size="14" font-weight="500" fill="#633806">view="warning"</text>
+  <text x="340" y="308" text-anchor="middle" font-size="12" fill="#854F0B">единственное общее значение — предупреждение в обоих контекстах</text>
+
+  <text x="170" y="358" text-anchor="middle" font-size="12" fill="#5F5E5A">TextField, Select, TextArea,</text>
+  <text x="170" y="374" text-anchor="middle" font-size="12" fill="#5F5E5A">Autocomplete, ComboBox</text>
+
+  <text x="510" y="358" text-anchor="middle" font-size="12" fill="#5F5E5A">Button, Badge, Chip, Toast,</text>
+  <text x="510" y="374" text-anchor="middle" font-size="12" fill="#5F5E5A">Notification</text>
+
+  <text x="340" y="416" text-anchor="middle" font-size="12" fill="#5F5E5A">поля ошибаются · компоненты действуют</text>
+</svg>

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 680 240" role="img" font-family="system-ui, -apple-system, sans-serif">
+  <title>Размерная шкала кнопок SDDS</title>
+  <desc>Шесть кнопок разной высоты: XXS 24px, XS 32px, S 40px, M 48px (дефолт), L 56px, XL 64px.</desc>
+
+  <rect x="40" y="98" width="58" height="24" rx="6" fill="#185FA5"/>
+  <text x="69" y="114" text-anchor="middle" font-size="12" font-weight="500" fill="#FFFFFF">Кнопка</text>
+  <text x="69" y="148" text-anchor="middle" font-size="12" font-weight="500" fill="#1A1A1A">XXS</text>
+  <text x="69" y="164" text-anchor="middle" font-size="11" fill="#888780">24px</text>
+
+  <rect x="128" y="90" width="74" height="32" rx="8" fill="#185FA5"/>
+  <text x="165" y="110" text-anchor="middle" font-size="13" font-weight="500" fill="#FFFFFF">Кнопка</text>
+  <text x="165" y="148" text-anchor="middle" font-size="12" font-weight="500" fill="#1A1A1A">XS</text>
+  <text x="165" y="164" text-anchor="middle" font-size="11" fill="#888780">32px</text>
+
+  <rect x="232" y="82" width="86" height="40" rx="8" fill="#185FA5"/>
+  <text x="275" y="106" text-anchor="middle" font-size="14" font-weight="500" fill="#FFFFFF">Кнопка</text>
+  <text x="275" y="148" text-anchor="middle" font-size="12" font-weight="500" fill="#1A1A1A">S</text>
+  <text x="275" y="164" text-anchor="middle" font-size="11" fill="#888780">40px</text>
+
+  <rect x="346" y="74" width="98" height="48" rx="8" fill="#185FA5" stroke="#185FA5" stroke-width="3" stroke-opacity="0.25"/>
+  <text x="395" y="102" text-anchor="middle" font-size="14" font-weight="500" fill="#FFFFFF">Кнопка</text>
+  <rect x="368" y="50" width="54" height="18" rx="4" fill="#F1EFE8"/>
+  <text x="395" y="62" text-anchor="middle" font-size="11" fill="#5F5E5A">дефолт</text>
+  <text x="395" y="148" text-anchor="middle" font-size="13" font-weight="500" fill="#1A1A1A">M</text>
+  <text x="395" y="164" text-anchor="middle" font-size="11" fill="#888780">48px</text>
+
+  <rect x="472" y="66" width="106" height="56" rx="8" fill="#185FA5"/>
+  <text x="525" y="98" text-anchor="middle" font-size="15" font-weight="500" fill="#FFFFFF">Кнопка</text>
+  <text x="525" y="148" text-anchor="middle" font-size="12" font-weight="500" fill="#1A1A1A">L</text>
+  <text x="525" y="164" text-anchor="middle" font-size="11" fill="#888780">56px</text>
+
+  <rect x="606" y="58" width="58" height="64" rx="8" fill="#185FA5"/>
+  <text x="635" y="94" text-anchor="middle" font-size="13" font-weight="500" fill="#FFFFFF">Кн</text>
+  <text x="635" y="148" text-anchor="middle" font-size="12" font-weight="500" fill="#1A1A1A">XL</text>
+  <text x="635" y="164" text-anchor="middle" font-size="11" fill="#888780">64px</text>
+
+  <line x1="40" y1="186" x2="640" y2="186" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="4 4" opacity="0.3"/>
+
+  <text x="40" y="210" font-size="13" fill="#1A1A1A" font-weight="500">XS–S</text>
+  <text x="84" y="210" font-size="13" fill="#5F5E5A">— плотные таблицы, тулбары</text>
+
+  <text x="270" y="210" font-size="13" fill="#1A1A1A" font-weight="500">M</text>
+  <text x="290" y="210" font-size="13" fill="#5F5E5A">— стандартные формы, дефолт</text>
+
+  <text x="500" y="210" font-size="13" fill="#1A1A1A" font-weight="500">L–XL</text>
+  <text x="538" y="210" font-size="13" fill="#5F5E5A">— главные CTA, touch</text>
+</svg>

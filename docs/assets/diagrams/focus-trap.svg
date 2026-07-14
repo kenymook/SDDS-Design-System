@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 680 480" role="img" font-family="system-ui, -apple-system, sans-serif">
+  <title>Focus trap внутри модального компонента</title>
+  <desc>Триггер кнопка снаружи, фокус уходит внутрь модального окна и циклится по трём интерактивным элементам по Tab. Escape возвращает фокус на триггер.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <rect x="40" y="60" width="180" height="44" rx="8" fill="#F1EFE8" stroke="#888780" stroke-width="0.5"/>
+  <text x="130" y="88" text-anchor="middle" font-size="14" font-weight="500" fill="#1A1A1A">Удалить аккаунт</text>
+  <text x="130" y="124" text-anchor="middle" font-size="12" fill="#5F5E5A">триггер</text>
+
+  <path d="M 220 82 Q 260 82 280 130" fill="none" stroke="#534AB7" stroke-width="1.2" marker-end="url(#arrow)"/>
+  <text x="252" y="74" font-size="12" fill="#3C3489">открытие</text>
+
+  <rect x="280" y="120" width="360" height="280" rx="14" fill="#F1EFE8" stroke="#888780" stroke-width="0.5" opacity="0.6"/>
+
+  <text x="300" y="148" font-size="14" font-weight="500" fill="#1A1A1A">Подтверждение</text>
+  <text x="300" y="166" font-size="12" fill="#5F5E5A">role="dialog" · aria-modal="true"</text>
+
+  <rect x="300" y="186" width="320" height="48" rx="8" fill="#FFFFFF" stroke="#534AB7" stroke-width="1.5"/>
+  <text x="316" y="216" font-size="12" fill="#888780">введите название аккаунта</text>
+  <rect x="608" y="208" width="2" height="20" fill="#534AB7"/>
+
+  <rect x="300" y="252" width="150" height="44" rx="8" fill="none" stroke="#888780" stroke-width="0.5"/>
+  <text x="375" y="280" text-anchor="middle" font-size="14" font-weight="500" fill="#1A1A1A">Отмена</text>
+
+  <rect x="466" y="252" width="154" height="44" rx="8" fill="#A32D2D"/>
+  <text x="543" y="280" text-anchor="middle" font-size="14" font-weight="500" fill="#FFFFFF">Удалить</text>
+
+  <text x="300" y="334" font-size="12" fill="#5F5E5A">tab-order:</text>
+
+  <circle cx="328" cy="354" r="11" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+  <text x="328" y="358" text-anchor="middle" font-size="14" font-weight="500" fill="#3C3489">1</text>
+  <text x="346" y="358" font-size="12" fill="#5F5E5A">поле ввода</text>
+
+  <circle cx="430" cy="354" r="11" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+  <text x="430" y="358" text-anchor="middle" font-size="14" font-weight="500" fill="#3C3489">2</text>
+  <text x="448" y="358" font-size="12" fill="#5F5E5A">отмена</text>
+
+  <circle cx="528" cy="354" r="11" fill="#EEEDFE" stroke="#534AB7" stroke-width="0.5"/>
+  <text x="528" y="358" text-anchor="middle" font-size="14" font-weight="500" fill="#3C3489">3</text>
+  <text x="546" y="358" font-size="12" fill="#5F5E5A">удалить</text>
+
+  <path d="M 328 374 Q 328 388 348 388 L 510 388 Q 528 388 528 374" fill="none" stroke="#534AB7" stroke-width="0.8" stroke-dasharray="3 3" marker-end="url(#arrow)"/>
+  <text x="428" y="408" text-anchor="middle" font-size="12" fill="#3C3489">Tab после №3 → возврат на №1</text>
+
+  <path d="M 460 122 Q 200 60 222 102" fill="none" stroke="#0F6E56" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+  <text x="280" y="44" font-size="12" fill="#0F6E56">Escape → возврат на триггер</text>
+
+  <line x1="40" y1="436" x2="640" y2="436" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="4 4" opacity="0.3"/>
+  <text x="40" y="460" font-size="12" fill="#5F5E5A">Tab и Shift+Tab никогда не выходят за пределы модального компонента, пока он открыт</text>
+</svg>

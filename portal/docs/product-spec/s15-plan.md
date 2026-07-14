@@ -1,0 +1,95 @@
+# S15 — план дизайн-задач: Builder и Portal
+
+**Спринт:** 23 июля – 5 августа 2026 · первый спринт ускорения, продолжение [S14](s14-plan.md).
+Здесь — задачи S15 по **DS Builder** и **SDDS Portal** с привязкой к готовым материалам пространства. Трек **Design 2.0** (Draft v1 по 6 компонентам: Button, Tabs, TextField, Select, Toast, Notification + шаблон документации v1) ведётся отдельно.
+
+## Цель S15
+
+Перейти от UX-прототипа и нарезки экранов к **реальным UI-макетам** и draft/v1-материалам. Вопрос «какие экраны нужны» не переоткрываем — он закрыт прототипом и Figma-нарезкой. Задача — переводить это в дизайн, который можно готовить к handoff в S16.
+
+## Приоритеты
+
+- **P0 — DS Builder:** UI direction · key screens · Builder shell · Project/DS/Theme · Tenant Model UI v1 · RBAC UI MVP · access states · подготовка первых dev slices.
+- **P1 — SDDS Portal MVP:** минимальная entry page · CTA «Открыть Builder» · вход в документацию · базовая навигация · auth / no access.
+- **P2 — не делаем:** полноценный портал · расширенный onboarding · все edge cases Builder · продвинутая ролевая админка · полный polished handoff · Modal/Drawer.
+
+## Опорные материалы для всего спринта
+
+- **Нарезка экранов:** [DS BUILDER | PLAYGROUND, страница «СС»](https://www.figma.com/design/3qtcAteqALdFuRL6EvR7qr/DS-BUILDER-%7C-PLAYGROUND?node-id=591-4822) — 63 кадра: 25 экранов, состояния, попапы, ошибки, роли, мобильные; каждый с аннотацией по итогам юзертестов (что сработало, что провалилось, что уже исправлено).
+- **Живой прототип:** https://portal-flow-prototype.vercel.app — поведение, переходы, моторика (актуален, включает правки раунда 1: Palette, откат, Storybook-дока, «Что произошло»).
+- **Спеки 25 экранов** ([design-spec/screens](../design-spec/)) — зоны, состояния, роли, тексты, чек-листы макетов.
+- **Паттерны, каталог состояний, глоссарий** — чтобы key screens не разъезжались по терминам и состояниям.
+
+## Задачи и что уже готово
+
+### [S15] DS Builder UI Direction & Key Screens — Руслан · P0
+
+| Критерий готовности | Что уже есть | Что делать в S15 |
+|---|---|---|
+| UI direction Builder | Кадры нарезки — референс структуры и поведения, **не визуала**; открытые вопросы визуала — в [журнале решений](decisions-log.md) | Новая работа: зафиксировать визуальный стандарт |
+| Builder shell + навигация | Схема shell в спеках (рейл, контекст-бар, тултипы — проверены юзертестом) | Отрисовать в финальном визуале |
+| Key screens MVP | Приоритеты P0 в [scope Builder](../deliverables/02-ds-builder-mvp-scope.md#5-приоритеты-p0p1p2-и-рамка-q3): стартовый, обзоры, редактор (+Palette), Changes, Publish, итог | Отрисовка по спекам; порядок — по P0 |
+| UI-паттерны списков/карточек/пустых | [Паттерны](../design-spec/patterns.md) + кадры S1–S5 (пустые состояния) с находками (у Versions нет заглушки — нужен empty-state) | Перевести в UI-кит макетов |
+| Что в handoff S16 / что в Q4 | Рамка Q3/Q4 в scope | Уточнить по факту отрисовки |
+
+⚠️ Из юзертестов в UI direction обязательно перенести: тултипы рейла, «Что произошло» после Publish, visual diff, Palette-вкладку — это уже проверенные решения, их нельзя потерять при перерисовке.
+
+### [S15] RBAC UI MVP Rules & Access States — Руслан · P0
+
+| Критерий | Что уже есть | Что делать |
+|---|---|---|
+| Роли MVP, full/read-only/no access | [Правила RBAC](../deliverables/03-rbac-ui-rules.md); роли Owner/Editor/Viewer зафиксированы в решениях | Свести в UI-контракт (таблица «роль × действие») |
+| Disabled / hidden actions | Реализовано в прототипе, снято на нарезку (R1, R2, Viewer-состояния редактора и Publish) | Зафиксировать правило выбора disabled vs hidden |
+| Запрос доступа | В прототипе и решениях: «Viewer видит почему недоступно + Request edit access» | Отрисовать состояние |
+| MVP vs future permissions | Открытые вопросы в журнале решений | Вынести сложные роли в future |
+
+### [S15] SDDS Portal Entry Page MVP — Руслан · P1
+
+| Критерий | Что уже есть | Что делать |
+|---|---|---|
+| Entry page UI | Спека [public-home](../design-spec/screens/public-home.md) + full-page кадр; позиционирование «ДС + инструмент» проверено правкой после юзертестов | Минимальная отрисовка |
+| CTA «Открыть Builder», вход в доку, навигация | Уже в прототипе и спеках; путь Portal → Builder проверен тестом | Перенести в UI |
+| Auth / no access | Кадры 08, 08s (ошибка), m8 (телефон) | Отрисовать по кадрам |
+| Не расширять сверх MVP | Раздел «что не берём» в [scope портала](../deliverables/04-sdds-portal-mvp-scope.md#7-что-пока-не-берём) | Держаться рамки |
+
+### [S15] Tenant Model UI v1 — Лиза · P0
+
+| Критерий | Что уже есть | Что делать |
+|---|---|---|
+| UI списка проектов, создание/обзор/настройки Project, DS, Theme | [Тенантная модель](../deliverables/05-tenant-and-project-model.md) + спеки всех 8 экранов + кадры нарезки (9–18) | Отрисовка v1 по спекам |
+| Переходы между сущностями | Проверены юзертестом (3/3 прошли путь) | — |
+| Empty states | Кадры S1–S2 + находка про редирект новичка в create-project | Решить и отрисовать |
+| Спорные сценарии | Открытые вопросы в спеках + журнале | Собрать заметки к review |
+
+### [S15] Support / Duty — Ася · P0
+
+Отдельная задача; объём в конце спринта — в копилку метрики «стоимость поддержки» ([экономика](metrics-and-economics.md)).
+
+## Синхронизации
+
+1. **Kick-off** — переход в acceleration mode; Builder главный, Portal не расширяем; цель — UI key screens и Draft v1.
+2. **Builder UI Sync** (Руслан, Лиза, PM/dev) — shell, сущности, порядок handoff, RBAC states MVP, блокеры. *Готовая повестка: незакрытые решения (CLI, props компонентов, вход) — они держат часть handoff.*
+3. **Design 2.0 Review** — отдельный трек.
+4. **Support Check** (Руслан, Ася).
+5. **S15 Review** (+PM/dev) — direction, key screens, Tenant UI v1, RBAC MVP, entry page, шаблон v1, Draft v1 ×6, список handoff S16, риски.
+
+## Definition of Done (Builder/Portal-часть)
+
+- есть первые реальные UI-макеты Builder и зафиксирован UI direction;
+- Tenant Model — в UI v1; RBAC — на уровне MVP-контракта;
+- Portal ограничен entry page MVP;
+- понятно, что идёт в handoff S16 и что переносится в future/Q4.
+
+## Риски и как готовые материалы их снижают
+
+| Риск | Митигация | Чем помогает готовое |
+|---|---|---|
+| Portal разрастётся | Только entry page MVP | IA и scope зафиксированы; расширения уже помечены «не берём» |
+| Builder расползётся на все экраны | Key screens + UI-система, не edge cases | Edge cases уже сняты на нарезке — их не надо «открывать», только отложить |
+| RBAC заблокирует дизайн | RBAC UI MVP, сложное — в future | Паттерны реализованы и проверены — контракт пишется с натуры |
+| Tenant Model уйдёт в архитектуру | Фиксируем путь Project → DS → Theme | Путь проверен юзертестом, спорное — списком в журнале |
+| Support съест capacity | Отдельная задача, фиксация объёма | Метрика заведена в экономике |
+
+## Связанные документы
+
+[План S14](s14-plan.md) · [Scope Builder](../deliverables/02-ds-builder-mvp-scope.md) · [RBAC](../deliverables/03-rbac-ui-rules.md) · [Scope портала](../deliverables/04-sdds-portal-mvp-scope.md) · [Тенантная модель](../deliverables/05-tenant-and-project-model.md) · [Инвентарь экранов](../design-spec/screen-inventory.md) · [Журнал решений](decisions-log.md) · [Отчёт по интервью](../research/2026-07-07-interviews-round1.md) · [Лестница качества](quality-ladder.md) · [Нарезка экранов в Figma](https://www.figma.com/design/3qtcAteqALdFuRL6EvR7qr/DS-BUILDER-%7C-PLAYGROUND?node-id=591-4822)

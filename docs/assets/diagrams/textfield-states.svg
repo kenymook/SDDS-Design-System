@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 680 540" role="img" font-family="system-ui, -apple-system, sans-serif">
+  <title>Состояния TextField</title>
+  <desc>Шесть вариантов одного TextField: default, focused, error, warning, success, disabled.</desc>
+
+  <text x="40" y="32" font-size="12" fill="#5F5E5A">view="default"</text>
+  <text x="40" y="56" font-size="14" font-weight="500" fill="#1A1A1A">Email</text>
+  <rect x="40" y="68" width="280" height="48" rx="8" fill="#F1EFE8" stroke="#888780" stroke-width="0.5"/>
+  <text x="56" y="98" font-size="14" fill="#888780">mail@example.com</text>
+  <text x="40" y="138" font-size="12" fill="#888780">не более 64 символов</text>
+
+  <text x="360" y="32" font-size="12" fill="#5F5E5A">view="default" · focused</text>
+  <text x="360" y="56" font-size="14" font-weight="500" fill="#1A1A1A">Email</text>
+  <rect x="360" y="68" width="280" height="48" rx="8" fill="#F1EFE8" stroke="#185FA5" stroke-width="2"/>
+  <text x="376" y="98" font-size="14" fill="#1A1A1A">anna</text>
+  <rect x="406" y="86" width="1" height="18" fill="#185FA5"/>
+  <text x="360" y="138" font-size="12" fill="#888780">не более 64 символов</text>
+
+  <text x="40" y="180" font-size="12" fill="#5F5E5A">view="error"</text>
+  <text x="40" y="204" font-size="14" font-weight="500" fill="#1A1A1A">Email</text>
+  <rect x="40" y="216" width="280" height="48" rx="8" fill="#FCEBEB" stroke="#A32D2D" stroke-width="0.5"/>
+  <text x="56" y="246" font-size="14" fill="#1A1A1A">anna@</text>
+  <text x="40" y="286" font-size="12" fill="#A32D2D">введите корректный email</text>
+
+  <text x="360" y="180" font-size="12" fill="#5F5E5A">view="warning"</text>
+  <text x="360" y="204" font-size="14" font-weight="500" fill="#1A1A1A">Пароль</text>
+  <rect x="360" y="216" width="280" height="48" rx="8" fill="#FAEEDA" stroke="#854F0B" stroke-width="0.5"/>
+  <text x="376" y="246" font-size="14" fill="#1A1A1A">••••••</text>
+  <text x="360" y="286" font-size="12" fill="#854F0B">этот пароль использовался ранее</text>
+
+  <text x="40" y="328" font-size="12" fill="#5F5E5A">view="success"</text>
+  <text x="40" y="352" font-size="14" font-weight="500" fill="#1A1A1A">Email</text>
+  <rect x="40" y="364" width="280" height="48" rx="8" fill="#EAF3DE" stroke="#3B6D11" stroke-width="0.5"/>
+  <text x="56" y="394" font-size="14" fill="#1A1A1A">anna@example.com</text>
+  <text x="40" y="434" font-size="12" fill="#3B6D11">email свободен</text>
+
+  <text x="360" y="328" font-size="12" fill="#5F5E5A">disabled</text>
+  <text x="360" y="352" font-size="14" font-weight="500" fill="#888780">Email</text>
+  <rect x="360" y="364" width="280" height="48" rx="8" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="0.5" opacity="0.6"/>
+  <text x="376" y="394" font-size="14" fill="#888780" opacity="0.7">anna@example.com</text>
+  <text x="360" y="434" font-size="12" fill="#888780" opacity="0.7">не более 64 символов</text>
+
+  <line x1="40" y1="466" x2="640" y2="466" stroke="#5F5E5A" stroke-width="0.5" stroke-dasharray="4 4" opacity="0.3"/>
+  <text x="40" y="490" font-size="12" fill="#5F5E5A">все варианты задаются через проп view, ничего не правится в макете руками</text>
+  <text x="40" y="510" font-size="12" fill="#5F5E5A">фон и обводка — токены состояния, hint-текст — токен Status соответствующего варианта</text>
+</svg>
