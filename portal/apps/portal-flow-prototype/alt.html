@@ -66,25 +66,55 @@ header nav a:hover{opacity:1}
 .axis.a1{left:4vw}.axis.a2{right:4vw}
 @media(max-width:760px){.axis{display:none}}
 
-/* ============ HERO ============ */
-.hero{position:relative;min-height:100vh;display:grid;align-content:center;padding:0 4vw}
-#field{position:absolute;inset:0;width:100%;height:100%;display:block}
-.hero-inner{position:relative;z-index:3}
-.hero-kicker{font-family:var(--font-mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:3vh;display:flex;gap:14px;align-items:center}
+/* ============ HERO: диагональный конвейер карточек ============ */
+.hero{position:relative;height:100vh;overflow:hidden}
+.hero-kicker{font-family:var(--font-mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:2.4vh;display:flex;gap:14px;align-items:center}
 .hero-kicker b{color:var(--brand);font-weight:500}
 .hero-kicker::before{content:'';width:44px;height:1px;background:var(--brand)}
 h1{font-family:var(--font-display);font-weight:900;text-transform:uppercase;
-  font-size:clamp(42px,8.6vw,150px);line-height:.94;letter-spacing:-.01em}
+  font-size:clamp(34px,5.6vw,96px);line-height:.96;letter-spacing:-.01em}
 h1 .line{display:block;overflow:hidden}
 h1 .line span{display:inline-block}
 h1 .accent{color:var(--brand)}
 h1 .hollow{color:transparent;-webkit-text-stroke:2px var(--ink)}
-.hero-meta{display:flex;justify-content:space-between;align-items:flex-end;gap:4vw;margin-top:5vh;flex-wrap:wrap}
-.hero-sub{max-width:520px;color:var(--ink-dim);font-size:18px}
+/* заголовок — сверху справа, ПОВЕРХ конвейера */
+.hero-tr{position:absolute;top:13vh;right:4vw;text-align:right;z-index:4}
+/* текст — снизу слева, вне пути карточек */
+.hero-bl{position:absolute;left:4vw;bottom:7vh;max-width:480px;z-index:5;
+  background:rgba(11,11,9,.6);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:20px 22px;border-radius:16px;border:1px solid rgba(255,255,255,.06)}
+.hero-sub{color:var(--ink-dim);font-size:18px}
 .hero-sub b{color:var(--ink);font-weight:600}
-.token-readout{font-family:var(--font-mono);font-size:12.5px;line-height:2;color:var(--ink-dim);text-align:right}
+.token-readout{font-family:var(--font-mono);font-size:12.5px;line-height:2;color:var(--ink-dim);margin-top:2.2vh}
 .token-readout .v{color:var(--brand)}
-.scroll-hint{position:absolute;bottom:4vh;left:50%;transform:translateX(-50%);font-family:var(--font-mono);font-size:11px;letter-spacing:.3em;color:var(--ink-dim);z-index:3}
+.scroll-hint{position:absolute;bottom:4vh;right:4vw;font-family:var(--font-mono);font-size:11px;letter-spacing:.3em;color:var(--ink-dim);z-index:4}
+
+/* конвейер */
+.deck{position:absolute;inset:0;z-index:3;pointer-events:none}
+.pass{position:absolute;top:0;left:0;width:min(300px,58vw);aspect-ratio:3/4;border-radius:26px;
+  padding:18px 18px 0;display:grid;grid-template-rows:1fr auto;
+  box-shadow:0 34px 80px -24px rgba(0,0,0,.75);will-change:transform}
+.pass-stage{display:grid;place-items:center}
+.pass-label{text-align:center;padding:12px 0 16px}
+.pass-label b{font-family:var(--font-display);font-weight:900;font-size:clamp(20px,2.4vw,30px);letter-spacing:.02em;color:#0C0C0A;display:block;text-transform:uppercase}
+.pass-label i{font-style:normal;display:inline-block;margin-top:8px;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#0C0C0A;border:1.5px solid #0C0C0A;border-radius:99px;padding:3px 12px}
+/* мини-моки компонентов внутри карточек (тёмные на цветном) */
+.mk{--mk:#0C0C0A}
+.mk-btn{background:var(--mk);color:#fff;border-radius:12px;padding:13px 26px;font-weight:600;font-size:15px;font-family:var(--font-body)}
+.mk-input{width:82%;border:2px solid var(--mk);border-radius:12px;padding:12px 14px;color:var(--mk);font-family:var(--font-mono);font-size:13px}
+.mk-switch{width:74px;height:40px;border-radius:99px;background:var(--mk);position:relative}
+.mk-switch::after{content:'';position:absolute;top:5px;right:5px;width:30px;height:30px;border-radius:50%;background:#fff}
+.mk-chip{border:2px solid var(--mk);color:var(--mk);border-radius:99px;padding:10px 22px;font-weight:600;font-family:var(--font-body)}
+.mk-progress{width:78%;height:10px;border-radius:99px;background:rgba(0,0,0,.18);position:relative}
+.mk-progress::after{content:'';position:absolute;inset:0;width:66%;border-radius:99px;background:var(--mk)}
+.mk-toast{background:var(--mk);color:#fff;border-radius:12px;padding:12px 18px;font-size:13.5px;font-family:var(--font-body)}
+.mk-pal{display:flex;gap:7px}
+.mk-pal span{width:26px;height:26px;border-radius:8px;background:var(--mk);opacity:.9}
+.mk-pal span:nth-child(2){opacity:.55}.mk-pal span:nth-child(3){opacity:.3}
+.mk-tabs{display:flex;gap:6px;border:2px solid var(--mk);border-radius:12px;padding:5px}
+.mk-tabs span{padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;color:var(--mk);font-family:var(--font-body)}
+.mk-tabs span.on{background:var(--mk);color:#fff}
+@media(max-width:760px){.hero-tr{top:11vh}.hero-bl{bottom:5vh;max-width:78vw}}
 
 /* ============ бегущая строка токенов ============ */
 .marquee{border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;padding:18px 0;background:var(--bg-raise)}
@@ -207,24 +237,21 @@ footer{padding:26px 4vw;border-top:1px solid var(--line);display:flex;justify-co
   </nav>
 </header>
 
-<!-- HERO -->
-<section class="hero" id="top" style="padding-top:0;padding-bottom:0">
-  <canvas id="field"></canvas>
-  <div class="hero-inner">
+<!-- HERO: конвейер компонентов -->
+<section class="hero" id="top">
+  <div class="deck" id="deck" aria-hidden="true"></div>
+  <h1 class="hero-tr" id="heroTitle">
+    <span class="line"><span>Одна</span></span>
+    <span class="line"><span>система<span class="accent">.</span></span></span>
+    <span class="line"><span class="hollow">Любой бренд<span class="accent">.</span></span></span>
+  </h1>
+  <div class="hero-bl">
     <p class="hero-kicker">Sber Digital Design System · <b id="kickerToken">color.primary = #10C8B4</b></p>
-    <h1 id="heroTitle">
-      <span class="line"><span>Одна</span></span>
-      <span class="line"><span>система<span class="accent">.</span></span></span>
-      <span class="line"><span class="hollow">Любой бренд<span class="accent">.</span></span></span>
-    </h1>
-    <div class="hero-meta">
-      <p class="hero-sub rv">Эта страница — <b>не макет</b>. Каждый её цвет, радиус и компонент читает живые токены SDDS. Переключите бренд ниже — и посмотрите, что произойдёт.</p>
-      <div class="token-readout rv" id="readout">
-        <div>--brand: <span class="v" data-ro="brand">#10C8B4</span></div>
-        <div>--radius: <span class="v" data-ro="radius">14px</span></div>
-        <div>components: <span class="v">~80</span></div>
-        <div>wcag: <span class="v">2.1 AA</span></div>
-      </div>
+    <p class="hero-sub rv">Эта страница — <b>не макет</b>. Каждый её цвет, радиус и компонент читает живые токены SDDS. Прокрутите — компоненты уже едут к вам.</p>
+    <div class="token-readout rv" id="readout">
+      <div>--brand: <span class="v" data-ro="brand">#10C8B4</span></div>
+      <div>--radius: <span class="v" data-ro="radius">14px</span></div>
+      <div>components: <span class="v">~80</span> · wcag: <span class="v">2.1 AA</span></div>
     </div>
   </div>
   <div class="scroll-hint">SCROLL</div>
@@ -366,93 +393,48 @@ const chain = ['color.primary', 'surface.accent', 'Button.background', 'text.onP
 const mq = document.getElementById('mq');
 mq.innerHTML = (chain.map(t => `<span><em>${t}</em> → <i data-ro="brand">#10C8B4</i></span>`).join('')).repeat(2);
 
-/* ============================== THREE: ПОЛЕ ТОКЕНОВ ============================== */
-let field = null;
-if (!reduced) {
-  try {
-    const THREE = await import('https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js');
-    const canvas = document.getElementById('field');
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(48, 1, .1, 100);
-    camera.position.set(0, 2.1, 7.5);
-    camera.lookAt(0, 0, 0);
-
-    const COLS = 110, ROWS = 60, N = COLS * ROWS;
-    const geo = new THREE.BufferGeometry();
-    const pos = new Float32Array(N * 3), seed = new Float32Array(N);
-    let k = 0;
-    for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
-      pos[k * 3] = (x / (COLS - 1) - .5) * 16;
-      pos[k * 3 + 1] = 0;
-      pos[k * 3 + 2] = (y / (ROWS - 1) - .5) * 9;
-      seed[k] = Math.random(); k++;
-    }
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    geo.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1));
-    const uniforms = {
-      uTime: { value: 0 },
-      uColor: { value: new THREE.Color(state.brand) },
-      uMouse: { value: new THREE.Vector2(99, 99) },
-    };
-    const mat = new THREE.ShaderMaterial({
-      uniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-      vertexShader: `
-        uniform float uTime; uniform vec2 uMouse; attribute float aSeed; varying float vA;
-        void main(){
-          vec3 p = position;
-          float w = sin(p.x*0.9 + uTime*0.9) * cos(p.z*1.1 + uTime*0.7) * 0.45;
-          w += sin((p.x+p.z)*0.5 + uTime*0.5) * 0.25;
-          float d = distance(p.xz, uMouse);
-          float lift = smoothstep(2.2, 0.0, d) * 1.2;      // подъём под курсором
-          p.y = w + lift;
-          vA = 0.18 + aSeed*0.25 + lift*0.55;
-          vec4 mv = modelViewMatrix * vec4(p,1.0);
-          gl_Position = projectionMatrix * mv;
-          gl_PointSize = (1.4 + aSeed*1.8 + lift*2.2) * (300.0/-mv.z) * 0.045;
-        }`,
-      fragmentShader: `
-        uniform vec3 uColor; varying float vA;
-        void main(){
-          vec2 c = gl_PointCoord - 0.5;
-          float m = smoothstep(0.5, 0.1, length(c));
-          gl_FragColor = vec4(uColor, vA * m);
-        }`,
-    });
-    scene.add(new THREE.Points(geo, mat));
-
-    const mouse3 = new THREE.Vector2(99, 99);
-    const ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3();
-    addEventListener('pointermove', (e) => {
-      const r = canvas.getBoundingClientRect();
-      if (e.clientY > r.bottom) { mouse3.set(99, 99); return; }
-      const nd = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
-      ray.setFromCamera(nd, camera);
-      if (ray.ray.intersectPlane(plane, hit)) mouse3.set(hit.x, hit.z);
-    }, { passive: true });
-
-    const resize = () => {
-      const w = canvas.clientWidth, h = canvas.clientHeight;
-      renderer.setSize(w, h, false);
-      camera.aspect = w / h; camera.updateProjectionMatrix();
-    };
-    addEventListener('resize', resize); resize();
-
-    let visible = true, rafId = 0;
-    new IntersectionObserver((en) => { visible = en[0].isIntersecting; if (visible && !rafId) loop(performance.now()); }, { threshold: .02 }).observe(canvas);
-    document.addEventListener('visibilitychange', () => { if (!document.hidden && visible && !rafId) loop(performance.now()); });
-    const loop = (t) => {
-      if (document.hidden || !visible) { rafId = 0; return; }
-      uniforms.uTime.value = t / 1000;
-      uniforms.uMouse.value.lerp(mouse3, .08);
-      renderer.render(scene, camera);
-      rafId = requestAnimationFrame(loop);
-    };
-    loop(performance.now());
-    field = { setColor: (hex) => gsap.to(uniforms.uColor.value, { ...new THREE.Color(hex), duration: .8 }) };
-  } catch (e) { /* нет WebGL/сети — страница живёт без 3D */ }
+/* ============================== HERO: КОНВЕЙЕР КОМПОНЕНТОВ ============================== */
+const field = null; // 3D-поле удалено — hero теперь ведёт конвейер карточек
+const PASSES = [
+  ['Button', 'action', '<span class="mk-btn">Оплатить</span>'],
+  ['Input', 'forms', '<span class="mk-input">name@sber.ru</span>'],
+  ['Switch', 'controls', '<span class="mk-switch"></span>'],
+  ['Palette', 'tokens', '<span class="mk-pal"><span></span><span></span><span></span></span>'],
+  ['Chip', 'filters', '<span class="mk-chip">Фильтр ✕</span>'],
+  ['Tabs', 'navigation', '<span class="mk-tabs"><span class="on">День</span><span>Месяц</span></span>'],
+  ['Progress', 'status', '<span class="mk-progress"></span>'],
+  ['Toast', 'feedback', '<span class="mk-toast">✓ Сохранено</span>'],
+];
+const CARD_COLORS = ['#10C8B4', '#63C7E6', '#9A6BFF', '#FFB020', '#FF6B57', '#7ED957', '#4D82FF', '#F2C94C'];
+const deckEl = document.getElementById('deck');
+const passCards = PASSES.map(([name, tag, mock], i) => {
+  const el = document.createElement('div');
+  el.className = 'pass mk';
+  el.style.background = CARD_COLORS[i % CARD_COLORS.length];
+  el.innerHTML = `<div class="pass-stage">${mock}</div><div class="pass-label"><b>${name}</b><i>${tag}</i></div>`;
+  deckEl.appendChild(el);
+  return el;
+});
+const jitter = passCards.map((_, i) => ((Math.sin((i + 1) * 12.9898) * 43758.5453) % 1 + 1) % 1);
+const DECK_STEP = 0.16, DECK_START = 0.30;
+const DECK_TRAVEL = 1.12 + (passCards.length - 1) * DECK_STEP - DECK_START + 0.30; // последняя карточка успевает выйти
+function placeDeck(progress) {
+  const W = innerWidth, H = innerHeight;
+  const cw = Math.min(300, W * .58);
+  passCards.forEach((el, i) => {
+    const s = DECK_START - i * DECK_STEP + progress;          // позиция вдоль диагонали
+    const x = (0.20 + 0.88 * s) * W - cw / 2;                 // низ-центр → верх-право (текст слева свободен)
+    const y = (1.10 - 1.35 * s) * H - cw * .66;
+    const clamped = Math.max(0, Math.min(1, s));
+    const rot = -16 + 26 * s + (jitter[i] * 8 - 4);           // наклон меняется вдоль пути
+    const sc = .84 + .24 * Math.sin(clamped * Math.PI);       // в центре чуть крупнее
+    gsap.set(el, { x, y, rotation: rot, scale: sc, opacity: s < -0.14 || s > 1.16 ? 0 : 1 });
+  });
 }
+if (window.gsap) placeDeck(reduced ? 0.42 : 0);               // reduced: статичная диагональ
+addEventListener('resize', () => placeDeck(lastDeckProgress));
+let lastDeckProgress = reduced ? 0.42 : 0;
+
 
 /* ============================== GSAP ХОРЕОГРАФИЯ ============================== */
 if (!reduced && window.gsap) {
@@ -469,8 +451,11 @@ if (!reduced && window.gsap) {
       scrollTrigger: { trigger: el, start: 'top 86%' } });
   });
 
-  /* лёгкий параллакс поля под скролл */
-  gsap.to('#field', { yPercent: 18, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
+  /* конвейер: hero пинится, карточки едут по диагонали скрабом скролла */
+  ScrollTrigger.create({
+    trigger: '.hero', start: 'top top', end: '+=260%', pin: true, scrub: .5,
+    onUpdate: (self) => { lastDeckProgress = self.progress * DECK_TRAVEL; placeDeck(lastDeckProgress); },
+  });
 
   /* счётчики */
   document.querySelectorAll('[data-count]').forEach((el) => {
