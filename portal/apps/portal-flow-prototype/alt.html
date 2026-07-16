@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SDDS — система, которая собирает себя сама</title>
+<meta name="description" content="Альтернативная главная SDDS: страница, полностью управляемая токенами дизайн-системы.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;500;700;900&family=Golos+Text:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============ ТОКЕН-ДВИЖОК: вся страница живёт на этих переменных ============ */
+:root{
+  --brand:#10C8B4;            /* color.primary — живой, переключается пультом */
+  --brand-deep:#0A7F73;       /* color.primaryDeep */
+  --on-brand:#041210;         /* color.onPrimary */
+  --ink:#EDECE6;              /* text.primary — тёплый белый */
+  --ink-dim:#8B8A82;          /* text.secondary */
+  --bg:#0B0B09;               /* surface.canvas — почти чёрный, тёплый */
+  --bg-raise:#141412;         /* surface.raised */
+  --line:#26251F;             /* outline.subtle */
+  --radius:14px;              /* rounding.md */
+  --font-display:'Unbounded',sans-serif;
+  --font-body:'Golos Text',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:auto}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:var(--font-body);font-size:17px;line-height:1.55;
+  overflow-x:hidden;cursor:none;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--brand);color:var(--on-brand)}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:none}
+
+/* зерно поверх всего */
+.grain{position:fixed;inset:-50%;width:200%;height:200%;pointer-events:none;z-index:90;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain 9s steps(10) infinite}
+@keyframes grain{0%,100%{transform:translate(0,0)}20%{transform:translate(-3%,2%)}40%{transform:translate(2%,-3%)}60%{transform:translate(-2%,-2%)}80%{transform:translate(3%,3%)}}
+
+/* кастомный курсор */
+.cur,.cur-dot{position:fixed;top:0;left:0;pointer-events:none;z-index:99;border-radius:50%;will-change:transform}
+.cur{width:36px;height:36px;border:1.5px solid var(--brand);transition:width .25s,height .25s,opacity .25s;margin:-18px 0 0 -18px}
+.cur.is-act{width:64px;height:64px;margin:-32px 0 0 -32px;opacity:.9}
+.cur-dot{width:5px;height:5px;background:var(--brand);margin:-2.5px 0 0 -2.5px}
+@media(hover:none){.cur,.cur-dot{display:none}body{cursor:auto}button{cursor:pointer}}
+
+/* прогресс чтения */
+.progress{position:fixed;top:0;left:0;height:2px;background:var(--brand);width:0;z-index:95}
+
+/* шапка */
+header{position:fixed;inset:0 0 auto;z-index:80;display:flex;justify-content:space-between;align-items:center;
+  padding:22px 4vw;mix-blend-mode:difference}
+.logo{font-family:var(--font-display);font-weight:900;font-size:19px;letter-spacing:.06em}
+.logo i{color:var(--brand);font-style:normal}
+header nav{display:flex;gap:28px;font-family:var(--font-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+header nav a{opacity:.75}
+header nav a:hover{opacity:1}
+
+/* оси-чертёж */
+.axis{position:fixed;top:0;bottom:0;width:1px;background:var(--line);z-index:1;opacity:.6}
+.axis.a1{left:4vw}.axis.a2{right:4vw}
+@media(max-width:760px){.axis{display:none}}
+
+/* ============ HERO ============ */
+.hero{position:relative;min-height:100vh;display:grid;align-content:center;padding:0 4vw}
+#field{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hero-inner{position:relative;z-index:3}
+.hero-kicker{font-family:var(--font-mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:3vh;display:flex;gap:14px;align-items:center}
+.hero-kicker b{color:var(--brand);font-weight:500}
+.hero-kicker::before{content:'';width:44px;height:1px;background:var(--brand)}
+h1{font-family:var(--font-display);font-weight:900;text-transform:uppercase;
+  font-size:clamp(42px,8.6vw,150px);line-height:.94;letter-spacing:-.01em}
+h1 .line{display:block;overflow:hidden}
+h1 .line span{display:inline-block}
+h1 .accent{color:var(--brand)}
+h1 .hollow{color:transparent;-webkit-text-stroke:2px var(--ink)}
+.hero-meta{display:flex;justify-content:space-between;align-items:flex-end;gap:4vw;margin-top:5vh;flex-wrap:wrap}
+.hero-sub{max-width:520px;color:var(--ink-dim);font-size:18px}
+.hero-sub b{color:var(--ink);font-weight:600}
+.token-readout{font-family:var(--font-mono);font-size:12.5px;line-height:2;color:var(--ink-dim);text-align:right}
+.token-readout .v{color:var(--brand)}
+.scroll-hint{position:absolute;bottom:4vh;left:50%;transform:translateX(-50%);font-family:var(--font-mono);font-size:11px;letter-spacing:.3em;color:var(--ink-dim);z-index:3}
+
+/* ============ бегущая строка токенов ============ */
+.marquee{border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;padding:18px 0;background:var(--bg-raise)}
+.marquee-track{display:flex;gap:56px;width:max-content;animation:mq 26s linear infinite;font-family:var(--font-mono);font-size:14px;white-space:nowrap}
+.marquee-track span i{font-style:normal;color:var(--brand)}
+.marquee-track span em{font-style:normal;color:var(--ink-dim)}
+@keyframes mq{to{transform:translateX(-50%)}}
+
+/* ============ секции ============ */
+section{position:relative;padding:16vh 4vw}
+.sec-head{display:flex;align-items:baseline;gap:22px;margin-bottom:7vh}
+.sec-idx{font-family:var(--font-mono);font-size:13px;color:var(--brand);letter-spacing:.2em}
+h2{font-family:var(--font-display);font-weight:700;text-transform:uppercase;font-size:clamp(26px,4vw,58px);line-height:1.04;letter-spacing:0}
+.sec-note{margin-left:auto;max-width:340px;color:var(--ink-dim);font-size:15px;text-align:right}
+@media(max-width:900px){.sec-note{display:none}}
+
+/* ============ ПУЛЬТ БРЕНДОВ (signature) ============ */
+.dial{display:grid;grid-template-columns:1.1fr .9fr;gap:6vw;align-items:center}
+@media(max-width:900px){.dial{grid-template-columns:1fr}}
+.dial-copy p{color:var(--ink-dim);font-size:19px;max-width:46ch}
+.dial-copy p b{color:var(--ink)}
+.dial-copy .claim{font-family:var(--font-display);font-weight:700;font-size:clamp(20px,2.2vw,30px);text-transform:uppercase;color:var(--ink);margin-bottom:3vh;line-height:1.25}
+.dial-copy .claim i{font-style:normal;color:var(--brand)}
+.brands{display:grid;gap:14px}
+.brand-btn{display:flex;align-items:center;gap:18px;padding:18px 22px;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--bg-raise);text-align:left;transition:border-color .3s,transform .3s}
+.brand-btn:hover{border-color:var(--brand);transform:translateX(6px)}
+.brand-btn.is-on{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand)}
+.brand-sw{width:42px;height:42px;border-radius:12px;flex:0 0 auto;position:relative;overflow:hidden}
+.brand-sw::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.35),transparent 55%)}
+.brand-btn strong{font-family:var(--font-display);font-weight:500;font-size:15px;letter-spacing:.02em;display:block}
+.brand-btn small{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-dim)}
+.brand-btn .hex{margin-left:auto;font-family:var(--font-mono);font-size:12px;color:var(--ink-dim)}
+
+/* ============ КОМПОНЕНТЫ ============ */
+.spec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+@media(max-width:1000px){.spec-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.spec-grid{grid-template-columns:1fr}}
+.spec{background:var(--bg);padding:34px 26px 30px;position:relative;min-height:210px;display:grid;align-content:space-between;gap:26px}
+.spec::before{content:attr(data-ref);position:absolute;top:12px;right:14px;font-family:var(--font-mono);font-size:10.5px;color:var(--ink-dim);letter-spacing:.12em}
+.spec-label{font-family:var(--font-mono);font-size:12px;color:var(--ink-dim);letter-spacing:.14em;text-transform:uppercase}
+.spec-label i{font-style:normal;color:var(--brand)}
+.spec-stage{display:flex;align-items:center;justify-content:center;min-height:86px}
+/* живые компоненты на токенах */
+.c-btn{background:var(--brand);color:var(--on-brand);border-radius:calc(var(--radius) - 4px);padding:13px 26px;font-weight:600;font-size:15px;transition:transform .2s}
+.c-btn:hover{transform:translateY(-2px)}
+.c-input{width:min(240px,100%)}
+.c-input label{display:block;font-family:var(--font-mono);font-size:11px;color:var(--ink-dim);margin-bottom:7px;letter-spacing:.1em}
+.c-input input{width:100%;background:var(--bg-raise);border:1px solid var(--line);border-radius:calc(var(--radius) - 4px);padding:12px 14px;color:var(--ink);font:inherit;outline:none}
+.c-input input:focus{border-color:var(--brand)}
+.c-switch{width:58px;height:32px;border-radius:99px;background:var(--brand);position:relative;transition:background .3s}
+.c-switch i{position:absolute;top:4px;left:30px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .25s}
+.c-switch.off{background:var(--line)}
+.c-switch.off i{left:4px}
+.c-chip{border:1px solid var(--brand);color:var(--brand);border-radius:99px;padding:9px 18px;font-size:14px;font-weight:500}
+.c-progress{width:min(220px,100%);height:8px;border-radius:99px;background:var(--bg-raise);overflow:hidden}
+.c-progress i{display:block;height:100%;width:64%;border-radius:99px;background:linear-gradient(90deg,var(--brand-deep),var(--brand))}
+.c-toast{display:flex;gap:12px;align-items:center;background:var(--bg-raise);border:1px solid var(--line);border-left:3px solid var(--brand);border-radius:calc(var(--radius) - 4px);padding:13px 18px;font-size:14.5px}
+.c-toast b{color:var(--brand)}
+
+/* ============ BUILDER ============ */
+.builder-wrap{display:grid;grid-template-columns:.9fr 1.1fr;gap:6vw;align-items:center}
+@media(max-width:900px){.builder-wrap{grid-template-columns:1fr}}
+.term{font-family:var(--font-mono);font-size:14px;background:#060605;border:1px solid var(--line);border-radius:var(--radius);padding:22px;line-height:1.9;box-shadow:0 30px 80px -30px rgba(0,0,0,.8)}
+.term .dim{color:var(--ink-dim)}
+.term .ok{color:var(--brand)}
+.term .caret{display:inline-block;width:8px;height:16px;background:var(--brand);vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.builder-copy p{color:var(--ink-dim);font-size:18px;max-width:46ch;margin-bottom:2.6vh}
+.builder-copy p b{color:var(--ink)}
+.mock{position:relative;border:1px solid var(--line);border-radius:calc(var(--radius) + 6px);background:var(--bg-raise);padding:18px;display:grid;grid-template-columns:52px 1fr 170px;gap:14px;min-height:340px;box-shadow:0 40px 100px -40px rgba(0,0,0,.9)}
+.mock-rail{display:grid;gap:10px;align-content:start;justify-items:center;padding-top:6px}
+.mock-rail i{width:34px;height:34px;border-radius:9px;background:var(--bg);border:1px solid var(--line);display:grid;place-items:center;font-style:normal;font-size:13px;color:var(--ink-dim)}
+.mock-rail i.on{background:var(--brand);color:var(--on-brand);border-color:transparent}
+.mock-canvas{background:var(--bg);border:1px solid var(--line);border-radius:var(--radius);display:grid;place-items:center;gap:0}
+.mock-side{display:grid;gap:10px;align-content:start}
+.mock-side .cell{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-family:var(--font-mono);font-size:11px;color:var(--ink-dim);line-height:1.7}
+.mock-side .cell b{color:var(--ink);font-weight:500;display:block}
+.mock-side .cell .sw{display:inline-block;width:12px;height:12px;border-radius:4px;background:var(--brand);vertical-align:-1px;margin-right:6px}
+
+/* ============ ЦИФРЫ ============ */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1px;background:var(--line);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.stat{background:var(--bg);padding:7vh 4vw}
+.stat b{font-family:var(--font-display);font-weight:900;font-size:clamp(46px,6vw,96px);line-height:1;display:block;color:var(--ink)}
+.stat b i{font-style:normal;color:var(--brand)}
+.stat > span{font-family:var(--font-mono);font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim)}
+
+/* ============ ФИНАЛ ============ */
+.final{min-height:88vh;display:grid;place-content:center;text-align:center;gap:4vh}
+.final h2{font-size:clamp(34px,6.4vw,110px)}
+.final .c-btn{font-size:18px;padding:20px 44px;border-radius:99px;justify-self:center}
+.final .alt-link{font-family:var(--font-mono);font-size:12.5px;color:var(--ink-dim);letter-spacing:.1em}
+.final .alt-link a{border-bottom:1px solid var(--line)}
+footer{padding:26px 4vw;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11.5px;color:var(--ink-dim);letter-spacing:.12em;flex-wrap:wrap;gap:10px}
+
+/* reveal-заготовки */
+.rv{opacity:0;transform:translateY(46px)}
+@media (prefers-reduced-motion: reduce){
+  .rv{opacity:1;transform:none}
+  .grain,.marquee-track{animation:none}
+  body{cursor:auto}
+  .cur,.cur-dot{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+<div class="progress" id="progress"></div>
+<div class="cur" id="cur"></div><div class="cur-dot" id="curDot"></div>
+<span class="axis a1"></span><span class="axis a2"></span>
+
+<header>
+  <a class="logo" href="/">S<i>D</i>DS</a>
+  <nav>
+    <a href="#brands">Токены</a>
+    <a href="#components">Компоненты</a>
+    <a href="#builder">Builder</a>
+    <a href="/" data-cur>Классическая версия</a>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section class="hero" id="top" style="padding-top:0;padding-bottom:0">
+  <canvas id="field"></canvas>
+  <div class="hero-inner">
+    <p class="hero-kicker">Sber Digital Design System · <b id="kickerToken">color.primary = #10C8B4</b></p>
+    <h1 id="heroTitle">
+      <span class="line"><span>Одна</span></span>
+      <span class="line"><span>система<span class="accent">.</span></span></span>
+      <span class="line"><span class="hollow">Любой бренд<span class="accent">.</span></span></span>
+    </h1>
+    <div class="hero-meta">
+      <p class="hero-sub rv">Эта страница — <b>не макет</b>. Каждый её цвет, радиус и компонент читает живые токены SDDS. Переключите бренд ниже — и посмотрите, что произойдёт.</p>
+      <div class="token-readout rv" id="readout">
+        <div>--brand: <span class="v" data-ro="brand">#10C8B4</span></div>
+        <div>--radius: <span class="v" data-ro="radius">14px</span></div>
+        <div>components: <span class="v">~80</span></div>
+        <div>wcag: <span class="v">2.1 AA</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-hint">SCROLL</div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track" id="mq"></div>
+</div>
+
+<!-- ПУЛЬТ БРЕНДОВ -->
+<section id="brands">
+  <div class="sec-head rv"><span class="sec-idx">01</span><h2>Это не тема страницы.<br>Это токены системы</h2>
+    <p class="sec-note">Один клик меняет значения токенов — страница, компоненты и даже 3D-сцена пересобираются сами.</p></div>
+  <div class="dial">
+    <div class="dial-copy rv">
+      <p class="claim">White-label — <i>не обещание</i>, а поведение по умолчанию.</p>
+      <p>Компоненты SDDS спроектированы нейтрально: бренд им придаёт <b>тема</b> — набор значений токенов. Подключите свою, и вся библиотека выглядит как ваш продукт. Без правок кода, без пересборки, без дизайнера на каждую кнопку.</p>
+    </div>
+    <div class="brands rv" id="brandList"></div>
+  </div>
+</section>
+
+<!-- КОМПОНЕНТЫ -->
+<section id="components">
+  <div class="sec-head rv"><span class="sec-idx">02</span><h2>~80 компонентов<br>уже слушают токены</h2>
+    <p class="sec-note">Ниже — живые HTML-компоненты, не картинки. Они перекрашиваются вместе со страницей.</p></div>
+  <div class="spec-grid">
+    <div class="spec rv" data-ref="SDDS/ACT-01"><span class="spec-label">Button · <i>surface.accent</i></span><div class="spec-stage"><button class="c-btn" data-cur>Оплатить</button></div></div>
+    <div class="spec rv" data-ref="SDDS/FRM-02"><span class="spec-label">TextField · <i>outline.focus</i></span><div class="spec-stage"><div class="c-input"><label>EMAIL</label><input placeholder="name@sber.ru" data-cur></div></div></div>
+    <div class="spec rv" data-ref="SDDS/FRM-05"><span class="spec-label">Switch · <i>control.on</i></span><div class="spec-stage"><button class="c-switch" id="sw" data-cur aria-label="Переключатель"><i></i></button></div></div>
+    <div class="spec rv" data-ref="SDDS/ACT-04"><span class="spec-label">Chip · <i>border.accent</i></span><div class="spec-stage"><span class="c-chip">Фильтр ✕</span></div></div>
+    <div class="spec rv" data-ref="SDDS/FBK-03"><span class="spec-label">Progress · <i>gradient.brand</i></span><div class="spec-stage"><div class="c-progress"><i></i></div></div></div>
+    <div class="spec rv" data-ref="SDDS/FBK-01"><span class="spec-label">Toast · <i>status.success</i></span><div class="spec-stage"><div class="c-toast"><b>✓</b> Сохранено · v1.5.0</div></div></div>
+  </div>
+</section>
+
+<!-- BUILDER -->
+<section id="builder">
+  <div class="sec-head rv"><span class="sec-idx">03</span><h2>Настроил. Опубликовал.<br>Разработка забрала</h2>
+    <p class="sec-note">DS Builder — рабочий инструмент темизации: токены, проверки, версии, handoff через CLI.</p></div>
+  <div class="builder-wrap">
+    <div class="builder-copy rv">
+      <p><b>Дизайнер</b> меняет токены в Builder и публикует неизменяемую Version — без согласований и ручной пересборки.</p>
+      <p><b>Разработчик</b> забирает конфигурацию одной командой. Один источник правды для дизайна и кода.</p>
+      <div class="term" aria-label="Терминал">
+        <div><span class="dim">$</span> <span id="typeCmd"></span><span class="caret" id="caret"></span></div>
+        <div id="termOut" style="opacity:0">
+          <span class="ok">✓ tokens: 6 · components: 10 · schema 1.0</span><br>
+          <span class="dim">→ Published Configuration</span> <span class="ok">v1.5.0</span>
+        </div>
+      </div>
+    </div>
+    <div class="mock rv" id="mock">
+      <div class="mock-rail"><i class="on">◧</i><i>●</i><i>↔</i><i>T</i><i>▦</i><i>△</i><i>↑</i></div>
+      <div class="mock-canvas"><button class="c-btn" style="pointer-events:none">Button</button></div>
+      <div class="mock-side">
+        <div class="cell"><b>Palette</b><span class="sw"></span>brand-500 <span data-ro="brand">#10C8B4</span></div>
+        <div class="cell"><b>Changes · 2</b>color.primary → <span data-ro="brand">#10C8B4</span><br>rounding.md → <span data-ro="radius">14px</span></div>
+        <div class="cell"><b>Publish</b>validation: passed<br>version: 1.5.0</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ЦИФРЫ -->
+<section style="padding-left:0;padding-right:0">
+  <div class="stats">
+    <div class="stat rv"><b><span data-count="80">0</span><i>~</i></b><span>готовых компонентов</span></div>
+    <div class="stat rv"><b><span data-count="16">0</span><i>+</i></b><span>команд Сбера уже на SDDS</span></div>
+    <div class="stat rv"><b>3<i>×</i></b><span>платформы · Web / Mobile / TV</span></div>
+    <div class="stat rv"><b>AA</b><span>WCAG 2.1 из коробки</span></div>
+  </div>
+</section>
+
+<!-- ФИНАЛ -->
+<section class="final">
+  <h2 class="rv">Соберите<br><span style="color:var(--brand)">свой бренд</span></h2>
+  <a class="c-btn rv" href="/" data-cur>Открыть DS Builder</a>
+  <p class="alt-link rv">концепт альтернативной главной · <a href="/" data-cur>вернуться к классической версии</a></p>
+</section>
+
+<footer>
+  <span>SDDS · SBER DIGITAL DESIGN SYSTEM</span>
+  <span>ALT.CONCEPT / AWWWARDS EDITION · 2026</span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script type="module">
+/* ============================== ТОКЕН-ДВИЖОК ============================== */
+const BRANDS = [
+  { name: 'SDDS Base',   note: 'палитра по умолчанию', brand: '#10C8B4', deep: '#0A7F73', on: '#041210', radius: 14 },
+  { name: 'GigaBlue',    note: 'ассистенты и облако',  brand: '#4D82FF', deep: '#2B54C4', on: '#050B1A', radius: 12 },
+  { name: 'Salute Violet', note: 'медиа и устройства', brand: '#9A6BFF', deep: '#6A3FD1', on: '#120826', radius: 20 },
+  { name: 'Amber Retail', note: 'витрины и маркеты',   brand: '#FFB020', deep: '#C77F00', on: '#1A1002', radius: 8 },
+  { name: 'Coral Fin',   note: 'финансовые сервисы',   brand: '#FF6B57', deep: '#C43A28', on: '#1A0704', radius: 26 },
+];
+const rootStyle = document.documentElement.style;
+const state = { brand: BRANDS[0].brand, radius: BRANDS[0].radius };
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function applyBrand(b, animate = true) {
+  const apply = () => {
+    rootStyle.setProperty('--brand', b.brand);
+    rootStyle.setProperty('--brand-deep', b.deep);
+    rootStyle.setProperty('--on-brand', b.on);
+    rootStyle.setProperty('--radius', b.radius + 'px');
+    document.querySelectorAll('[data-ro="brand"]').forEach(n => n.textContent = b.brand);
+    document.querySelectorAll('[data-ro="radius"]').forEach(n => n.textContent = b.radius + 'px');
+    document.getElementById('kickerToken').textContent = 'color.primary = ' + b.brand;
+    if (field) field.setColor(b.brand);
+  };
+  if (!animate || reduced || !window.gsap) { apply(); return; }
+  // короткая «прошивка» токенов: страница мигает служебной рамкой
+  gsap.fromTo('body', { filter: 'saturate(1.6) brightness(1.08)' }, { filter: 'none', duration: .5, ease: 'power2.out' });
+  apply();
+}
+
+/* пульт брендов */
+const list = document.getElementById('brandList');
+BRANDS.forEach((b, i) => {
+  const btn = document.createElement('button');
+  btn.className = 'brand-btn' + (i === 0 ? ' is-on' : '');
+  btn.dataset.cur = '';
+  btn.innerHTML = `<span class="brand-sw" style="background:${b.brand}"></span>
+    <span><strong>${b.name}</strong><small>${b.note} · radius ${b.radius}</small></span>
+    <span class="hex">${b.brand}</span>`;
+  btn.addEventListener('click', () => {
+    list.querySelectorAll('.brand-btn').forEach(x => x.classList.remove('is-on'));
+    btn.classList.add('is-on');
+    applyBrand(b);
+  });
+  list.appendChild(btn);
+});
+
+/* бегущая строка токенов */
+const chain = ['color.primary', 'surface.accent', 'Button.background', 'text.onPrimary', 'rounding.md', 'Chip.border', 'Switch.on', 'typography.body', 'Progress.fill', 'Toast.status'];
+const mq = document.getElementById('mq');
+mq.innerHTML = (chain.map(t => `<span><em>${t}</em> → <i data-ro="brand">#10C8B4</i></span>`).join('')).repeat(2);
+
+/* ============================== THREE: ПОЛЕ ТОКЕНОВ ============================== */
+let field = null;
+if (!reduced) {
+  try {
+    const THREE = await import('https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js');
+    const canvas = document.getElementById('field');
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(48, 1, .1, 100);
+    camera.position.set(0, 2.1, 7.5);
+    camera.lookAt(0, 0, 0);
+
+    const COLS = 110, ROWS = 60, N = COLS * ROWS;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(N * 3), seed = new Float32Array(N);
+    let k = 0;
+    for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+      pos[k * 3] = (x / (COLS - 1) - .5) * 16;
+      pos[k * 3 + 1] = 0;
+      pos[k * 3 + 2] = (y / (ROWS - 1) - .5) * 9;
+      seed[k] = Math.random(); k++;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1));
+    const uniforms = {
+      uTime: { value: 0 },
+      uColor: { value: new THREE.Color(state.brand) },
+      uMouse: { value: new THREE.Vector2(99, 99) },
+    };
+    const mat = new THREE.ShaderMaterial({
+      uniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+      vertexShader: `
+        uniform float uTime; uniform vec2 uMouse; attribute float aSeed; varying float vA;
+        void main(){
+          vec3 p = position;
+          float w = sin(p.x*0.9 + uTime*0.9) * cos(p.z*1.1 + uTime*0.7) * 0.45;
+          w += sin((p.x+p.z)*0.5 + uTime*0.5) * 0.25;
+          float d = distance(p.xz, uMouse);
+          float lift = smoothstep(2.2, 0.0, d) * 1.2;      // подъём под курсором
+          p.y = w + lift;
+          vA = 0.18 + aSeed*0.25 + lift*0.55;
+          vec4 mv = modelViewMatrix * vec4(p,1.0);
+          gl_Position = projectionMatrix * mv;
+          gl_PointSize = (1.4 + aSeed*1.8 + lift*2.2) * (300.0/-mv.z) * 0.045;
+        }`,
+      fragmentShader: `
+        uniform vec3 uColor; varying float vA;
+        void main(){
+          vec2 c = gl_PointCoord - 0.5;
+          float m = smoothstep(0.5, 0.1, length(c));
+          gl_FragColor = vec4(uColor, vA * m);
+        }`,
+    });
+    scene.add(new THREE.Points(geo, mat));
+
+    const mouse3 = new THREE.Vector2(99, 99);
+    const ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hit = new THREE.Vector3();
+    addEventListener('pointermove', (e) => {
+      const r = canvas.getBoundingClientRect();
+      if (e.clientY > r.bottom) { mouse3.set(99, 99); return; }
+      const nd = new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+      ray.setFromCamera(nd, camera);
+      if (ray.ray.intersectPlane(plane, hit)) mouse3.set(hit.x, hit.z);
+    }, { passive: true });
+
+    const resize = () => {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h; camera.updateProjectionMatrix();
+    };
+    addEventListener('resize', resize); resize();
+
+    let visible = true, rafId = 0;
+    new IntersectionObserver((en) => { visible = en[0].isIntersecting; if (visible && !rafId) loop(performance.now()); }, { threshold: .02 }).observe(canvas);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden && visible && !rafId) loop(performance.now()); });
+    const loop = (t) => {
+      if (document.hidden || !visible) { rafId = 0; return; }
+      uniforms.uTime.value = t / 1000;
+      uniforms.uMouse.value.lerp(mouse3, .08);
+      renderer.render(scene, camera);
+      rafId = requestAnimationFrame(loop);
+    };
+    loop(performance.now());
+    field = { setColor: (hex) => gsap.to(uniforms.uColor.value, { ...new THREE.Color(hex), duration: .8 }) };
+  } catch (e) { /* нет WebGL/сети — страница живёт без 3D */ }
+}
+
+/* ============================== GSAP ХОРЕОГРАФИЯ ============================== */
+if (!reduced && window.gsap) {
+  gsap.registerPlugin(ScrollTrigger);
+
+  /* hero: строки заголовка выезжают, kicker и мета — следом */
+  gsap.from('#heroTitle .line span', { yPercent: 115, duration: 1.1, ease: 'power4.out', stagger: .12, delay: .15 });
+  gsap.to('.hero .rv', { opacity: 1, y: 0, duration: 1, ease: 'power3.out', stagger: .15, delay: .8 });
+  gsap.from('.hero-kicker', { opacity: 0, x: -30, duration: .8, delay: .4 });
+
+  /* reveal всех остальных .rv по скроллу */
+  document.querySelectorAll('section:not(.hero) .rv').forEach((el) => {
+    gsap.to(el, { opacity: 1, y: 0, duration: .9, ease: 'power3.out',
+      scrollTrigger: { trigger: el, start: 'top 86%' } });
+  });
+
+  /* лёгкий параллакс поля под скролл */
+  gsap.to('#field', { yPercent: 18, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
+
+  /* счётчики */
+  document.querySelectorAll('[data-count]').forEach((el) => {
+    const to = Number(el.dataset.count);
+    ScrollTrigger.create({ trigger: el, start: 'top 88%', once: true,
+      onEnter: () => gsap.fromTo(el, { textContent: 0 }, { textContent: to, duration: 1.6, snap: { textContent: 1 }, ease: 'power2.out' }) });
+  });
+
+  /* терминал: печатаем команду при появлении */
+  const cmd = 'sdds sync --project atlas --theme brand --version 1.5.0';
+  ScrollTrigger.create({ trigger: '.term', start: 'top 80%', once: true, onEnter: () => {
+    const t = document.getElementById('typeCmd');
+    gsap.to({ i: 0 }, { i: cmd.length, duration: 2.2, ease: 'none',
+      onUpdate: function () { t.textContent = cmd.slice(0, Math.round(this.targets()[0].i)); },
+      onComplete: () => { gsap.to('#termOut', { opacity: 1, duration: .5 }); document.getElementById('caret').style.display = 'none'; } });
+  }});
+
+  /* прогресс чтения */
+  gsap.to('#progress', { width: '100%', ease: 'none', scrollTrigger: { start: 0, end: 'max', scrub: .3 } });
+}
+
+/* ============================== МЕЛОЧИ ============================== */
+/* курсор */
+const cur = document.getElementById('cur'), dot = document.getElementById('curDot');
+if (matchMedia('(hover:hover)').matches) {
+  let cx = innerWidth / 2, cy = innerHeight / 2, tx = cx, ty = cy;
+  addEventListener('pointermove', (e) => { tx = e.clientX; ty = e.clientY; dot.style.transform = `translate(${tx}px,${ty}px)`; }, { passive: true });
+  (function curLoop() { cx += (tx - cx) * .18; cy += (ty - cy) * .18; cur.style.transform = `translate(${cx}px,${cy}px)`; requestAnimationFrame(curLoop); })();
+  document.addEventListener('pointerover', (e) => { if (e.target.closest('[data-cur],a,button,input')) cur.classList.add('is-act'); });
+  document.addEventListener('pointerout', (e) => { if (e.target.closest('[data-cur],a,button,input')) cur.classList.remove('is-act'); });
+}
+/* switch-компонент живой */
+document.getElementById('sw').addEventListener('click', function () { this.classList.toggle('off'); });
+applyBrand(BRANDS[0], false);
+</script>
+</body>
+</html>
