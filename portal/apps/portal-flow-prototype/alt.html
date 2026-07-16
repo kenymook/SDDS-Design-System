@@ -428,8 +428,12 @@ function placeDeck(progress) {
     const clamped = Math.max(0, Math.min(1, s));
     // закрутка как в референсе: вход ~−26°, у центра выпрямляется, на выходе ~+22°
     const rot = -26 + 48 * s + (jitter[i] * 10 - 5);
+    // объёмное вращение: на входе карточка развёрнута в глубину (rotateY) и завалена
+    // верхом от зрителя (rotateX), к центру распрямляется, на выходе уходит в обратный разворот
+    const ry = 30 - 52 * clamped + (jitter[i] * 6 - 3);
+    const rx = 12 - 16 * clamped;
     const sc = .84 + .24 * Math.sin(clamped * Math.PI);       // в центре чуть крупнее
-    gsap.set(el, { x, y, rotation: rot, scale: sc, opacity: s < -0.14 || s > 1.16 ? 0 : 1 });
+    gsap.set(el, { x, y, rotation: rot, rotationY: ry, rotationX: rx, transformPerspective: 1100, scale: sc, opacity: s < -0.14 || s > 1.16 ? 0 : 1 });
   });
 }
 if (window.gsap) placeDeck(reduced ? 0.42 : 0);               // reduced: статичная диагональ
