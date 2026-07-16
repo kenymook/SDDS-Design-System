@@ -416,13 +416,15 @@ const passCards = PASSES.map(([name, tag, mock], i) => {
   return el;
 });
 const jitter = passCards.map((_, i) => ((Math.sin((i + 1) * 12.9898) * 43758.5453) % 1 + 1) % 1);
-const DECK_STEP = 0.16, DECK_START = 0.30;
-const DECK_TRAVEL = 1.12 + (passCards.length - 1) * DECK_STEP - DECK_START + 0.30; // последняя карточка успевает выйти
+const DECK_STEP = 0.20, DECK_START = 0.30;
+const DECK_LOOP = passCards.length * DECK_STEP; // длина цикла ленты: уехавшая вправо карточка снова заходит слева
+const DECK_TRAVEL = 2.4;           // сколько «пути» проезжает лента за весь пин
 function placeDeck(progress) {
   const W = innerWidth, H = innerHeight;
   const cw = Math.min(300, W * .58);
   passCards.forEach((el, i) => {
-    const s = DECK_START - i * DECK_STEP + progress;          // позиция вдоль пути
+    let s = DECK_START - i * DECK_STEP + progress;            // позиция вдоль пути
+    s = ((s + 0.2) % DECK_LOOP + DECK_LOOP) % DECK_LOOP - 0.2; // зацикливание ленты
     // движение слева направо (как в референсе): вход слева снизу, выход справа сверху
     const x = (-0.14 + 1.24 * s) * W - cw / 2;
     const y = (0.84 - 0.62 * s) * H - cw * .66;
