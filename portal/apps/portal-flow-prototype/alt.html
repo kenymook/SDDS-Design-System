@@ -77,17 +77,17 @@ h1 .line{display:block;overflow:hidden}
 h1 .line span{display:inline-block}
 h1 .accent{color:var(--brand)}
 h1 .hollow{color:transparent;-webkit-text-stroke:2px var(--ink)}
-/* заголовок — сверху справа, ПОВЕРХ конвейера */
-.hero-tr{position:absolute;top:13vh;right:4vw;text-align:right;z-index:4}
-/* текст — снизу слева, вне пути карточек */
-.hero-bl{position:absolute;left:4vw;bottom:7vh;max-width:480px;z-index:5;
+/* заголовок — сверху слева, ПОВЕРХ конвейера */
+.hero-tr{position:absolute;top:13vh;left:4vw;text-align:left;z-index:4}
+/* текст — снизу справа */
+.hero-bl{position:absolute;right:4vw;bottom:7vh;max-width:480px;z-index:5;
   background:rgba(11,11,9,.6);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
   padding:20px 22px;border-radius:16px;border:1px solid rgba(255,255,255,.06)}
 .hero-sub{color:var(--ink-dim);font-size:18px}
 .hero-sub b{color:var(--ink);font-weight:600}
 .token-readout{font-family:var(--font-mono);font-size:12.5px;line-height:2;color:var(--ink-dim);margin-top:2.2vh}
 .token-readout .v{color:var(--brand)}
-.scroll-hint{position:absolute;bottom:4vh;right:4vw;font-family:var(--font-mono);font-size:11px;letter-spacing:.3em;color:var(--ink-dim);z-index:4}
+.scroll-hint{position:absolute;bottom:4vh;left:4vw;font-family:var(--font-mono);font-size:11px;letter-spacing:.3em;color:var(--ink-dim);z-index:4}
 
 /* конвейер */
 .deck{position:absolute;inset:0;z-index:3;pointer-events:none}
