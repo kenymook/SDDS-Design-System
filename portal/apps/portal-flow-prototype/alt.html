@@ -425,18 +425,22 @@ function placeDeck(progress) {
   passCards.forEach((el, i) => {
     let s = DECK_START - i * DECK_STEP + progress;            // позиция вдоль пути
     s = ((s + 0.2) % DECK_LOOP + DECK_LOOP) % DECK_LOOP - 0.2; // зацикливание ленты
-    // движение слева направо (как в референсе): вход слева снизу, выход справа сверху
+    // лента слева направо; вертикальный размах даёт сам барабан (см. transformOrigin ниже)
     const x = (-0.14 + 1.24 * s) * W - cw / 2;
-    const y = (0.84 - 0.62 * s) * H - cw * .66;
+    const y = (0.62 - 0.20 * s) * H - cw * .66;
     const clamped = Math.max(0, Math.min(1, s));
     // позиция центра карточки по горизонтали экрана: 0 — левый край, 1 — правый
     const hx = Math.max(0, Math.min(1, (x + cw / 2) / W));
-    // Tilt (rotateX): +90° на входе слева → 0° в центре экрана → −90° на выходе справа
-    const rx = 90 * (1 - 2 * hx);
+    // карточка — часть спирали: вращается не вокруг своего центра, а вокруг оси
+    // барабана позади (origin с z-смещением); Tilt −90° слева → 0° в центре → +90° справа,
+    // при этом сама карточка сметается по дуге: снизу слева заходит, сверху справа сходит
+    const R = H * .38;
+    const rx = 90 * (2 * hx - 1);
     const ry = (jitter[i] * 6 - 3);                           // лёгкий живой доворот
     const rot = -4 + 8 * clamped + (jitter[i] * 4 - 2);       // небольшой плоский наклон
-    const sc = .86 + .2 * Math.sin(clamped * Math.PI);        // в центре чуть крупнее
-    gsap.set(el, { x, y, rotation: rot, rotationY: ry, rotationX: rx, transformPerspective: 900, scale: sc, opacity: s < -0.14 || s > 1.16 ? 0 : 1 });
+    gsap.set(el, { x, y, rotation: rot, rotationY: ry, rotationX: rx,
+      transformOrigin: `50% 50% ${-R}px`, transformPerspective: 1200,
+      scale: 1, opacity: s < -0.14 || s > 1.16 ? 0 : 1 });
   });
 }
 if (window.gsap) placeDeck(reduced ? 0.42 : 0);               // reduced: статичная диагональ
@@ -459,10 +463,18 @@ if (!reduced && window.gsap) {
       scrollTrigger: { trigger: el, start: 'top 86%' } });
   });
 
-  /* конвейер: hero пинится, карточки едут по диагонали скрабом скролла */
+  /* конвейер: hero пинится; скролл задаёт цель, а лента догоняет её с изингом —
+     анимация плавно стартует и затухает после остановки скролла (инерция) */
+  let targetDeckProgress = lastDeckProgress;
   ScrollTrigger.create({
-    trigger: '.hero', start: 'top top', end: '+=260%', pin: true, scrub: .5,
-    onUpdate: (self) => { lastDeckProgress = self.progress * DECK_TRAVEL; placeDeck(lastDeckProgress); },
+    trigger: '.hero', start: 'top top', end: '+=260%', pin: true, scrub: true,
+    onUpdate: (self) => { targetDeckProgress = self.progress * DECK_TRAVEL; },
+  });
+  gsap.ticker.add((time, dt) => {
+    const diff = targetDeckProgress - lastDeckProgress;
+    if (Math.abs(diff) < 0.00005) return;
+    lastDeckProgress += diff * (1 - Math.exp(-dt * 0.0045)); // независимый от fps lerp
+    placeDeck(lastDeckProgress);
   });
 
   /* счётчики */
