@@ -472,12 +472,16 @@ if (!reduced && window.gsap) {
 
   /* конвейер: hero пинится; скролл задаёт цель, а лента догоняет её с изингом —
      анимация плавно стартует и затухает после остановки скролла (инерция) */
+  const PIN_VH = 2.6;                                          // длина пина в высотах экрана
   let targetDeckProgress = lastDeckProgress;
-  ScrollTrigger.create({
-    trigger: '.hero', start: 'top top', end: '+=260%', pin: true, scrub: true,
-    onUpdate: (self) => { targetDeckProgress = self.progress * DECK_TRAVEL; },
-  });
+  ScrollTrigger.create({ trigger: '.hero', start: 'top top', end: '+=' + PIN_VH * 100 + '%', pin: true, scrub: true });
   gsap.ticker.add((time, dt) => {
+    const pinLen = PIN_VH * innerHeight;
+    // Лента едет с одной скоростью и на пине, и потом — пока герой уезжает вверх
+    // (на это уходит ещё один экран): карточки крутятся, пока видны хоть краем.
+    // Как только герой целиком ушёл из кадра — перестаём считать.
+    if (scrollY > pinLen + innerHeight) return;
+    targetDeckProgress = scrollY / pinLen * DECK_TRAVEL;
     const diff = targetDeckProgress - lastDeckProgress;
     if (Math.abs(diff) < 0.00005) return;
     lastDeckProgress += diff * (1 - Math.exp(-dt * 0.0045)); // независимый от fps lerp
