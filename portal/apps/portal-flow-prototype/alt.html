@@ -450,9 +450,12 @@ function placeDeck(progress) {
       zIndex: depth, scale: 1, opacity: s < -0.14 || s > 1.16 ? 0 : 1 });
   });
 }
-if (window.gsap) placeDeck(reduced ? 0.42 : 0);               // reduced: статичная диагональ
+// разгон на загрузке: лента стартует «позади» цели и влетает в неё тем же изингом,
+// что и при обновлении страницы на середине скролла — быстрый пролёт с торможением
+const DECK_INTRO = 1.15;
+if (window.gsap) placeDeck(reduced ? 0.42 : -DECK_INTRO);     // reduced: статичная диагональ
 addEventListener('resize', () => placeDeck(lastDeckProgress));
-let lastDeckProgress = reduced ? 0.42 : 0;
+let lastDeckProgress = reduced ? 0.42 : -DECK_INTRO;
 
 
 /* ============================== GSAP ХОРЕОГРАФИЯ ============================== */
