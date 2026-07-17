@@ -513,6 +513,48 @@ if (!reduced && window.gsap) {
   gsap.to('#progress', { width: '100%', ease: 'none', scrollTrigger: { start: 0, end: 'max', scrub: .3 } });
 }
 
+/* ============================== ПЛАВНЫЙ СКРОЛЛ ============================== */
+/* тот же механизм, что на классической главной (app.js → initSmoothScroll):
+   колесо перехватываем, позицию догоняем экспоненциальным сглаживанием */
+function initSmoothScroll() {
+  if (reduced) return;
+  let target = scrollY, current = scrollY, raf = 0, lastT = 0;
+  const maxScroll = () => document.documentElement.scrollHeight - innerHeight;
+  const step = (now) => {
+    // Сглаживание через exp(-λ·dt) — скорость скольжения одинакова на 60 и 144 Гц.
+    const dt = Math.min(0.05, (now - lastT) / 1000 || 0.016);
+    lastT = now;
+    current += (target - current) * (1 - Math.exp(-5.5 * dt));
+    if (Math.abs(target - current) < 0.5) { current = target; raf = 0; }
+    else raf = requestAnimationFrame(step);
+    scrollTo(0, current);
+  };
+  const scrollsInside = (event) => {
+    let el = event.target instanceof Element ? event.target : null;
+    for (; el && el !== document.body; el = el.parentElement) {
+      if (el.scrollHeight <= el.clientHeight + 1) continue;
+      const overflowY = getComputedStyle(el).overflowY;
+      if (overflowY !== 'auto' && overflowY !== 'scroll') continue;
+      const up = event.deltaY < 0;
+      if ((up && el.scrollTop > 0) || (!up && el.scrollTop + el.clientHeight < el.scrollHeight - 1)) return true;
+    }
+    return false;
+  };
+  addEventListener('wheel', (event) => {
+    if (event.ctrlKey || event.defaultPrevented || scrollsInside(event)) return; // ctrl+колесо — зум браузера
+    event.preventDefault();
+    const delta = event.deltaMode === 1 ? event.deltaY * 16
+      : event.deltaMode === 2 ? event.deltaY * innerHeight
+      : event.deltaY;
+    if (!raf) { current = scrollY; target = current; lastT = performance.now(); }
+    target = Math.max(0, Math.min(maxScroll(), target + delta));
+    if (!raf) raf = requestAnimationFrame(step);
+  }, { passive: false });
+  // Скролл не от колеса (скроллбар, клавиатура, переход по якорю) — синхронизируемся.
+  addEventListener('scroll', () => { if (!raf) { current = scrollY; target = current; } }, { passive: true });
+}
+initSmoothScroll();
+
 /* ============================== МЕЛОЧИ ============================== */
 /* курсор */
 const cur = document.getElementById('cur'), dot = document.getElementById('curDot');
