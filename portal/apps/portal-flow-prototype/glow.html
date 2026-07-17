@@ -109,17 +109,31 @@ void main(){ vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
 const FRAG = `
 precision highp float;
 varying vec2 vUv;
-uniform vec3  uCol[5];   // 0 белое ядро · 1 тёплый тон бренда · 2 его глубь · 3 холодный противовес · 4 его глубь
+uniform vec3  uCol[3];   // подтоны источников: 0 тон бренда · 1 противоположный · 2 почти белый
 uniform float uTime, uAspect;
 
-// Широкий наклонный лепесток света: растянутая повёрнутая гауссиана.
-// Именно форма даёт «расфокус» — никакого блюра не нужно.
-float lobe(vec2 p, vec2 c, float ang, vec2 sc, float seed){
+// Конструкция из референса: три источника со сдвигом, из каждого расходится
+// веер тонких лучей; веера крутятся в разные стороны с разной скоростью.
+// Наложение и медленное вращение и дают ощущение свечения с размытием.
+float rays(float a, float seed){
+  float s = 0.0;
+  s += sin(a *  9.0 + seed)        * 0.50;
+  s += sin(a * 23.0 + seed * 2.0)  * 0.30;
+  s += sin(a * 17.0 + seed * 3.7)  * 0.20;
+  return s * 0.5 + 0.5;
+}
+vec3 source(vec2 p, vec2 c, float rot, float seed, vec3 tint){
   vec2 d = p - c;
-  float ca = cos(ang), sa = sin(ang);
-  d = vec2(d.x * ca - d.y * sa, d.x * sa + d.y * ca) / sc;
-  float w = 1.0 + 0.10 * sin(uTime * 0.23 + seed + d.x * 1.7);   // медленное «дыхание» формы
-  return exp(-dot(d, d) * w);
+  float r2 = dot(d, d);
+  float a = atan(d.y, d.x) + rot;
+  // лучи не гасят поле до черноты, а мягко модулируют светлую подложку —
+  // в референсе между лучами всегда остаётся свет
+  float b = (0.40 + 0.60 * pow(rays(a, seed), 1.4)) * exp(-r2 * 0.55);
+  // спектр — только у самого центра, дальше лучи выцветают в подтон
+  vec3 spec = 0.5 + 0.5 * cos(a * 2.0 + vec3(0.0, 2.09, 4.19));
+  vec3 colr = mix(tint, spec, exp(-r2 * 14.0) * 0.45);
+  // мягкий белёсый ореол вокруг центра — в записи сердцевины заметно светлее поля
+  return colr * b + tint * exp(-r2 * 2.2) * 0.34;
 }
 float grain(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 
@@ -137,13 +151,10 @@ void main(){
   vec2 p = (vUv - 0.5) * vec2(uAspect, 1.0) * 2.0;
   float t = uTime;
   vec3 col = vec3(0.0);
-  // поле света: крупные лепестки крест-накрест; ядро меньше и тише,
-  // чтобы плато пересвета было пятном, а не половиной кадра
-  col += uCol[0] * 0.95 * lobe(p, vec2( 0.15 + sin(t*.11)*.10,  0.12 + cos(t*.09)*.08),  0.65, vec2(0.62, 0.38), 4.7);
-  col += uCol[1] * 0.85 * lobe(p, vec2(-0.85 + sin(t*.08)*.09,  0.42 + cos(t*.12)*.07), -0.55, vec2(1.10, 0.58), 0.0);
-  col += uCol[3] * 0.85 * lobe(p, vec2( 0.95 + cos(t*.10)*.09, -0.20 + sin(t*.13)*.08),  0.50, vec2(1.20, 0.65), 2.1);
-  col += uCol[2] * 0.65 * lobe(p, vec2(-0.55 + cos(t*.09)*.08, -0.72 + sin(t*.11)*.06),  0.35, vec2(1.00, 0.46), 1.3);
-  col += uCol[4] * 0.65 * lobe(p, vec2( 0.55 + sin(t*.12)*.08,  0.80 + cos(t*.08)*.06), -0.40, vec2(0.90, 0.44), 3.4);
+  // три источника: смещены друг от друга, крутятся в разные стороны с разной скоростью
+  col += source(p, vec2(-0.14 + sin(t*.05)*.04,  0.06 + cos(t*.04)*.03),  t * 0.10, 1.0, uCol[0]) * 0.52;
+  col += source(p, vec2( 0.16 + cos(t*.06)*.04, -0.09 + sin(t*.05)*.03), -t * 0.16, 3.0, uCol[1]) * 0.48;
+  col += source(p, vec2( 0.02 + sin(t*.04)*.03,  0.13 + cos(t*.06)*.03),  t * 0.06, 5.0, uCol[2]) * 0.55;
   // тёмные углы: свет живёт в центре кадра, как на кадрах записи
   float r = length((vUv - 0.5) * 2.0);
   col *= 1.0 - 0.72 * smoothstep(0.72, 1.42, r);
@@ -179,7 +190,7 @@ gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
 const U = {};
 ['uTime', 'uAspect'].forEach(n => U[n] = gl.getUniformLocation(prog, n));
-const uCol = [0, 1, 2, 3, 4].map(i => gl.getUniformLocation(prog, `uCol[${i}]`));
+const uCol = [0, 1, 2].map(i => gl.getUniformLocation(prog, `uCol[${i}]`));
 
 /* ─── цвета из токенов бренда ───
    По замерам записи: насыщенность у поля мизерная (медиана 0.05), светлота высокая.
@@ -214,11 +225,9 @@ function applyBrand(b) {
   rootStyle.setProperty('--on-brand', b.on);
   rootStyle.setProperty('--radius', b.radius + 'px');
   const set = [
-    tone(b.brand,   0, 0.86, 0.30),   // белое ядро с еле заметным подтоном бренда
-    tone(b.brand,   0, 0.64, 1.00),   // тон бренда, глухой и светлый
-    tone(b.brand,   0, 0.36, 1.30),   // его глубокая часть
-    tone(b.brand, 180, 0.60, 1.00),   // противовес: противоположный тон
-    tone(b.brand, 180, 0.32, 1.20),   // его глубокая часть
+    tone(b.brand,   0, 0.62, 1.00),   // источник в тоне бренда, глухой и светлый
+    tone(b.brand, 180, 0.58, 1.00),   // источник в противоположном тоне
+    tone(b.brand,   0, 0.78, 0.28),   // почти белый источник с еле заметным подтоном
   ];
   gl.useProgram(prog);
   set.forEach((c, i) => gl.uniform3f(uCol[i], c[0], c[1], c[2]));
