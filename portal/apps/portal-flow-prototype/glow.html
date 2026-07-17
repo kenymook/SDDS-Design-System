@@ -27,40 +27,34 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font-mono);overflow
 .back{pointer-events:auto;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);text-decoration:none;border:1px solid var(--line);border-radius:99px;padding:8px 14px;transition:.2s}
 .back:hover{color:var(--ink);border-color:var(--ink-dim)}
 
-/* ─── макет поверх: проверяем читаемость ─── */
+/* ─── макет поверх: проверяем читаемость ───
+   На светлом поле референса белый текст не живёт — берём тёмный, как у Elva. */
 .mock{position:fixed;inset:0;z-index:3;pointer-events:none;opacity:0;transition:opacity .4s}
 .mock[data-on="1"]{opacity:1}
 .mock h1{position:absolute;top:16vh;left:5vw;max-width:52vw;font-family:var(--font-display);font-weight:900;
-  font-size:clamp(34px,5.2vw,74px);line-height:.92;letter-spacing:-.02em;text-transform:uppercase}
-.mock h1 em{font-style:normal;-webkit-text-stroke:1.4px var(--ink);color:transparent}
+  font-size:clamp(34px,5.2vw,74px);line-height:.92;letter-spacing:-.02em;text-transform:uppercase;color:#131313}
+.mock h1 em{font-style:normal;-webkit-text-stroke:1.4px #131313;color:transparent}
 .mock .card{position:absolute;right:9vw;top:50%;transform:translateY(-50%) rotate(-4deg);
   width:min(280px,26vw);aspect-ratio:3/4;border-radius:var(--radius);background:var(--brand);
-  box-shadow:0 34px 80px -24px rgba(0,0,0,.75);display:grid;place-items:center;transition:background .5s,border-radius .5s}
+  box-shadow:0 34px 80px -24px rgba(0,0,0,.45);display:grid;place-items:center;transition:background .5s,border-radius .5s}
 .mock .card b{font-family:var(--font-display);font-weight:900;font-size:26px;color:var(--on-brand);text-transform:uppercase}
+/* низ-лево у поля тёмный — текст там светлый; заголовок стоит над светлым ядром — он тёмный */
 .mock p{position:absolute;left:5vw;bottom:12vh;max-width:340px;font-family:var(--font-text);font-size:14px;line-height:1.6;color:var(--ink)}
 
-/* ─── пульт ─── */
-.panel{position:fixed;right:26px;bottom:26px;z-index:6;width:296px;background:rgba(11,11,9,.72);
+/* ─── пульт: только бренд и макет, настройки зашиты ─── */
+.panel{position:fixed;right:26px;bottom:26px;z-index:6;width:250px;background:rgba(11,11,9,.72);
   backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:16px;padding:16px 16px 14px}
 .panel h3{font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-dim);font-weight:400;margin-bottom:10px}
-.brands{display:flex;gap:7px;margin-bottom:16px}
+.brands{display:flex;gap:7px;margin-bottom:13px}
 .chip{flex:1;height:30px;border-radius:9px;border:1px solid var(--line);cursor:pointer;transition:.2s}
 .chip:hover{transform:translateY(-2px)}
 .chip[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
-.row{display:grid;grid-template-columns:80px 1fr 38px;align-items:center;gap:9px;margin-bottom:9px}
-.row label{font-size:10px;letter-spacing:.06em;color:var(--ink-dim)}
-.row output{font-size:10px;color:var(--brand);text-align:right;transition:color .5s}
-input[type=range]{-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;background:var(--line);outline:none}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--brand);cursor:pointer;transition:background .5s}
-.toggles{display:flex;gap:7px;margin-top:13px;padding-top:13px;border-top:1px solid var(--line)}
-.tg{flex:1;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);
+.tg{width:100%;font-family:var(--font-mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);
   background:none;border:1px solid var(--line);border-radius:8px;padding:7px 4px;cursor:pointer;transition:.2s}
 .tg[aria-pressed="true"]{color:var(--on-brand);background:var(--brand);border-color:var(--brand)}
 
-.note{position:fixed;left:26px;bottom:26px;z-index:6;max-width:290px;font-size:10.5px;line-height:1.65;color:var(--ink-dim);transition:opacity .3s}
-.note b{color:var(--ink);font-weight:500}
 .err{position:fixed;inset:auto 0 0 0;z-index:9;background:#5A1A12;color:#fff;padding:10px 16px;font-size:11px;display:none}
-@media (max-width:900px){ .note{display:none} .mock .card{display:none} }
+@media (max-width:900px){ .mock .card{display:none} }
 </style>
 </head>
 <body>
@@ -73,33 +67,25 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;heigh
 </div>
 
 <header class="top">
-  <div class="title">Фон-свечение<i>пробник на цветах живых токенов · без библиотек</i></div>
+  <div class="title">Фон-свечение<i>как в референсе · без библиотек и без блюра</i></div>
   <a class="back" href="./alt.html">← alt</a>
 </header>
 
 <aside class="panel">
   <h3>Бренд</h3>
   <div class="brands" id="brands"></div>
-  <h3>Свечение</h3>
-  <div class="row"><label>Яркость</label><input type="range" id="bright" min="0" max="3" step="0.05" value="1.6"><output id="brightV"></output></div>
-  <div class="row"><label>Размах</label><input type="range" id="spread" min="0.4" max="2.2" step="0.02" value="1.25"><output id="spreadV"></output></div>
-  <div class="row"><label>Мягкость</label><input type="range" id="soft" min="0.6" max="4" step="0.05" value="3"><output id="softV"></output></div>
-  <div class="row"><label>Насыщенность</label><input type="range" id="sat" min="0" max="1" step="0.02" value="0.22"><output id="satV"></output></div>
-  <div class="row"><label>Скорость</label><input type="range" id="speed" min="0" max="2.5" step="0.05" value="1"><output id="speedV"></output></div>
-  <div class="toggles">
-    <button class="tg" id="tgMock" aria-pressed="false">Макет</button>
-    <button class="tg" id="tgGrain" aria-pressed="true">Зерно</button>
-  </div>
+  <button class="tg" id="tgMock" aria-pressed="false">Макет поверх</button>
 </aside>
 
-<p class="note">Свечение собрано из <b>мягких градиентов</b> — ни одного блюра, как на референсе. Цвет берётся из токенов бренда: смени бренд, и фон <b>перекрасится сам</b>.<br><br>Значения подобраны <b>замером референса</b>, а не на глаз. Там свечение почти бесцветное (насыщенность 0.05) и очень контрастное: чёрные зоны и ядра, упирающиеся в плато 0.77. Отсюда низкая насыщенность и потолок в шейдере.<br><br>Ползунок «Насыщенность» гоняет от референса до полного цвета токена. «Макет» кладёт поверх заголовок и карточку — проверить читаемость.</p>
 <div class="err" id="err"></div>
 
 <script>
-/* ─────────── пробник фона: чистый WebGL, без библиотек ───────────
-   Разбор elvalabs.ai показал: их свечение — не блюр, а мягкие формы
-   по построению (широкий smoothstep + колышущийся край из синусов).
-   Здесь то же самое, но цвета берутся из токенов бренда SDDS. */
+/* ─────────── фон-свечение: чистый WebGL, без библиотек ───────────
+   Пересборка по кадрам присланной записи. В референсе это не круглые пятна
+   на чёрном, а сплошное поле расфокусированного света: широкие косые лепестки
+   на весь кадр, тёмные углы, почти белые ядра, еле тёплый и еле холодный подтон.
+   Плюс тонкие радужные «засветки плёнки» вдоль верхней и нижней кромки.
+   Блюра нет: формы нерезкие по построению (широкие гауссовы лепестки). */
 
 const BRANDS = [
   { name: 'SDDS Base',     brand: '#10C8B4', deep: '#0A7F73', on: '#041210', radius: 14 },
@@ -123,37 +109,50 @@ void main(){ vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
 const FRAG = `
 precision highp float;
 varying vec2 vUv;
-uniform vec3  uCol[5];      // цвета пятен — выведены из токенов бренда
-uniform float uTime, uAspect, uBright, uSpread, uSoft, uGrain;
+uniform vec3  uCol[5];   // 0 белое ядро · 1 тёплый тон бренда · 2 его глубь · 3 холодный противовес · 4 его глубь
+uniform float uTime, uAspect;
 
-// Мягкое пятно: край размывать нечем и незачем — smoothstep сам даёт градиент,
-// а сумма синусов по углу делает контур живым, а не циркульным.
-float blob(vec2 p, vec2 c, float r, float seed){
+// Широкий наклонный лепесток света: растянутая повёрнутая гауссиана.
+// Именно форма даёт «расфокус» — никакого блюра не нужно.
+float lobe(vec2 p, vec2 c, float ang, vec2 sc, float seed){
   vec2 d = p - c;
-  float a = atan(d.y, d.x);
-  float w = sin(a * 3.0 + uTime * 0.6 + seed) * 0.07
-          + sin(a * 5.0 - uTime * 0.9 + seed) * 0.045
-          + sin(a * 2.0 + uTime * 1.1 + seed) * 0.055;
-  return pow(1.0 - smoothstep(0.0, r * uSpread + w, length(d)), uSoft);
+  float ca = cos(ang), sa = sin(ang);
+  d = vec2(d.x * ca - d.y * sa, d.x * sa + d.y * ca) / sc;
+  float w = 1.0 + 0.10 * sin(uTime * 0.23 + seed + d.x * 1.7);   // медленное «дыхание» формы
+  return exp(-dot(d, d) * w);
 }
 float grain(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+
+// Тонкая радужная «засветка плёнки» у кромки кадра — как в референсе.
+float streak(vec2 p, float y0, float seed){
+  float wave = 0.018 * sin(p.x * 2.6 + uTime * 0.25 + seed) + 0.008 * sin(p.x * 6.1 - uTime * 0.17 + seed);
+  float d = p.y - y0 + wave;
+  float along = smoothstep(1.9, 0.3, abs(p.x - sin(uTime * 0.07 + seed) * 0.8));
+  return exp(-d * d * 5200.0) * along;
+}
+// приглушённая радуга: в записи засветки почти белые, цвет лишь угадывается
+vec3 prism(float x){ return 0.78 + 0.22 * cos(6.2831 * (x * 0.22) + vec3(0.0, 2.09, 4.19)); }
 
 void main(){
   vec2 p = (vUv - 0.5) * vec2(uAspect, 1.0) * 2.0;
   float t = uTime;
   vec3 col = vec3(0.0);
-  col += uCol[0] * blob(p, vec2(-0.85 + sin(t * 0.21) * 0.20,  0.45 + cos(t * 0.17) * 0.16), 1.05, 0.0);
-  col += uCol[1] * blob(p, vec2( 0.90 + cos(t * 0.19) * 0.18, -0.35 + sin(t * 0.23) * 0.14), 1.15, 2.1);
-  col += uCol[2] * blob(p, vec2( 0.15 + sin(t * 0.13) * 0.30,  0.80 + cos(t * 0.11) * 0.18), 0.85, 4.7);
-  col += uCol[3] * blob(p, vec2(-0.35 + cos(t * 0.16) * 0.26, -0.75 + sin(t * 0.15) * 0.13), 0.90, 1.3);
-  col += uCol[4] * blob(p, vec2( 0.45 + sin(t * 0.27) * 0.22,  0.05 + cos(t * 0.20) * 0.24), 0.75, 3.4);
-  col *= uBright;
-  // Потолок, а не компрессор. В референсе верхние 10% пикселей лежат на ровном плато
-  // (светлота 0.765 и 0.78 почти совпадают) — ядра упираются в предел и не уходят
-  // в чистый белый. Компрессия вместо потолка тянет вверх и тёмные зоны, а они там
-  // должны оставаться чёрными.
+  // поле света: крупные лепестки крест-накрест; ядро меньше и тише,
+  // чтобы плато пересвета было пятном, а не половиной кадра
+  col += uCol[0] * 0.95 * lobe(p, vec2( 0.15 + sin(t*.11)*.10,  0.12 + cos(t*.09)*.08),  0.65, vec2(0.62, 0.38), 4.7);
+  col += uCol[1] * 0.85 * lobe(p, vec2(-0.85 + sin(t*.08)*.09,  0.42 + cos(t*.12)*.07), -0.55, vec2(1.10, 0.58), 0.0);
+  col += uCol[3] * 0.85 * lobe(p, vec2( 0.95 + cos(t*.10)*.09, -0.20 + sin(t*.13)*.08),  0.50, vec2(1.20, 0.65), 2.1);
+  col += uCol[2] * 0.65 * lobe(p, vec2(-0.55 + cos(t*.09)*.08, -0.72 + sin(t*.11)*.06),  0.35, vec2(1.00, 0.46), 1.3);
+  col += uCol[4] * 0.65 * lobe(p, vec2( 0.55 + sin(t*.12)*.08,  0.80 + cos(t*.08)*.06), -0.40, vec2(0.90, 0.44), 3.4);
+  // тёмные углы: свет живёт в центре кадра, как на кадрах записи
+  float r = length((vUv - 0.5) * 2.0);
+  col *= 1.0 - 0.72 * smoothstep(0.72, 1.42, r);
+  // потолок вместо компрессии: ядра в референсе упираются в плато ~0.78
   col = min(col, vec3(0.82));
-  col += (grain(vUv * 900.0) - 0.5) * uGrain;   // против полос на пологих градиентах
+  // засветки плёнки по кромкам — еле заметные, как в записи
+  col += streak(p, 0.94, 1.0) * prism(p.x) * 0.13;
+  col += streak(p, -0.96, 3.0) * prism(p.x + 0.35) * 0.10;
+  col += (grain(vUv * 900.0) - 0.5) * 0.016;   // зерно против полос
   gl_FragColor = vec4(col, 1.0);
 }`;
 
@@ -170,7 +169,7 @@ gl.linkProgram(prog);
 if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) fail('Программа: ' + gl.getProgramInfoLog(prog));
 gl.useProgram(prog);
 
-/* полноэкранный треугольник — дешевле квада, лишних пикселей не рисует */
+/* полноэкранный треугольник */
 const buf = gl.createBuffer();
 gl.bindBuffer(gl.ARRAY_BUFFER, buf);
 gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
@@ -179,10 +178,12 @@ gl.enableVertexAttribArray(aPos);
 gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
 const U = {};
-['uTime', 'uAspect', 'uBright', 'uSpread', 'uSoft', 'uGrain'].forEach(n => U[n] = gl.getUniformLocation(prog, n));
+['uTime', 'uAspect'].forEach(n => U[n] = gl.getUniformLocation(prog, n));
 const uCol = [0, 1, 2, 3, 4].map(i => gl.getUniformLocation(prog, `uCol[${i}]`));
 
-/* ─── цвета: выводим пять оттенков из двух токенов бренда ─── */
+/* ─── цвета из токенов бренда ───
+   По замерам записи: насыщенность у поля мизерная (медиана 0.05), светлота высокая.
+   Тон бренда почти обесцвечиваем; противовес — противоположный тон, тоже глухой. */
 const hex2rgb = (h) => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
 const rgb2hsl = ([r, g, b]) => {
   const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
@@ -198,7 +199,12 @@ const hsl2rgb = ([h, s, l]) => {
     return t < 1/6 ? p + (q - p) * 6 * t : t < 1/2 ? q : t < 2/3 ? p + (q - p) * (2/3 - t) * 6 : p; };
   return [f(h + 1/3), f(h), f(h - 1/3)];
 };
-let satMul = 0.22;
+const SAT = 0.16;
+function tone(hex, degShift, light, satScale) {
+  const [h, s] = rgb2hsl(hex2rgb(hex));
+  return hsl2rgb([(h + degShift / 360 + 1) % 1, Math.min(1, s * SAT * satScale), light]);
+}
+
 let current = BRANDS[0];
 const rootStyle = document.documentElement.style;
 function applyBrand(b) {
@@ -207,29 +213,16 @@ function applyBrand(b) {
   rootStyle.setProperty('--brand-deep', b.deep);
   rootStyle.setProperty('--on-brand', b.on);
   rootStyle.setProperty('--radius', b.radius + 'px');
-  pushColors();
-  [...document.querySelectorAll('.chip')].forEach((el, i) => el.setAttribute('aria-pressed', String(BRANDS[i] === b)));
-}
-/* Палитра собрана по замерам референса, а не на глаз. Там свечение почти бесцветное
-   (медиана насыщенности 0.05) и очень светлое (верхние 10% — светлота 0.77), а тона
-   лежат двумя кучками: тёплой и холодной. Поэтому здесь: тон бренда сильно приглушаем,
-   поднимаем светлоту до почти белой и добавляем противоположный тон как холодный/тёплый
-   противовес. Ползунок «Насыщенность» гоняет от «как в референсе» до полного цвета токена. */
-function tone(hex, degShift, light, satScale) {
-  const [h, s] = rgb2hsl(hex2rgb(hex));
-  return hsl2rgb([(h + degShift / 360 + 1) % 1, Math.min(1, s * satMul * satScale), light]);
-}
-function pushColors() {
-  const b = current;
   const set = [
-    tone(b.brand,   0, 0.74, 1.0),    // основное поле — тон бренда, почти белый
-    tone(b.brand,   0, 0.46, 1.4),    // его глубокая часть
-    tone(b.brand,   0, 0.82, 0.4),    // светлое ядро — почти чистый свет
-    tone(b.brand, 180, 0.60, 1.0),    // противовес: противоположный тон
-    tone(b.brand, 180, 0.38, 1.3),    // его глубокая часть
+    tone(b.brand,   0, 0.86, 0.30),   // белое ядро с еле заметным подтоном бренда
+    tone(b.brand,   0, 0.64, 1.00),   // тон бренда, глухой и светлый
+    tone(b.brand,   0, 0.36, 1.30),   // его глубокая часть
+    tone(b.brand, 180, 0.60, 1.00),   // противовес: противоположный тон
+    tone(b.brand, 180, 0.32, 1.20),   // его глубокая часть
   ];
   gl.useProgram(prog);
   set.forEach((c, i) => gl.uniform3f(uCol[i], c[0], c[1], c[2]));
+  [...document.querySelectorAll('.chip')].forEach((el, i) => el.setAttribute('aria-pressed', String(BRANDS[i] === b)));
 }
 const chips = document.getElementById('brands');
 BRANDS.forEach((b) => {
@@ -239,32 +232,14 @@ BRANDS.forEach((b) => {
   el.onclick = () => applyBrand(b);
   chips.appendChild(el);
 });
+applyBrand(BRANDS[0]);
 
-/* ─── пульт ─── */
-const bind = (id, out, fmt, apply) => {
-  const s = document.getElementById(id), o = document.getElementById(out);
-  const sync = () => { o.textContent = fmt(+s.value); apply(+s.value); };
-  s.addEventListener('input', sync); sync();
-};
-let speed = 1, grainOn = 1;
-bind('bright', 'brightV', v => v.toFixed(2), v => { gl.useProgram(prog); gl.uniform1f(U.uBright, v); });
-bind('spread', 'spreadV', v => v.toFixed(2), v => { gl.useProgram(prog); gl.uniform1f(U.uSpread, v); });
-bind('soft',   'softV',   v => v.toFixed(2), v => { gl.useProgram(prog); gl.uniform1f(U.uSoft, v); });
-bind('sat',    'satV',    v => v.toFixed(2), v => { satMul = v; pushColors(); });
-bind('speed',  'speedV',  v => v.toFixed(2), v => { speed = v; });
-
-const mock = document.getElementById('mock'), tgMock = document.getElementById('tgMock'), tgGrain = document.getElementById('tgGrain');
+const mock = document.getElementById('mock'), tgMock = document.getElementById('tgMock');
 tgMock.onclick = () => {
   const on = mock.dataset.on !== '1';
   mock.dataset.on = on ? '1' : '0';
   tgMock.setAttribute('aria-pressed', String(on));
-  document.querySelector('.note').style.opacity = on ? '0' : '1';   // подпись и текст макета живут в одном углу
 };
-tgGrain.onclick = () => { grainOn = grainOn ? 0 : 1; tgGrain.setAttribute('aria-pressed', String(!!grainOn));
-  gl.useProgram(prog); gl.uniform1f(U.uGrain, grainOn * 0.014); };
-
-applyBrand(BRANDS[0]);
-gl.useProgram(prog); gl.uniform1f(U.uGrain, 0.014);
 
 /* ─── размер ─── */
 function resize() {
@@ -280,7 +255,7 @@ addEventListener('resize', resize); resize();
 let t = 0, last = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
-  if (!reduced) t += dt * speed;
+  if (!reduced) t += dt;
   gl.useProgram(prog);
   gl.uniform1f(U.uTime, t);
   gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -289,7 +264,7 @@ function frame(now) {
 requestAnimationFrame(frame);
 
 /* ручка для замеров — пробник, не прод */
-window.__probe = { gl, applyBrand, BRANDS, pushColors, canvas };
+window.__probe = { gl, applyBrand, BRANDS, canvas };
 </script>
 </body>
 </html>
