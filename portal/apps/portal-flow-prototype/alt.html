@@ -569,5 +569,12 @@ if (matchMedia('(hover:hover)').matches) {
 document.getElementById('sw').addEventListener('click', function () { this.classList.toggle('off'); });
 applyBrand(BRANDS[0], false);
 </script>
+<script type="module">
+/* призматический фон hero — модуль пользователя (prismatic-background.js) */
+import { createPrismaticBackground } from './prismatic-background.js';
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  createPrismaticBackground(document.querySelector('.hero'));
+}
+</script>
 </body>
 </html>
