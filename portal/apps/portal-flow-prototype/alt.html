@@ -419,6 +419,7 @@ const jitter = passCards.map((_, i) => ((Math.sin((i + 1) * 12.9898) * 43758.545
 const DECK_STEP = 0.26, DECK_START = 0.30;   // шаг растёт вместе с шириной карточки
 const DECK_LOOP = passCards.length * DECK_STEP; // длина цикла ленты: уехавшая вправо карточка снова заходит слева
 const DECK_RATE = 0.92;            // ход ленты на один экран прокрутки (темп как раньше)
+const DECK_DRIFT = 0.04;           // лента едет и сама по себе: ход в секунду (~карточка за 6.5с)
 const DECK_SPAN = 1.9;             // ширина барабана в экранах: ±90° уходят за края кадра
 function placeDeck(progress) {
   const W = innerWidth, H = innerHeight;
@@ -478,10 +479,14 @@ if (!reduced && window.gsap) {
      движение плавно стартует и затухает после остановки скролла (инерция). */
   const heroEl = document.querySelector('.hero');
   let targetDeckProgress = lastDeckProgress;
+  let drift = 0;
   gsap.ticker.add((time, dt) => {
     // считаем, только пока герой в кадре: ушёл целиком — лента замирает
     if (heroEl.getBoundingClientRect().bottom <= 0) return;
-    targetDeckProgress = scrollY / innerHeight * DECK_RATE;
+    // дрейф копим по кадрам, а не от абсолютного времени: пока герой был за кадром,
+    // он не набегает — иначе при возврате наверх лента прыгнула бы вперёд
+    drift += dt / 1000 * DECK_DRIFT;
+    targetDeckProgress = scrollY / innerHeight * DECK_RATE + drift;
     const diff = targetDeckProgress - lastDeckProgress;
     if (Math.abs(diff) < 0.00005) return;
     lastDeckProgress += diff * (1 - Math.exp(-dt * 0.0045)); // независимый от fps lerp
