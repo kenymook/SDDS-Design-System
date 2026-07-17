@@ -418,7 +418,7 @@ const passCards = PASSES.map(([name, tag, mock], i) => {
 const jitter = passCards.map((_, i) => ((Math.sin((i + 1) * 12.9898) * 43758.5453) % 1 + 1) % 1);
 const DECK_STEP = 0.26, DECK_START = 0.30;   // шаг растёт вместе с шириной карточки
 const DECK_LOOP = passCards.length * DECK_STEP; // длина цикла ленты: уехавшая вправо карточка снова заходит слева
-const DECK_TRAVEL = 2.4;           // сколько «пути» проезжает лента за весь пин
+const DECK_RATE = 0.92;            // ход ленты на один экран прокрутки (темп как раньше)
 const DECK_SPAN = 1.9;             // ширина барабана в экранах: ±90° уходят за края кадра
 function placeDeck(progress) {
   const W = innerWidth, H = innerHeight;
@@ -473,18 +473,15 @@ if (!reduced && window.gsap) {
       scrollTrigger: { trigger: el, start: 'top 86%' } });
   });
 
-  /* конвейер: hero пинится; скролл задаёт цель, а лента догоняет её с изингом —
-     анимация плавно стартует и затухает после остановки скролла (инерция) */
-  const PIN_VH = 2.6;                                          // длина пина в высотах экрана
+  /* конвейер: герой не пинится — страница едет вниз обычным скроллом, а лента
+     крутится одновременно с ней. Скролл задаёт цель, лента догоняет её с изингом:
+     движение плавно стартует и затухает после остановки скролла (инерция). */
+  const heroEl = document.querySelector('.hero');
   let targetDeckProgress = lastDeckProgress;
-  ScrollTrigger.create({ trigger: '.hero', start: 'top top', end: '+=' + PIN_VH * 100 + '%', pin: true, scrub: true });
   gsap.ticker.add((time, dt) => {
-    const pinLen = PIN_VH * innerHeight;
-    // Лента едет с одной скоростью и на пине, и потом — пока герой уезжает вверх
-    // (на это уходит ещё один экран): карточки крутятся, пока видны хоть краем.
-    // Как только герой целиком ушёл из кадра — перестаём считать.
-    if (scrollY > pinLen + innerHeight) return;
-    targetDeckProgress = scrollY / pinLen * DECK_TRAVEL;
+    // считаем, только пока герой в кадре: ушёл целиком — лента замирает
+    if (heroEl.getBoundingClientRect().bottom <= 0) return;
+    targetDeckProgress = scrollY / innerHeight * DECK_RATE;
     const diff = targetDeckProgress - lastDeckProgress;
     if (Math.abs(diff) < 0.00005) return;
     lastDeckProgress += diff * (1 - Math.exp(-dt * 0.0045)); // независимый от fps lerp
