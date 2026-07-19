@@ -914,11 +914,11 @@ function portalHome() {
         <div class="principle-grid">
           <article>
             <div class="pv" aria-hidden="true"><span class="pvb" style="--c:#107f8c"><i></i></span><span class="pvb" style="--c:#3b78ff"><i></i></span><span class="pvb" style="--c:#d45b35"><i></i></span></div>
-            <h3>Одна система — разные бренды</h3><p>Компоненты спроектированы нейтрально — бренд им придаёт тема (принцип white-label). Подключите свою — и вся библиотека выглядит как ваш продукт, без правок кода.</p>
+            <h3>Одна система — разные бренды</h3><p>Компоненты нейтральны — бренд задаёт тема. Подключите свою, и библиотека выглядит как ваш продукт, без правок кода.</p>
           </article>
           <article>
             <div class="pv" aria-hidden="true"><span class="pvm pvm-light"><i></i><b></b></span><span class="pvm pvm-dark"><i></i><b></b></span></div>
-            <h3>Light и Dark из коробки</h3><p>Каждая тема сразу включает светлый и тёмный режимы — у токенов есть значения в обоих. Тёмная версия продукта — не отдельный дизайн-проект, а встроенное свойство системы.</p>
+            <h3>Light и Dark из коробки</h3><p>Каждая тема включает светлый и тёмный режимы. Тёмная версия — не отдельный проект, а встроенное свойство системы.</p>
           </article>
           <article>
             <div class="pv" aria-hidden="true">
@@ -927,11 +927,11 @@ function portalHome() {
               <span class="pvc" style="--bg:#eef2f7;--dot:#0a5c66"><i></i><small>OnLight</small></span>
               <span class="pvc" style="--bg:#107f8c;--dot:#ffffff"><i></i><small>Inverse</small></span>
             </div>
-            <h3>4 контекста темы</h3><p>Default, OnDark, OnLight и Inverse — каждый цветовой токен знает своё значение в каждом контексте. Поставьте компонент на тёмную подложку — он сам возьмёт правильный цвет, без ручной подмены.</p>
+            <h3>4 контекста темы</h3><p>Default, OnDark, OnLight, Inverse — токен знает своё значение в каждом контексте. На тёмной подложке компонент сам возьмёт правильный цвет.</p>
           </article>
           <article>
             <div class="pv pv-dict" aria-hidden="true"><span class="pvd">size · M</span><span class="pvd">view · primary</span><span class="pvd">disabled</span><span class="pvd">focused</span></div>
-            <h3>Единые словари системы</h3><p>Свойства, состояния и размеры описаны один раз — на уровне системы. Size M везде 48px, disabled выглядит одинаково во всех компонентах, а props называются одними именами в макете и в коде.</p>
+            <h3>Единые словари системы</h3><p>Свойства, состояния и размеры описаны один раз. Size M везде 48px, disabled везде одинаковый, props зовутся одинаково в макете и коде.</p>
           </article>
         </div>
       </section>
