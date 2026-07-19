@@ -890,7 +890,7 @@ function portalHome() {
         <div class="hero-ribbon" aria-hidden="true"><canvas id="hero-canvas"></canvas></div>
         <div class="hero-ribbon-copy">
           <h1 class="hero-title"><span class="hero-green">SBER</span> DIGITAL<br>DESIGN SYSTEM</h1>
-          <p class="hero-subtitle">SDDS помогает командам быстрее запускать и развивать цифровые продукты: используйте готовую дизайн-систему, настраивайте темы в DS Builder и передавайте изменения в разработку через версии.</p>
+          <p class="hero-subtitle">SDDS помогает командам быстрее запускать продукты: готовая дизайн-система, темы в DS Builder и передача изменений в разработку через версии.</p>
           <div class="landing-cta-row">
             <button data-route="support" data-support-type="consult">Записаться на демо</button>
             <button class="secondary" data-action="scroll-to" data-target="principles">Узнать больше</button>
