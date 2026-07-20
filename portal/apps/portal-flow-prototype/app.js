@@ -436,7 +436,6 @@ function builderSidebar() {
   const unreadCount = notifications.filter((entry) => !entry.read).length;
   const railAssets = {
     mark: 'https://www.figma.com/api/mcp/asset/4d3fc357-326d-4f80-94de-4f5519283e8c',
-    swatch: 'https://www.figma.com/api/mcp/asset/d0ca10ce-d570-482c-a815-2bd3e17ab1d4',
     colors: 'https://www.figma.com/api/mcp/asset/a01b5fdd-7ca6-43aa-8944-193f57668d9b',
     fonts: 'https://www.figma.com/api/mcp/asset/f494c30b-563b-472e-bfee-c515c73b4bde',
     shape: 'https://www.figma.com/api/mcp/asset/8daba963-db4a-4833-bcc5-9f4298892594',
@@ -469,11 +468,11 @@ function builderSidebar() {
       : `<button class="builder-rail-logo rail-back-button" data-route="portal-home" data-tooltip="SDDS Portal" aria-label="Back to SDDS Portal"><span class="builder-mark">DS</span><span class="builder-back-arrow">←</span></button>`}
     <nav>
       ${inTheme
-        ? `<div class="builder-rail-section builder-rail-section-main">${item('editor', railSvg.palette, 'Palette', 'palette')}<span class="builder-rail-divider"></span>${item('editor', railIcon(railAssets.swatch), 'Swatches', 'swatches')}${item('editor', railIcon(railAssets.colors), 'Colors', 'colors')}${item('editor', railIcon(railAssets.fonts), 'Fonts', 'fonts')}${item('editor', railIcon(railAssets.shape), 'Shapes', 'sizes')}${item('components', railIcon(railAssets.components), 'Components')}<span class="builder-rail-divider"></span>${item('health', railSvg.health, 'Health')}${item('versions', railSvg.versions, 'Versions')}<span class="builder-rail-divider"></span>${item('changes', railSvg.changes, `Changes (${state.changes.length})`)}</div>`
+        ? `<div class="builder-rail-section builder-rail-section-main">${item('health', railSvg.health, 'Health')}<span class="builder-rail-divider"></span>${item('editor', railSvg.palette, 'Palette', 'palette')}${item('editor', railIcon(railAssets.colors), 'Colors', 'colors')}${item('editor', railIcon(railAssets.fonts), 'Typography', 'fonts')}${item('editor', railIcon(railAssets.shape), 'Corner radius', 'sizes')}${item('components', railIcon(railAssets.components), 'Components')}<span class="builder-rail-divider"></span>${item('changes', railSvg.changes, `Changes (${state.changes.length})`)}${item('versions', railSvg.versions, 'Versions')}</div>`
         : `<span class="builder-rail-divider"></span><div class="builder-project-list" aria-label="Projects">${projects.map(projectItem).join('')}</div><button class="builder-rail-button builder-add-project" data-route="create-project" data-tooltip="Create new Project" aria-label="Create new Project"><span>+</span></button>${system ? `<span class="builder-rail-divider"></span>${item('design-system', '◇', system.name)}` : ''}`}
     </nav>
     <div class="builder-account">
-      ${inTheme ? `<div class="builder-rail-section builder-rail-section-foot"><button class="builder-rail-button" data-route="theme-settings" data-tooltip="Help" aria-label="Help"><span>${railIcon(railAssets.help)}</span></button></div>` : ''}
+      ${inTheme ? `<div class="builder-rail-section builder-rail-section-foot"><button class="builder-rail-button" data-route="theme-settings" data-tooltip="Documentation" aria-label="Documentation"><span>${railIcon(railAssets.help)}</span></button></div>` : ''}
       <button class="builder-notification-button ${state.notificationMenuOpen ? 'is-open' : ''}" data-action="toggle-notifications" data-tooltip="Notifications" aria-label="Notifications${unreadCount ? `, unread: ${unreadCount}` : ''}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>${unreadCount ? `<b>${unreadCount > 9 ? '9+' : unreadCount}</b>` : ''}</button>
       ${state.notificationMenuOpen ? notificationPopover(notifications) : ''}
       <button class="builder-avatar ${state.accountMenuOpen ? 'is-open' : ''}" data-action="toggle-account" data-tooltip="${escapeHtml(state.userName)}" aria-label="${escapeHtml(state.userName)}">${initials}</button>
@@ -2470,6 +2469,9 @@ function paletteEditor() {
 
 function editor() {
   if (state.editorTab === 'palette') return paletteEditor();
+  // Предохранитель: сессия могла сохранить вкладку, которой больше нет (например,
+  // убранную swatches) — без отката рендер падал и оставлял чёрный экран.
+  if (!state.tokens.some((token) => token.group === state.editorTab)) state.editorTab = 'colors';
   const viewer = state.role === 'viewer';
   const allTokens = state.tokens.filter((token) => token.group === state.editorTab);
   const tokens = allTokens.filter((token) => token.name.toLowerCase().includes(state.tokenSearch.toLowerCase()) && (!state.issueFilter || (findChange('token', token.id) && findChange('token', token.id).severity !== 'Passed'))).sort((a, b) => state.tokenSort === 'az' ? a.name.localeCompare(b.name) : 0);
