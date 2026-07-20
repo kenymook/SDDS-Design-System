@@ -436,23 +436,11 @@ function builderSidebar() {
   const unreadCount = notifications.filter((entry) => !entry.read).length;
   const railAssets = {
     mark: 'https://www.figma.com/api/mcp/asset/4d3fc357-326d-4f80-94de-4f5519283e8c',
-    colors: 'https://www.figma.com/api/mcp/asset/a01b5fdd-7ca6-43aa-8944-193f57668d9b',
-    fonts: 'https://www.figma.com/api/mcp/asset/f494c30b-563b-472e-bfee-c515c73b4bde',
-    shape: 'https://www.figma.com/api/mcp/asset/8daba963-db4a-4833-bcc5-9f4298892594',
-    components: 'https://www.figma.com/api/mcp/asset/003019af-2b31-4423-9c97-f7805be3657f',
-    help: 'https://www.figma.com/api/mcp/asset/71af8463-d58a-42d7-b89e-554f24e26214',
   };
   const railIcon = (src) => `<img class="builder-rail-icon" src="${src}" alt="">`;
-  // Иконки с внятными метафорами (итог аудита 07.2026): у Figma-ассетов Palette читался
-  // как «стопка», Health — как «спидометр», Versions — как «нумерованный список»,
-  // Changes носил стрелки «обмена». CSS-фильтр .builder-rail-icon красит и inline-SVG.
-  const railInlineIcon = (paths) => `<svg class="builder-rail-icon" viewBox="0 0 24 24" fill="none" stroke="#c6cbd4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
-  const railSvg = {
-    palette: railInlineIcon('<path d="M12 21a9 9 0 1 1 0-18 9 8 0 0 1 9 8 4.5 4.5 0 0 1-4.5 4.5h-2.5a2 2 0 0 0-1 3.75 1.3 1.3 0 0 1-1 1.75"/><circle cx="7.5" cy="10.5" r=".9" fill="#c6cbd4" stroke="none"/><circle cx="12" cy="7.5" r=".9" fill="#c6cbd4" stroke="none"/><circle cx="16.5" cy="10.5" r=".9" fill="#c6cbd4" stroke="none"/>'),
-    health: railInlineIcon('<path d="M3 12h4l3 8 4-16 3 8h4"/>'),
-    versions: railInlineIcon('<rect x="10" y="5" width="10" height="14" rx="2"/><path d="M7 7v10M4 8v8"/>'),
-    changes: railInlineIcon('<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M12 10v4M10 12h4M10 17h4"/>'),
-  };
+  // Иконки рейла — фирменный набор из макета DS BUILDER | PLAYGROUND (нода 714:17802),
+  // выгружены локально в assets/icons. CSS-фильтр .builder-rail-icon даёт серый/синий.
+  const railSvg = (name) => railIcon(`assets/icons/rail-${name}.svg`);
   const item = (route, icon, label, tab = '', disabled = false) => {
     const active = state.route === route && (!tab || state.editorTab === tab) ? 'is-active' : '';
     const title = disabled ? `${label} - unavailable for Viewer` : label;
@@ -468,12 +456,11 @@ function builderSidebar() {
       : `<button class="builder-rail-logo rail-back-button" data-route="portal-home" data-tooltip="SDDS Portal" aria-label="Back to SDDS Portal"><span class="builder-mark">DS</span><span class="builder-back-arrow">←</span></button>`}
     <nav>
       ${inTheme
-        ? `<div class="builder-rail-section builder-rail-section-main">${item('health', railSvg.health, 'Health')}<span class="builder-rail-divider"></span>${item('editor', railSvg.palette, 'Palette', 'palette')}${item('editor', railIcon(railAssets.colors), 'Colors', 'colors')}${item('editor', railIcon(railAssets.fonts), 'Typography', 'fonts')}${item('editor', railIcon(railAssets.shape), 'Corner radius', 'sizes')}${item('components', railIcon(railAssets.components), 'Components')}<span class="builder-rail-divider"></span>${item('changes', railSvg.changes, `Changes (${state.changes.length})`)}${item('versions', railSvg.versions, 'Versions')}</div>`
+        ? `<div class="builder-rail-section builder-rail-section-main">${item('health', railSvg('health'), 'Health')}<span class="builder-rail-divider"></span>${item('editor', railSvg('palette'), 'Palette', 'palette')}${item('editor', railSvg('colors'), 'Colors', 'colors')}${item('editor', railSvg('typography'), 'Typography', 'fonts')}${item('editor', railSvg('corner-radius'), 'Corner radius', 'sizes')}${item('components', railSvg('components'), 'Components')}<span class="builder-rail-divider"></span>${item('changes', railSvg('changes'), `Changes (${state.changes.length})`)}${item('versions', railSvg('versions'), 'Versions')}<span class="builder-rail-divider"></span>${item('theme-settings', railSvg('documentation'), 'Documentation')}</div>`
         : `<span class="builder-rail-divider"></span><div class="builder-project-list" aria-label="Projects">${projects.map(projectItem).join('')}</div><button class="builder-rail-button builder-add-project" data-route="create-project" data-tooltip="Create new Project" aria-label="Create new Project"><span>+</span></button>${system ? `<span class="builder-rail-divider"></span>${item('design-system', '◇', system.name)}` : ''}`}
     </nav>
     <div class="builder-account">
-      ${inTheme ? `<div class="builder-rail-section builder-rail-section-foot"><button class="builder-rail-button" data-route="theme-settings" data-tooltip="Documentation" aria-label="Documentation"><span>${railIcon(railAssets.help)}</span></button></div>` : ''}
-      <button class="builder-notification-button ${state.notificationMenuOpen ? 'is-open' : ''}" data-action="toggle-notifications" data-tooltip="Notifications" aria-label="Notifications${unreadCount ? `, unread: ${unreadCount}` : ''}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>${unreadCount ? `<b>${unreadCount > 9 ? '9+' : unreadCount}</b>` : ''}</button>
+            <button class="builder-notification-button ${state.notificationMenuOpen ? 'is-open' : ''}" data-action="toggle-notifications" data-tooltip="Notifications" aria-label="Notifications${unreadCount ? `, unread: ${unreadCount}` : ''}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>${unreadCount ? `<b>${unreadCount > 9 ? '9+' : unreadCount}</b>` : ''}</button>
       ${state.notificationMenuOpen ? notificationPopover(notifications) : ''}
       <button class="builder-avatar ${state.accountMenuOpen ? 'is-open' : ''}" data-action="toggle-account" data-tooltip="${escapeHtml(state.userName)}" aria-label="${escapeHtml(state.userName)}">${initials}</button>
       ${state.accountMenuOpen ? `<div class="account-popover"><div class="account-popover-user"><strong>${escapeHtml(state.userName)}</strong><span>${escapeHtml(state.userEmail)}</span></div><button data-route="account-settings">Settings</button><button data-route="portal-home">Go to SDDS Portal</button><span class="account-popover-divider"></span><button class="danger-menu-item" data-action="logout">Log out</button></div>` : ''}
