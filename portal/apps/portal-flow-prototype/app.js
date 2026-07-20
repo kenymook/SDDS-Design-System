@@ -97,8 +97,21 @@ const initialState = {
     demo: [{ name: 'Анна Дизайнер', email: 'anna@sdds.local', role: 'owner' }],
   },
   tokens: [
-    { id: 'primary', group: 'colors', name: 'color.primary', value: '#107f8c', darkValue: '#65c8d0', hint: 'Попробуйте #ffffff, чтобы увидеть validation issue' },
-    { id: 'on-primary', group: 'colors', name: 'color.onPrimary', value: '#ffffff', darkValue: '#071d21', hint: 'Текст и иконки на primary surface' },
+    { id: 'primary', group: 'colors', name: 'color.primary', value: '#000000', darkValue: '#fbffae', hint: 'Попробуйте #ffffff, чтобы увидеть validation issue' },
+    { id: 'on-primary', group: 'colors', name: 'color.onPrimary', value: '#c9c9c9', darkValue: '#fbffae', hint: 'Текст и иконки на primary surface' },
+    { id: 'text-primary', group: 'colors', name: 'color.textPrimary', value: '#a7a7a7', darkValue: '#fbffae', hint: 'Primary content color' },
+    { id: 'text-secondary', group: 'colors', name: 'color.textSecondary', value: '#8f8f8f', darkValue: '#fbffae', hint: 'Secondary content color' },
+    { id: 'text-tertiary', group: 'colors', name: 'color.textTertiary', value: '#158f96', darkValue: '#fbffae', hint: 'Muted content color' },
+    { id: 'surface-default', group: 'colors', name: 'color.surfaceDefault', value: '#111111', darkValue: '#fbffae', hint: 'Default surface' },
+    { id: 'surface-hover', group: 'colors', name: 'color.surfaceHover', value: '#cfcfcf', darkValue: '#fbffae', hint: 'Hovered surface' },
+    { id: 'surface-active', group: 'colors', name: 'color.surfaceActive', value: '#9f9f9f', darkValue: '#fbffae', hint: 'Active surface' },
+    { id: 'outline-default', group: 'colors', name: 'color.outlineDefault', value: '#111111', darkValue: '#fbffae', hint: 'Default outline' },
+    { id: 'outline-focus', group: 'colors', name: 'color.outlineFocus', value: '#c9c9c9', darkValue: '#fbffae', hint: 'Focus outline' },
+    { id: 'bg-default', group: 'colors', name: 'color.bgDefault', value: '#111111', darkValue: '#fbffae', hint: 'Canvas background' },
+    { id: 'bg-elevated', group: 'colors', name: 'color.bgElevated', value: '#c9c9c9', darkValue: '#fbffae', hint: 'Elevated background' },
+    { id: 'data-positive', group: 'colors', name: 'color.dataPositive', value: '#5a8dec', darkValue: '#fbffae', hint: 'Positive data color' },
+    { id: 'data-warning', group: 'colors', name: 'color.dataWarning', value: '#f0ae00', darkValue: '#fbffae', hint: 'Warning data color' },
+    { id: 'data-critical', group: 'colors', name: 'color.dataCritical', value: '#e34ed9', darkValue: '#fbffae', hint: 'Critical data color' },
     { id: 'control-size', group: 'sizes', name: 'size.control.md', value: '40', hint: 'Размер контрола, 32–64' },
     { id: 'rounding', group: 'sizes', name: 'rounding.md', value: '8', hint: 'Скругление, число от 0 до 24' },
     { id: 'font-family', group: 'fonts', name: 'typography.fontFamily.body', value: 'SB Sans Text', hint: 'Основной шрифт интерфейса' },
@@ -251,6 +264,18 @@ function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem('sdds-portal-flow-v6') || '{}');
     const merged = { ...structuredClone(initialState), ...saved };
+    const savedTokenIds = new Set((merged.tokens || []).map((token) => token.id));
+    merged.tokens = [
+      ...(merged.tokens || []),
+      ...initialState.tokens.filter((token) => !savedTokenIds.has(token.id)),
+    ].map((token) => token.group === 'colors' ? { ...token, ...(initialState.tokens.find((item) => item.id === token.id && item.group === 'colors') || {}) } : token);
+    Object.values(merged.themeWorkspaces || {}).forEach((workspace) => {
+      const workspaceTokenIds = new Set((workspace.tokens || []).map((token) => token.id));
+      workspace.tokens = [
+        ...(workspace.tokens || []),
+        ...initialState.tokens.filter((token) => !workspaceTokenIds.has(token.id)),
+      ].map((token) => token.group === 'colors' ? { ...token, ...(initialState.tokens.find((item) => item.id === token.id && item.group === 'colors') || {}) } : token);
+    });
     // Портал и Builder ведут себя по-разному:
     // — Builder (экраны за авторизацией) — рабочий инструмент: всегда возвращаемся на последний
     //   экран, как IDE открывает последний проект.
@@ -336,6 +361,25 @@ function workspaceContextBar() {
   if (!project || !system || !theme) return '';
   const card = themeCardState(theme);
   const issues = issueCount();
+  if (state.route === 'editor' && state.editorTab === 'colors') {
+    const settingsIcon = 'https://www.figma.com/api/mcp/asset/3268525a-8eb3-4182-9ed7-cbf828bafee4';
+    const caretIcon = 'https://www.figma.com/api/mcp/asset/287d01e6-80f2-4341-b281-ca24ab1670a3';
+    return `<div class="workspace-context-bar workspace-context-bar-editor" aria-label="Theme editor context">
+      <nav class="workspace-breadcrumb" aria-label="Editor breadcrumbs">
+        <button data-route="design-system">Design System</button><span>/</span>
+        <strong>Color tokens editor</strong>
+      </nav>
+      <div class="workspace-context-meta">
+        <button class="context-icon-button figma-topbar-icon" title="Settings" aria-label="Settings"><img src="${settingsIcon}" alt=""></button>
+        <div class="figma-topbar-reset ${state.resetMenuOpen ? 'is-open' : ''}">
+          <button data-action="reset-all" ${state.changes.length && canEditTheme() ? '' : 'disabled'}>Reset</button>
+          <button class="figma-topbar-caret" data-action="toggle-reset-menu" aria-label="Reset options" aria-expanded="${state.resetMenuOpen}" ${state.changes.length && canEditTheme() ? '' : 'disabled'}><img src="${caretIcon}" alt=""></button>
+          ${state.resetMenuOpen ? `<div class="reset-dropdown figma-topbar-dropdown"><button data-action="reset-section" ${sectionTokenChanges().length ? '' : 'disabled'}>Reset section ${sectionTokenChanges().length ? `· ${sectionTokenChanges().length}` : ''}</button><button data-action="reset-all" ${state.changes.length ? '' : 'disabled'}>Reset all · ${state.changes.length}</button></div>` : ''}
+        </div>
+        <button class="figma-topbar-publish" data-route="publish" ${state.changes.length && canPublish() ? '' : 'disabled'}>Publish</button>
+      </div>
+    </div>`;
+  }
   return `<div class="workspace-context-bar" aria-label="Контекст Theme">
     <nav class="workspace-breadcrumb" aria-label="Хлебные крошки">
       <button data-route="project">${escapeHtml(project.name)}</button><span>/</span>
@@ -384,35 +428,59 @@ function contextSidebar(inBuilder) {
 }
 
 function builderSidebar() {
-  const project = selectedProject(), system = selectedSystem(), theme = selectedTheme();
+  const project = selectedProject(), system = selectedSystem();
   const inTheme = ['theme-settings', 'editor', 'components', 'health', 'versions', 'changes', 'publish', 'result'].includes(state.route);
   const projects = allProjects().filter((entry) => membership(entry.id));
   const initials = state.userName.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
   const notifications = currentNotifications();
   const unreadCount = notifications.filter((entry) => !entry.read).length;
+  const railAssets = {
+    mark: 'https://www.figma.com/api/mcp/asset/4d3fc357-326d-4f80-94de-4f5519283e8c',
+    swatch: 'https://www.figma.com/api/mcp/asset/d0ca10ce-d570-482c-a815-2bd3e17ab1d4',
+    colors: 'https://www.figma.com/api/mcp/asset/a01b5fdd-7ca6-43aa-8944-193f57668d9b',
+    fonts: 'https://www.figma.com/api/mcp/asset/f494c30b-563b-472e-bfee-c515c73b4bde',
+    shape: 'https://www.figma.com/api/mcp/asset/8daba963-db4a-4833-bcc5-9f4298892594',
+    components: 'https://www.figma.com/api/mcp/asset/003019af-2b31-4423-9c97-f7805be3657f',
+    help: 'https://www.figma.com/api/mcp/asset/71af8463-d58a-42d7-b89e-554f24e26214',
+  };
+  const railIcon = (src) => `<img class="builder-rail-icon" src="${src}" alt="">`;
+  // Иконки с внятными метафорами (итог аудита 07.2026): у Figma-ассетов Palette читался
+  // как «стопка», Health — как «спидометр», Versions — как «нумерованный список»,
+  // Changes носил стрелки «обмена». CSS-фильтр .builder-rail-icon красит и inline-SVG.
+  const railInlineIcon = (paths) => `<svg class="builder-rail-icon" viewBox="0 0 24 24" fill="none" stroke="#c6cbd4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+  const railSvg = {
+    palette: railInlineIcon('<path d="M12 21a9 9 0 1 1 0-18 9 8 0 0 1 9 8 4.5 4.5 0 0 1-4.5 4.5h-2.5a2 2 0 0 0-1 3.75 1.3 1.3 0 0 1-1 1.75"/><circle cx="7.5" cy="10.5" r=".9" fill="#c6cbd4" stroke="none"/><circle cx="12" cy="7.5" r=".9" fill="#c6cbd4" stroke="none"/><circle cx="16.5" cy="10.5" r=".9" fill="#c6cbd4" stroke="none"/>'),
+    health: railInlineIcon('<path d="M3 12h4l3 8 4-16 3 8h4"/>'),
+    versions: railInlineIcon('<rect x="10" y="5" width="10" height="14" rx="2"/><path d="M7 7v10M4 8v8"/>'),
+    changes: railInlineIcon('<path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M12 10v4M10 12h4M10 17h4"/>'),
+  };
   const item = (route, icon, label, tab = '', disabled = false) => {
     const active = state.route === route && (!tab || state.editorTab === tab) ? 'is-active' : '';
-    const title = disabled ? `${label} — недоступно для Viewer` : label;
+    const title = disabled ? `${label} - unavailable for Viewer` : label;
     return `<button class="builder-rail-button ${active}" data-route="${route}" ${tab ? `data-tab="${tab}"` : ''} data-tooltip="${escapeHtml(title)}" aria-label="${escapeHtml(title)}" ${disabled ? 'disabled aria-disabled="true"' : ''}><span>${icon}</span></button>`;
   };
-  const projectItem = (entry) => { const isNew = notifications.some((notification) => notification.projectId === entry.id && !notification.read); return `<button class="builder-rail-button project-rail-item ${project?.id === entry.id ? 'is-active' : ''}" data-action="open-project" data-id="${entry.id}" data-tooltip="${escapeHtml(entry.name)}" aria-label="Открыть Project ${escapeHtml(entry.name)}"><span>${entry.sidebarIcon ? `<img src="${escapeHtml(entry.sidebarIcon)}" alt="">` : escapeHtml(entry.name.trim().charAt(0).toUpperCase() || 'P')}</span>${isNew ? '<i class="project-unread-dot" aria-label="Новый Project"></i>' : ''}</button>`; };
-  return `<aside class="builder-icon-sidebar ${inTheme ? 'theme-rail' : ''}" aria-label="Навигация DS Builder">
+  const projectItem = (entry) => {
+    const isNew = notifications.some((notification) => notification.projectId === entry.id && !notification.read);
+    return `<button class="builder-rail-button project-rail-item ${project?.id === entry.id ? 'is-active' : ''}" data-action="open-project" data-id="${entry.id}" data-tooltip="${escapeHtml(entry.name)}" aria-label="Open Project ${escapeHtml(entry.name)}"><span>${entry.sidebarIcon ? `<img src="${escapeHtml(entry.sidebarIcon)}" alt="">` : escapeHtml(entry.name.trim().charAt(0).toUpperCase() || 'P')}</span>${isNew ? '<i class="project-unread-dot" aria-label="New Project"></i>' : ''}</button>`;
+  };
+  return `<aside class="builder-icon-sidebar ${inTheme ? 'theme-rail' : ''}" aria-label="DS Builder navigation">
     ${inTheme
-      ? `<button class="builder-rail-logo rail-back-button theme-back-button" data-route="design-system" data-tooltip="Вернуться к Themes" aria-label="Вернуться к Themes"><span class="builder-mark">DS</span><span class="builder-back-arrow">←</span></button>`
-      : `<button class="builder-rail-logo rail-back-button" data-route="portal-home" data-tooltip="На SDDS Portal" aria-label="Вернуться на SDDS Portal"><span class="builder-mark">DS</span><span class="builder-back-arrow">←</span></button>`}
+      ? `<div class="builder-rail-section builder-rail-section-head"><button class="builder-rail-logo rail-back-button theme-back-button" data-route="design-system" data-tooltip="Back to Themes" aria-label="Back to Themes"><span class="builder-mark">${railIcon(railAssets.mark)}</span><span class="builder-back-arrow">←</span></button></div>`
+      : `<button class="builder-rail-logo rail-back-button" data-route="portal-home" data-tooltip="SDDS Portal" aria-label="Back to SDDS Portal"><span class="builder-mark">DS</span><span class="builder-back-arrow">←</span></button>`}
     <nav>
       ${inTheme
-        ? `${item('editor','◧','Palette','palette')}${item('editor','●','Colors','colors')}${item('editor','↔','Sizes','sizes')}${item('editor','T','Fonts','fonts')}${item('components','▦','Components')}<span class="builder-rail-divider"></span>${item('health','✚','Health')}${item('versions','≡','Versions')}${item('changes','△',`Changes (${state.changes.length})`)}${item('publish','↑','Publish','',!canPublish())}`
-        : `<span class="builder-rail-divider"></span><div class="builder-project-list" aria-label="Проекты">${projects.map(projectItem).join('')}</div><button class="builder-rail-button builder-add-project" data-route="create-project" data-tooltip="Создать новый Project" aria-label="Создать новый Project"><span>＋</span></button>${system ? `<span class="builder-rail-divider"></span>${item('design-system','◇',system.name)}` : ''}`}
+        ? `<div class="builder-rail-section builder-rail-section-main">${item('editor', railSvg.palette, 'Palette', 'palette')}<span class="builder-rail-divider"></span>${item('editor', railIcon(railAssets.swatch), 'Swatches', 'swatches')}${item('editor', railIcon(railAssets.colors), 'Colors', 'colors')}${item('editor', railIcon(railAssets.fonts), 'Fonts', 'fonts')}${item('editor', railIcon(railAssets.shape), 'Shapes', 'sizes')}${item('components', railIcon(railAssets.components), 'Components')}<span class="builder-rail-divider"></span>${item('health', railSvg.health, 'Health')}${item('versions', railSvg.versions, 'Versions')}<span class="builder-rail-divider"></span>${item('changes', railSvg.changes, `Changes (${state.changes.length})`)}</div>`
+        : `<span class="builder-rail-divider"></span><div class="builder-project-list" aria-label="Projects">${projects.map(projectItem).join('')}</div><button class="builder-rail-button builder-add-project" data-route="create-project" data-tooltip="Create new Project" aria-label="Create new Project"><span>+</span></button>${system ? `<span class="builder-rail-divider"></span>${item('design-system', '◇', system.name)}` : ''}`}
     </nav>
-    <div class="builder-account"><button class="builder-notification-button ${state.notificationMenuOpen ? 'is-open' : ''}" data-action="toggle-notifications" data-tooltip="Уведомления" aria-label="Уведомления${unreadCount ? `, непрочитанных: ${unreadCount}` : ''}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>${unreadCount ? `<b>${unreadCount > 9 ? '9+' : unreadCount}</b>` : ''}</button>
+    <div class="builder-account">
+      ${inTheme ? `<div class="builder-rail-section builder-rail-section-foot"><button class="builder-rail-button" data-route="theme-settings" data-tooltip="Help" aria-label="Help"><span>${railIcon(railAssets.help)}</span></button></div>` : ''}
+      <button class="builder-notification-button ${state.notificationMenuOpen ? 'is-open' : ''}" data-action="toggle-notifications" data-tooltip="Notifications" aria-label="Notifications${unreadCount ? `, unread: ${unreadCount}` : ''}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>${unreadCount ? `<b>${unreadCount > 9 ? '9+' : unreadCount}</b>` : ''}</button>
       ${state.notificationMenuOpen ? notificationPopover(notifications) : ''}
       <button class="builder-avatar ${state.accountMenuOpen ? 'is-open' : ''}" data-action="toggle-account" data-tooltip="${escapeHtml(state.userName)}" aria-label="${escapeHtml(state.userName)}">${initials}</button>
-      ${state.accountMenuOpen ? `<div class="account-popover"><div class="account-popover-user"><strong>${escapeHtml(state.userName)}</strong><span>${escapeHtml(state.userEmail)}</span></div><button data-route="account-settings">Настройки</button><button data-route="portal-home">Перейти на SDDS Portal</button><span class="account-popover-divider"></span><button class="danger-menu-item" data-action="logout">Выйти</button></div>` : ''}
+      ${state.accountMenuOpen ? `<div class="account-popover"><div class="account-popover-user"><strong>${escapeHtml(state.userName)}</strong><span>${escapeHtml(state.userEmail)}</span></div><button data-route="account-settings">Settings</button><button data-route="portal-home">Go to SDDS Portal</button><span class="account-popover-divider"></span><button class="danger-menu-item" data-action="logout">Log out</button></div>` : ''}
     </div>
   </aside>`;
 }
-
 function currentNotifications() {
   return (state.notifications || []).filter((entry) => entry.recipientEmail?.toLowerCase() === state.userEmail.toLowerCase()).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
 }
@@ -516,6 +584,8 @@ function render() {
     landingAnimObserver = null;
     landingPinCleanup?.();
     landingPinCleanup = null;
+    landingIconFlowCleanup?.();
+    landingIconFlowCleanup = null;
     if (landingScroll) { window.removeEventListener('scroll', landingScroll); window.removeEventListener('resize', landingScroll); landingScroll = null; }
     if (landingSlidesTimer) { clearInterval(landingSlidesTimer); landingSlidesTimer = null; }
     landingSetSlide = null;
@@ -541,6 +611,7 @@ function render() {
 let landingObserver = null;
 let landingScroll = null;
 let landingPinCleanup = null;
+let landingIconFlowCleanup = null;
 let landingSlidesTimer = null;
 let landingAnimObserver = null;
 let landingSetSlide = null;
@@ -554,6 +625,8 @@ function initLandingEnhancements() {
   landingAnimObserver = null;
   landingPinCleanup?.();
   landingPinCleanup = null;
+  landingIconFlowCleanup?.();
+  landingIconFlowCleanup = null;
   if (landingScroll) { window.removeEventListener('scroll', landingScroll); window.removeEventListener('resize', landingScroll); landingScroll = null; }
   const root = app.querySelector('.landing');
   if (!root) return;
@@ -578,6 +651,7 @@ function initLandingEnhancements() {
       } else landingObserver.observe(section);
     });
   }
+  landingIconFlowCleanup = initIconFlow(root, reduced);
   // Морфинг «путь цвета» (много CSS-анимаций) ставим на паузу, когда он за экраном —
   // это снимает постоянную нагрузку на композитор на слабых машинах, не меняя вид.
   const morphWrap = root.querySelector('.morph-wrap');
@@ -705,6 +779,146 @@ function initLandingEnhancements() {
   }
 }
 
+function initIconFlow(root, reduced) {
+  const section = root.querySelector('.icon-flow-section');
+  const pin = section?.querySelector('.icon-flow-pin');
+  const copy = section?.querySelector('.icon-flow-copy');
+  const track = section?.querySelector('.icon-flow-track');
+  const cards = [...(section?.querySelectorAll('.icon-flow-card') || [])];
+  if (!section || !pin || !copy || !track || !cards.length) return null;
+
+  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+  const smoothstep = (value) => value * value * (3 - value * 2);
+  const smootherstep = (value) => value * value * value * (value * (value * 6 - 15) + 10);
+  const lanePattern = [-1, 1, -1, 1, -1, 1, -1, 1, -1, 1];
+  const laneClearances = [46, 66, 54, 74, 50, 70, 58, 78, 52, 68];
+  const profiles = [
+    { tilt: -5.5, swing: 3.2, ripple: 1.6, phase: 0.12, skew: -1.2, x: -3, y: -8 },
+    { tilt: 3.8, swing: -4.4, ripple: 2.1, phase: 0.34, skew: 1.4, x: 4, y: 7 },
+    { tilt: 6.4, swing: 2.2, ripple: -1.8, phase: 0.62, skew: -1, x: -1, y: -12 },
+    { tilt: -4.6, swing: 4.8, ripple: 1.2, phase: 0.78, skew: 1.6, x: 3, y: 10 },
+    { tilt: 5.2, swing: -3.4, ripple: -2.2, phase: 0.48, skew: -1.3, x: -4, y: 5 },
+  ];
+
+  if (reduced) {
+    track.style.transform = 'none';
+    cards.forEach((card) => { card.style.transform = 'none'; });
+    return null;
+  }
+
+  const scaleTuning = () => window.innerWidth < 720
+    ? { resting: 0.78, lift: 0.36, peak: 1.14 }
+    : { resting: 0.76, lift: 0.42, peak: 1.18 };
+  const getCenterScalePulse = (centerX, m) => {
+    const range = m.vw < 720 ? m.vw * 0.7 : m.vw * 0.36;
+    const distance = Math.abs(centerX - m.vw / 2);
+    return smootherstep(clamp(1 - Math.pow(distance / range, 1.45), 0, 1));
+  };
+  const ribbonPath = (card, centerX, m) => {
+    const halfWidth = card.offsetWidth * scaleTuning().peak / 2;
+    const approach = m.vw < 720 ? 260 : 520;
+    const left = m.copyRect.left - halfWidth - approach;
+    const right = m.copyRect.right + halfWidth + approach;
+    if (centerX <= left || centerX >= right) {
+      return { t: centerX <= left ? 0 : 1, pulse: 0, sway: 0 };
+    }
+    const t = clamp((centerX - left) / Math.max(1, right - left), 0, 1);
+    const arch = Math.sin(Math.PI * t);
+    return {
+      t,
+      pulse: smoothstep(clamp(arch, 0, 1)),
+      sway: Math.sin(Math.PI * 2 * t),
+    };
+  };
+  const metrics = () => {
+    const vw = document.documentElement.clientWidth;
+    const vh = window.innerHeight;
+    const sectionRect = section.getBoundingClientRect();
+    const pinRect = pin.getBoundingClientRect();
+    const copyRect = copy.getBoundingClientRect();
+    const headerH = document.querySelector('.portal-header, .content-topbar')?.offsetHeight || 0;
+    const sectionTop = window.scrollY + sectionRect.top;
+    const copyOffset = Math.max(0, (pin.offsetHeight - copy.offsetHeight) / 2);
+    const startScroll = sectionTop + copyOffset - vh * 0.86;
+    const endScroll =
+      sectionTop +
+      section.offsetHeight -
+      pin.offsetHeight +
+      copyOffset +
+      copy.offsetHeight -
+      headerH;
+    const progress = clamp((window.scrollY - startScroll) / Math.max(1, endScroll - startScroll), 0, 1);
+    const startX = vw * 1.08;
+    const endX = -(track.scrollWidth + vw * 0.08);
+    return { vw, vh, pinRect, copyRect, progress, startX, endX, travel: endX - startX };
+  };
+  const liftFor = (card, direction, m, index) => {
+    const peakHeight = card.offsetHeight * scaleTuning().peak;
+    const baseTop = m.pinRect.top + m.pinRect.height / 2 - peakHeight / 2;
+    const baseBottom = m.pinRect.top + m.pinRect.height / 2 + peakHeight / 2;
+    const clearance = laneClearances[index % laneClearances.length] * (m.vw < 720 ? 0.66 : 0.82);
+    const minimum = clamp(m.pinRect.height * 0.22, 140, 230);
+    const contactPulse = m.vw < 720 ? 0.82 : 0.86;
+    const requiredLift = direction < 0
+      ? (m.copyRect.top - clearance - baseBottom) / contactPulse
+      : (m.copyRect.bottom + clearance - baseTop) / contactPulse;
+    const safeLift = direction < 0
+      ? Math.min(-minimum, requiredLift)
+      : Math.max(minimum, requiredLift);
+    const edgeGutter = m.vw < 720 ? 10 : 16;
+    const edgeLimit = direction < 0
+      ? m.pinRect.top + edgeGutter - baseTop
+      : m.pinRect.bottom - edgeGutter - baseBottom;
+    return direction < 0 ? Math.max(safeLift, edgeLimit) : Math.min(safeLift, edgeLimit);
+  };
+  const apply = (progress) => {
+    const m = metrics();
+    const trackX = m.startX + m.travel * progress;
+    track.style.transform = `translate3d(${trackX.toFixed(2)}px, -50%, 0)`;
+    cards.forEach((card, index) => {
+      const direction = lanePattern[index % lanePattern.length];
+      const profile = profiles[index % profiles.length];
+      const baseCenter = trackX + card.offsetLeft + card.offsetWidth / 2;
+      const path = ribbonPath(card, baseCenter, m);
+      const motionPulse = path.pulse;
+      const stream = path.sway;
+      const crowdPull = clamp((m.vw / 2 - baseCenter) * 0.05, m.vw < 720 ? -24 : -42, m.vw < 720 ? 24 : 42);
+      const lift = liftFor(card, direction, m, index);
+      const bob = Math.sin((path.t + index * 0.07) * Math.PI) * motionPulse * (m.vw < 720 ? 5 : 9);
+      const x = stream * (m.vw < 720 ? 5 : 9) * direction + crowdPull * motionPulse;
+      const scaleConfig = scaleTuning();
+      const y = lift * motionPulse + bob;
+      const centerPulse = getCenterScalePulse(baseCenter + x, m);
+      const rotate = ((profile.tilt + Math.sin((path.t + profile.phase) * Math.PI * 2) * profile.swing) * motionPulse) + stream * profile.ripple;
+      const skewY = stream * motionPulse * profile.skew;
+      const scale = scaleConfig.resting + centerPulse * scaleConfig.lift + Math.sin((path.t + profile.phase) * Math.PI * 2) * 0.008 * centerPulse;
+      card.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) rotate(${rotate.toFixed(2)}deg) skewY(${skewY.toFixed(2)}deg) scale(${scale.toFixed(3)})`;
+    });
+  };
+
+  let target = 0;
+  let displayed = 0;
+  let rafId = 0;
+  const tick = () => {
+    target = metrics().progress;
+    displayed += (target - displayed) * 0.1;
+    if (Math.abs(target - displayed) < 0.0006) displayed = target;
+    apply(displayed);
+    rafId = requestAnimationFrame(tick);
+  };
+  const observer = typeof IntersectionObserver !== 'undefined'
+    ? new IntersectionObserver((entries) => {
+        const on = entries[0]?.isIntersecting ?? true;
+        if (on && !rafId) rafId = requestAnimationFrame(tick);
+        if (!on && rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+      }, { rootMargin: '35% 0px 35% 0px' })
+    : null;
+  observer?.observe(section);
+  if (!observer) rafId = requestAnimationFrame(tick);
+  apply(metrics().progress);
+  return () => { if (rafId) cancelAnimationFrame(rafId); observer?.disconnect(); };
+}
+
 function accountSettingsView() {
   return `<p class="eyebrow">DS Builder / Account</p><h1>Настройки профиля</h1>
     <section class="form-card account-settings-card">
@@ -749,6 +963,48 @@ function iconStar(style, size = 40) {
     ? 'fill="currentColor"'
     : `fill="none" stroke="currentColor" stroke-width="${style === 'bold' ? 2.6 : 1.5}" stroke-linejoin="round" stroke-linecap="round"`;
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" aria-hidden="true"><path d="${d}" ${paint}/></svg>`;
+}
+
+function iconFlowGlyph(type, size = 72) {
+  const attrs = `width="${size}" height="${size}" viewBox="0 0 64 64" aria-hidden="true"`;
+  const stroke = 'fill="none" stroke="currentColor" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"';
+  const icons = {
+    calendar: `<rect x="13" y="16" width="38" height="34" rx="8" ${stroke}/><path d="M20 10v10M44 10v10M14 27h36M24 40h.2" ${stroke}/>`,
+    circles: `<circle cx="25" cy="37" r="11" ${stroke}/><circle cx="39" cy="37" r="11" ${stroke}/><circle cx="32" cy="25" r="11" ${stroke}/>`,
+    palette: `<path d="M17 14h16c10 0 17 7 17 16 0 4-2 6-5 6h-6c-3 0-5 2-5 5s-2 6-6 6H17c-3 0-5-2-5-5V19c0-3 2-5 5-5Z" ${stroke}/><path d="M25 25l-7 7 7 7M39 25l7 7-7 7" ${stroke}/>`,
+    check: `<circle cx="32" cy="32" r="21" ${stroke}/><path d="M21 33l8 8 16-17" ${stroke}/>`,
+    hourglass: `<path d="M21 10h22M21 54h22M24 12c0 11 16 12 16 20S24 41 24 52M40 12c0 11-16 12-16 20s16 9 16 20" ${stroke}/>`,
+    stack: `<path d="M18 20l14-8 14 8-14 8-14-8Z" ${stroke}/><path d="M18 32l14 8 14-8M18 44l14 8 14-8" ${stroke}/>`,
+    sliders: `<path d="M14 22h36M14 42h36M25 16v12M40 36v12" ${stroke}/><circle cx="25" cy="22" r="5" ${stroke}/><circle cx="40" cy="42" r="5" ${stroke}/>`,
+    spark: `<path d="M32 10l5 16 16 6-16 6-5 16-6-16-15-6 15-6 6-16Z" ${stroke}/>`,
+    grid: `<rect x="14" y="14" width="14" height="14" rx="4" ${stroke}/><rect x="36" y="14" width="14" height="14" rx="4" ${stroke}/><rect x="14" y="36" width="14" height="14" rx="4" ${stroke}/><rect x="36" y="36" width="14" height="14" rx="4" ${stroke}/>`,
+    bolt: `<path d="M36 8L16 36h16l-4 20 20-28H32l4-20Z" ${stroke}/>`,
+    token: `<path d="M32 10l19 11v22L32 54 13 43V21l19-11Z" ${stroke}/><path d="M32 32l19-11M32 32L13 21M32 32v22" ${stroke}/>`,
+    cursor: `<path d="M17 12l30 18-13 4-7 13-10-35Z" ${stroke}/>`
+  };
+  return `<svg ${attrs}>${icons[type] || icons.spark}</svg>`;
+}
+
+const landingIconFlowCards = [
+  { label: 'Calendar', icon: 'calendar', bg: '#8846c8', ink: '#562199', depth: '#5b238f' },
+  { label: 'Components', icon: 'circles', bg: '#43bf52', ink: '#168c2a', depth: '#178232' },
+  { label: 'Palette', icon: 'palette', bg: '#3b60ff', ink: '#1640d9', depth: '#2246c8' },
+  { label: 'Check', icon: 'check', bg: '#ffc34d', ink: '#df8b00', depth: '#b87812' },
+  { label: 'Process', icon: 'hourglass', bg: '#ff644d', ink: '#cf351e', depth: '#bb3726', shape: 'round' },
+  { label: 'Layers', icon: 'stack', bg: '#ad3fd0', ink: '#76219b', depth: '#78249c' },
+  { label: 'Settings', icon: 'sliders', bg: '#25b8a8', ink: '#0b8177', depth: '#137a72' },
+  { label: 'Spark', icon: 'spark', bg: '#7f63ff', ink: '#4d31c7', depth: '#4c35b3' },
+  { label: 'Grid', icon: 'grid', bg: '#25c1e8', ink: '#06799a', depth: '#087488' },
+  { label: 'Bolt', icon: 'bolt', bg: '#ffe05a', ink: '#d09200', depth: '#ad7b0c' },
+];
+
+function landingIconFlowCard(card, index) {
+  return `<figure class="icon-flow-card ${card.shape === 'round' ? 'is-round' : ''}" style="--flow-bg:${card.bg};--flow-ink:${card.ink};--flow-depth:${card.depth};--flow-index:${index}" data-flow-card aria-label="${escapeHtml(card.label)}">
+    <span class="icon-flow-card-visual" data-icon-animation-slot>
+      <span class="icon-flow-icon">${iconFlowGlyph(card.icon)}</span>
+    </span>
+    <figcaption class="visually-hidden">${escapeHtml(card.label)}</figcaption>
+  </figure>`;
 }
 
 function landingProofSection() {
@@ -936,34 +1192,19 @@ function portalHome() {
         </div>
       </section>
 
-      <section class="landing-section reveal">
-        <p class="eyebrow">Иконки</p>
-        <h2>Свой набор иконок — три стиля и три размера</h2>
-        <div class="landing-split">
-          <div class="icons-panel" role="img" aria-label="Иконка в стилях Outline, OutlineBold и Fill; размеры 16, 24 и 32 пикселя">
-            <div class="icon-set">
-              <figure>
-                <span class="icon-cell">${iconStar('outline')}</span>
-                <figcaption>Outline</figcaption>
-              </figure>
-              <figure>
-                <span class="icon-cell">${iconStar('bold')}</span>
-                <figcaption>OutlineBold</figcaption>
-              </figure>
-              <figure>
-                <span class="icon-cell">${iconStar('fill')}</span>
-                <figcaption>Fill</figcaption>
-              </figure>
-            </div>
-            <div class="icon-sizes">
-              <figure><span class="icon-cell">${iconStar('fill', 16)}</span><figcaption>16</figcaption></figure>
-              <figure><span class="icon-cell">${iconStar('fill', 24)}</span><figcaption>24</figcaption></figure>
-              <figure><span class="icon-cell">${iconStar('fill', 32)}</span><figcaption>32</figcaption></figure>
+      <section class="landing-section icon-flow-section reveal">
+        <div class="icon-flow-pin">
+          <div class="icon-flow-stage" role="img" aria-label="Карточки с иконками плавно огибают текст раздела">
+            <div class="icon-flow-track">
+              ${landingIconFlowCards.map(landingIconFlowCard).join('')}
             </div>
           </div>
-          <div class="landing-split-copy">
-            <p>В SDDS входит собственный набор иконок — не сторонняя библиотека. Каждая иконка есть в трёх начертаниях: Outline, OutlineBold и Fill, и в трёх размерах — 16, 24 и 32 px, выровненных с высотами компонентов.</p>
-            <p>Иконки — такие же токенизированные части системы: цвет берётся из семантических токенов и меняется вместе с темой, а не задаётся вручную.</p>
+          <div class="icon-flow-copy">
+            <p class="eyebrow">Иконки</p>
+            <h2>Свой набор иконок – три стиля и три размера</h2>
+            <div class="icon-flow-text">
+              <p>GigaChat, HomeOS на SmartTV и другие продукты собраны из компонентов SDDS. Разные платформы, размеры и бренды – общие набор токенов и правил.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -1955,6 +2196,42 @@ function baseValueLine(selected, draft, mode = 'light') {
   return `<div class="property-line ${overridden ? 'is-edited' : ''}"><span>Base ${mode === 'dark' ? 'Dark' : 'Light'}</span><strong>${escapeHtml(base)}</strong><small>${overridden ? 'overridden' : 'inherited'}</small></div>`;
 }
 
+function colorTokenDisplayName(token) {
+  return linkedColorTokenLabels[token.id] || token.name.replace(/^color\./, '');
+}
+
+function colorTokenDescription(token) {
+  const descriptions = {
+    primary: 'Применяется для выделения текста и иконок. Он предназначен для обозначения основного, базового текста и иконок в пользовательском интерфейсе (UI). Этот токен определяет цвета, которые используются для текста и иконок по умолчанию, чтобы создать единообразие и консистентность в дизайне.',
+  };
+  return descriptions[token.id] || token.hint || 'Значение токена используется в связанных состояниях темы и наследуется компонентами дизайн-системы.';
+}
+
+function colorValueLabel(value, fallback = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === '#000000' || normalized === '#000') return 'black100';
+  if (normalized === '#ffffff' || normalized === '#fff') return 'white100';
+  if (normalized === '#fbffae') return 'FBFFAE';
+  if (normalized === '#c9c9c9') return 'gray300';
+  if (normalized === '#a7a7a7') return 'textGeneralPrimary';
+  return fallback || String(value || '').replace(/^#/, '').toUpperCase();
+}
+
+function colorInspectorField({ tokenId, mode, label, value, editable = false, disabled = '' }) {
+  const isOpen = state.colorPicker?.tokenId === tokenId && state.colorPicker?.mode === mode;
+  const pickerAttrs = editable ? `data-action="open-color-picker" data-id="${tokenId}" data-mode="${mode}" aria-label="Open color picker for ${label}" aria-expanded="${isOpen}"` : '';
+  const inputAttrs = editable ? `data-action="edit-token" data-id="${tokenId}" data-mode="${mode}"` : 'readonly';
+  return `<div class="figma-inspector-field">
+    <span class="figma-inspector-field-label">${label}</span>
+    <div class="figma-value-control">
+      <div class="figma-value-main">
+        <button type="button" class="swatch-button ${isOpen ? 'is-open' : ''}" ${pickerAttrs} style="background:${escapeHtml(value)}" ${editable ? disabled : 'disabled'}></button>
+        <input ${inputAttrs} value="${escapeHtml(colorValueLabel(value))}" ${editable ? disabled : ''}>
+      </div>
+      <div class="figma-value-alpha"><span>100</span><i>%</i></div>
+    </div>
+  </div>`;
+}
 function tokenImpactSections(id) {
   const usage = tokenUsage[id] || { tokens: [], components: [] };
   const system = selectedSystem();
@@ -1972,9 +2249,28 @@ function tokenInspector(selected, draft, viewer) {
   const disabled = viewer ? 'disabled' : '';
   if (selected.group === 'colors') {
     const darkDraft = tokenDraftValue(selected.id, 'dark');
+    const onDark = linkedColorContextValues[selected.id]?.onDark || darkDraft;
+    const onLight = linkedColorContextValues[selected.id]?.onLight || draft;
+    const inverse = linkedColorContextValues[selected.id]?.inverse || darkDraft;
     return `
-      <section class="inspector-section"><span class="inspector-heading">Theme modes</span><label>Light<div class="value-control"><button type="button" class="swatch-button ${state.colorPicker?.tokenId === selected.id && state.colorPicker?.mode === 'light' ? 'is-open' : ''}" data-action="open-color-picker" data-id="${selected.id}" data-mode="light" style="background:${escapeHtml(draft)}" aria-label="Открыть color picker для Light" aria-expanded="${state.colorPicker?.tokenId === selected.id && state.colorPicker?.mode === 'light'}" ${disabled}></button><input data-action="edit-token" data-id="${selected.id}" data-mode="light" value="${escapeHtml(draft)}" ${disabled}></div></label><label>Dark<div class="value-control"><button type="button" class="swatch-button ${state.colorPicker?.tokenId === selected.id && state.colorPicker?.mode === 'dark' ? 'is-open' : ''}" data-action="open-color-picker" data-id="${selected.id}" data-mode="dark" style="background:${escapeHtml(darkDraft)}" aria-label="Открыть color picker для Dark" aria-expanded="${state.colorPicker?.tokenId === selected.id && state.colorPicker?.mode === 'dark'}" ${disabled}></button><input data-action="edit-token" data-id="${selected.id}" data-mode="dark" value="${escapeHtml(darkDraft)}" ${disabled}></div></label>${baseValueLine(selected, draft, 'light')}${baseValueLine(selected, darkDraft, 'dark')}</section>
-      <section class="inspector-section"><span class="inspector-heading">⌄ Subtheme　ⓘ</span><div class="property-line"><span>Default</span><strong>${escapeHtml(draft)}</strong><small>Light</small></div><div class="property-line"><span>OnDark</span><strong>${escapeHtml(darkDraft)}</strong><small>Dark</small></div><div class="property-line"><span>OnLight</span><strong>#000000 50%</strong><small>auto</small></div><div class="property-line"><span>Inverse</span><strong>#FFFFFF 10%</strong><small>auto</small></div></section>
+      <section class="inspector-section figma-inspector-copy"><p>${escapeHtml(colorTokenDescription(selected))}</p></section>
+      <section class="inspector-section figma-inspector-group">
+        <span class="inspector-heading">Default Themes</span>
+        ${colorInspectorField({ tokenId: selected.id, mode: 'light', label: 'Light', value: draft, editable: true, disabled })}
+        ${colorInspectorField({ tokenId: selected.id, mode: 'dark', label: 'Dark', value: darkDraft, editable: true, disabled })}
+      </section>
+      <section class="inspector-section figma-inspector-group figma-subthemes">
+        <span class="inspector-heading">› Subthemes <i>ⓘ</i></span>
+        <div class="figma-subtheme-title"><span>OnDark</span><b>⌁</b></div>
+        ${colorInspectorField({ tokenId: selected.id, mode: 'ondark-light', label: 'Light', value: onDark })}
+        ${colorInspectorField({ tokenId: selected.id, mode: 'ondark-dark', label: 'Dark', value: onDark })}
+        <div class="figma-subtheme-title"><span>OnLight</span><b>⌁</b></div>
+        ${colorInspectorField({ tokenId: selected.id, mode: 'onlight-light', label: 'Light', value: onLight })}
+        ${colorInspectorField({ tokenId: selected.id, mode: 'onlight-dark', label: 'Dark', value: onLight })}
+        <div class="figma-subtheme-title"><span>Inverse</span><b>⌁</b></div>
+        ${colorInspectorField({ tokenId: selected.id, mode: 'inverse-light', label: 'Light', value: inverse })}
+        ${colorInspectorField({ tokenId: selected.id, mode: 'inverse-dark', label: 'Dark', value: draft })}
+      </section>
       ${tokenImpactSections(selected.id)}`;
   }
   if (selected.group === 'sizes') {
@@ -1993,7 +2289,6 @@ function tokenInspector(selected, draft, viewer) {
       <section class="inspector-section"><span class="inspector-heading">⌄ Preview</span><div class="font-preview" style="font-family:'${escapeHtml(family)}',Inter,sans-serif;font-size:${size}px">Съешь ещё этих мягких французских булок</div><p class="inspector-hint">${escapeHtml(selected.hint)}</p></section>
       ${tokenImpactSections(selected.id)}`;
 }
-
 function hexToRgba(hex) {
   let value = String(hex).trim().replace('#', '');
   if (/^[0-9a-f]{3}$/i.test(value)) value = value.split('').map((char) => char + char).join('');
@@ -2177,35 +2472,37 @@ function editor() {
   if (state.editorTab === 'palette') return paletteEditor();
   const viewer = state.role === 'viewer';
   const allTokens = state.tokens.filter((token) => token.group === state.editorTab);
-  const tokens = allTokens.filter((token) => token.name.toLowerCase().includes(state.tokenSearch.toLowerCase()) && (!state.issueFilter || (findChange('token', token.id) && findChange('token', token.id).severity !== 'Passed'))).sort((a,b)=>state.tokenSort==='az'?a.name.localeCompare(b.name):0);
+  const tokens = allTokens.filter((token) => token.name.toLowerCase().includes(state.tokenSearch.toLowerCase()) && (!state.issueFilter || (findChange('token', token.id) && findChange('token', token.id).severity !== 'Passed'))).sort((a, b) => state.tokenSort === 'az' ? a.name.localeCompare(b.name) : 0);
   const selected = allTokens.find((token) => token.id === state.selectedTokenId) || tokens[0] || allTokens[0];
   state.selectedTokenId = selected.id;
   const draft = tokenDraftValue(selected.id), change = findChange('token', selected.id);
-  const groupLabel = state.editorTab === 'colors' ? 'Text & Icon' : tokenGroupLabels[state.editorTab] || state.editorTab;
+  const groupLabel = state.editorTab === 'colors' ? 'Text & Icons' : tokenGroupLabels[state.editorTab] || state.editorTab;
   const groupIssues = allTokens.filter((token) => { const entry = findChange('token', token.id); return entry && entry.severity !== 'Passed'; }).length;
+  const inspectorTitle = state.editorTab === 'colors' ? colorTokenDisplayName(selected) : selected.name;
+  const tokenBrowserHeader = state.editorTab === 'colors'
+    ? `<div class="token-panel-header token-menu-header"><strong>Plumbus Design System</strong><div class="token-menu-controls"><button data-action="token-search-focus" aria-label="Search"><span>⌕</span></button><button data-action="toggle-issue-filter" class="${state.issueFilter ? 'is-active' : ''}" aria-label="Filters"><span>≛</span></button></div></div>`
+    : `<div class="token-panel-header"><strong>${tokenGroupLabels[state.editorTab] || 'Tokens'}</strong><input class="token-search" data-action="token-search" value="${escapeHtml(state.tokenSearch)}" placeholder="Search"></div>`;
+  const tokenFilters = state.editorTab === 'colors' ? '' : `<div class="token-filters"><button data-action="toggle-token-sort" class="${state.tokenSort === 'az' ? 'is-active' : ''}">A-Z</button><button data-action="toggle-issue-filter" class="${state.issueFilter ? 'is-active' : ''}">Issues ${issueCount()}</button></div>`;
+  const tokenTree = state.editorTab === 'colors'
+    ? linkedColorTokenTree(tokens, selected)
+    : `<div class="token-tree-group is-open"><span>⌄ ${groupLabel}${groupIssues ? ` <b class="tree-issue-badge">${groupIssues}</b>` : ''}</span>${tokens.map((token) => `<button class="token-row ${selected.id === token.id ? 'is-selected' : ''}" data-action="select-token" data-id="${token.id}"><i class="token-status ${tokenSeverityClass(token.id)}"></i><span>${escapeHtml(token.name.replace(/^[^.]+\./, ''))}</span></button>`).join('')}</div>`;
   return `<section class="editor-workbench playground-workbench">
     <aside class="token-browser">
-      <div class="token-panel-header"><strong>${tokenGroupLabels[state.editorTab] || 'Tokens'}</strong><input class="token-search" data-action="token-search" value="${escapeHtml(state.tokenSearch)}" placeholder="Поиск"></div>
-      <div class="token-filters"><button data-action="toggle-token-sort" class="${state.tokenSort==='az'?'is-active':''}">A–Z</button><button data-action="toggle-issue-filter" class="${state.issueFilter ? 'is-active' : ''}">Issues ${issueCount()}</button></div>
-      <div class="token-tree">
-        ${state.editorTab === 'colors' ? '<div class="token-tree-group"><span>› Surface</span></div>' : ''}
-        <div class="token-tree-group is-open"><span>⌄ ${groupLabel}${groupIssues ? ` <b class="tree-issue-badge">${groupIssues}</b>` : ''}</span>
-          ${tokens.map((token) => `<button class="token-row ${selected.id === token.id ? 'is-selected' : ''}" data-action="select-token" data-id="${token.id}"><i class="token-status ${tokenSeverityClass(token.id)}"></i><span>${escapeHtml(token.name.replace(/^[^.]+\./,''))}</span></button>`).join('')}
-        </div>
-        ${state.editorTab === 'colors' ? '<div class="token-tree-group"><span>› Outlines</span></div><div class="token-tree-group"><span>› BG</span></div><div class="token-tree-group"><span>› Overlay</span></div><div class="token-tree-group"><span>› Data</span></div>' : ''}
-      </div>
+      ${tokenBrowserHeader}
+      ${tokenFilters}
+      <div class="token-tree">${tokenTree}</div>
     </aside>
     <header class="editor-toolbar">
-      <div class="inspector-toolbar"><div class="selected-token-title"><i class="${tokenSeverityClass(selected.id)}"></i><strong>${escapeHtml(selected.name)}</strong></div><div class="history-actions"><button data-action="undo-change" title="Undo" aria-label="Undo" ${state.undoStack?.length && canEditTheme() ? '' : 'disabled'}>↶</button><button data-action="redo-change" title="Redo" aria-label="Redo" ${state.redoStack?.length && canEditTheme() ? '' : 'disabled'}>↷</button></div></div>
-      <div class="preview-toolbar"><div class="workspace-tabs"><button data-action="workspace-tab" data-mode="overview" class="${state.workspaceMode === 'overview' ? 'is-active' : ''}">Overview</button><button data-action="workspace-tab" data-mode="accessibility" class="${state.workspaceMode === 'accessibility' ? 'is-active' : ''}">Accessibility</button></div><span class="mode-chip" title="Превью показывает Light-режим. Dark-значения редактируются в пипетке токена (вкладка Dark) или каскадом из Palette.">Preview: ☼ Light</span><div class="publish-actions"><span>Статус системы: <b>${issueCount() ? `△ ${issueCount()} issue` : 'Нет issues'}</b></span>${resetSplitButton(selected, change)}<button data-route="publish" ${state.changes.length && canPublish() ? '' : 'disabled'}>Publish · ${state.changes.length}</button></div></div>
+      <div class="inspector-toolbar"><div class="selected-token-title"><i class="${tokenSeverityClass(selected.id)}"></i><strong>${escapeHtml(inspectorTitle)}</strong></div><div class="history-actions"><button data-action="undo-change" title="Undo" aria-label="Undo" ${state.undoStack?.length && canEditTheme() ? '' : 'disabled'}>↶</button><button data-action="redo-change" title="Redo" aria-label="Redo" ${state.redoStack?.length && canEditTheme() ? '' : 'disabled'}>↷</button></div></div>
+      <div class="preview-toolbar"><div class="workspace-tabs"><button data-action="workspace-tab" data-mode="overview" class="${state.workspaceMode === 'overview' ? 'is-active' : ''}">Overview</button><button data-action="workspace-tab" data-mode="accessibility" class="${state.workspaceMode === 'accessibility' ? 'is-active' : ''}">Accessibility</button></div><span class="mode-chip" title="Preview shows Light mode. Dark values are edited from the token picker or Palette cascade.">Preview: Light</span><div class="publish-actions"><span>System status: <b>${issueCount() ? `${issueCount()} issue` : 'No issues'}</b></span>${resetSplitButton(selected, change)}<button data-route="publish" ${state.changes.length && canPublish() ? '' : 'disabled'}>Publish · ${state.changes.length}</button></div></div>
     </header>
     <aside class="properties-panel">
       ${draftStatusBanner()}
-      ${viewer ? `<div class="viewer-banner">Read-only access ${state.accessRequested ? '· запрос отправлен' : '<button data-action="request-access">Request edit access</button>'}</div>` : ''}
+      ${viewer ? `<div class="viewer-banner">Read-only access ${state.accessRequested ? '· request sent' : '<button data-action="request-access">Request edit access</button>'}</div>` : ''}
       ${tokenInspector(selected, draft, viewer)}
     </aside>
     <main class="preview-canvas">
-      <div class="canvas-toolbar"><button>Typography⌄</button><div>☼　◐　◉　●　◆</div></div>
+      <div class="canvas-toolbar"><button>Typography</button><div>Light · Dark · Default</div></div>
       ${state.workspaceMode === 'accessibility' ? themePreview(viewer) : themeOverviewPreview()}
     </main>
     ${colorPickerView()}
@@ -2216,7 +2513,159 @@ function tokenDraftValue(id, mode = 'light') {
   const baseline = mode === 'dark' ? (token?.darkValue ?? token?.value ?? '') : (token?.value ?? '');
   return findChange('token', id, mode)?.to ?? baseline;
 }
+function colorTokenCanvas() {
+  const groups = [
+    ['Text & Icon', ['primary', 'on-primary', 'text-primary', 'text-secondary', 'text-tertiary', 'outline-focus', 'text-primary']],
+    ['Surface', ['surface-default', 'surface-hover', 'surface-active']],
+    ['Outline', ['outline-default', 'outline-focus', 'text-tertiary', 'surface-active']],
+    ['BG', ['bg-default', 'bg-elevated']],
+    ['Data', ['data-positive', 'data-warning', 'data-critical', 'primary', 'outline-focus', 'data-positive', 'data-warning', 'data-critical']],
+  ];
+  const tokenById = new Map(state.tokens.map((token) => [token.id, token]));
+  return `<div class="token-canvas">
+    <div class="token-swatch-board">
+      ${groups.map(([label, ids]) => `<section class="token-swatch-group">
+        <div class="token-swatch-head"><h3>${label}</h3><span>onDark</span><span>onLight</span><span>Inverse</span></div>
+        <div class="token-swatch-grid">
+          ${ids.map((id, index) => {
+            const token = tokenById.get(id);
+            if (!token) return '';
+            const value = index % 3 === 1 ? tokenDraftValue(id, 'dark') : tokenDraftValue(id, 'light');
+            const darkValue = tokenDraftValue(id, 'dark');
+            const selected = state.selectedTokenId === id ? 'is-selected' : '';
+            return `<button class="token-swatch-card ${selected}" data-action="select-token" data-id="${id}" title="${escapeHtml(token.name)} · ${escapeHtml(value)}">
+              <span class="token-swatch-fill" style="background:${escapeHtml(value)}"></span>
+              <span class="token-swatch-dark" style="background:${escapeHtml(darkValue)}"></span>
+            </button>`;
+          }).join('')}
+        </div>
+      </section>`).join('')}
+    </div>
+  </div>`;
+}
+function colorTokenTree(tokens, selected) {
+  const groups = [
+    ['Text & Icon', ['primary', 'on-primary', 'text-primary', 'text-secondary', 'text-tertiary']],
+    ['Surface', ['surface-default', 'surface-hover', 'surface-active']],
+    ['Outlines', ['outline-default', 'outline-focus']],
+    ['BG', ['bg-default', 'bg-elevated']],
+    ['Data', ['data-positive', 'data-warning', 'data-critical']],
+  ];
+  const visible = new Set(tokens.map((token) => token.id));
+  const tokenById = new Map(tokens.map((token) => [token.id, token]));
+  return groups.map(([label, ids]) => {
+    const rows = ids.filter((id) => visible.has(id)).map((id) => {
+      const token = tokenById.get(id);
+      return `<button class="token-row ${selected.id === token.id ? 'is-selected' : ''}" data-action="select-token" data-id="${token.id}"><i class="token-status ${tokenSeverityClass(token.id)}"></i><span>${escapeHtml(token.name.replace(/^color\./, ''))}</span></button>`;
+    }).join('');
+    if (!rows) return '';
+    const issueCount = ids.filter((id) => {
+      const entry = findChange('token', id);
+      return entry && entry.severity !== 'Passed';
+    }).length;
+    return `<div class="token-tree-group is-open"><span>⌄ ${label}${issueCount ? ` <b class="tree-issue-badge">${issueCount}</b>` : ''}</span>${rows}</div>`;
+  }).join('');
+}
+
+const linkedColorTokenGroups = [
+  ['Text & Icons', ['primary', 'on-primary', 'text-primary', 'text-secondary', 'text-tertiary', '__text-gradient', '__text-promo', 'data-warning']],
+  ['Surfaces', ['surface-default', 'surface-hover']],
+  ['Outlines', ['outline-default', 'outline-focus']],
+  ['BG', ['bg-default', 'bg-elevated']],
+  ['Overlays', []],
+  ['Data', ['data-positive', 'data-critical']],
+  ['Syntax', []],
+];
+const linkedColorTokenLabels = {
+  primary: 'textPrimary',
+  'on-primary': 'textSecondary',
+  'text-primary': 'textTertiary',
+  'text-secondary': 'textParagraph',
+  'text-tertiary': 'textAccent',
+  '__text-gradient': 'textGradient',
+  '__text-promo': 'textPromo',
+  'data-warning': 'textWarning',
+  'surface-default': 'surfacePrimary',
+  'surface-hover': 'surfaceSecondary',
+  'outline-default': 'outlinePrimary',
+  'outline-focus': 'outlineFocus',
+  'bg-default': 'bgPrimary',
+  'bg-elevated': 'bgSecondary',
+  'data-positive': 'dataPositive',
+  'data-critical': 'dataCritical',
+};
+const linkedColorContextLabels = [
+  ['default', 'Default'],
+  ['onDark', 'onDark'],
+  ['onLight', 'onLight'],
+  ['inverse', 'Inverse'],
+];
+const linkedColorContextValues = {
+  primary: { onDark: '#fbffae', onLight: '#000000', inverse: '#fbffae' },
+  'on-primary': { onDark: '#fbffae', onLight: '#c9c9c9', inverse: '#347cff' },
+  'text-primary': { onDark: '#000000', onLight: '#bcbcbc', inverse: '#5a8dec' },
+  'text-secondary': { onDark: '#fbffae', onLight: '#9d9d9d', inverse: '#fbffae' },
+  'text-tertiary': { onDark: '#fbffae', onLight: '#158f96', inverse: '#5a8dec' },
+  'surface-default': { onDark: '#fbffae', onLight: '#111111', inverse: '#fbffae' },
+  'surface-hover': { onDark: '#fbffae', onLight: '#d6d6d6', inverse: '#c9c9c9' },
+  'surface-active': { onDark: '#fbffae', onLight: '#9f9f9f', inverse: '#b5b5b5' },
+  'outline-default': { onDark: '#fbffae', onLight: '#111111', inverse: '#fbffae' },
+  'outline-focus': { onDark: '#fbffae', onLight: '#a7a7a7', inverse: '#008f24' },
+  'bg-default': { onDark: '#fbffae', onLight: '#f7f7f7', inverse: '#fbffae' },
+  'bg-elevated': { onDark: '#fbffae', onLight: '#c9c9c9', inverse: '#fbffae' },
+  'data-positive': { onDark: '#fbffae', onLight: '#d748d3', inverse: '#158f96' },
+  'data-warning': { onDark: '#fbffae', onLight: '#f0ae00', inverse: '#fbffae' },
+  'data-critical': { onDark: '#fbffae', onLight: '#5a8dec', inverse: '#5a8dec' },
+};
+function linkedColorContextValue(id, context) {
+  if (context === 'default') return tokenDraftValue(id, 'light');
+  return linkedColorContextValues[id]?.[context] || tokenDraftValue(id, 'light');
+}
+function linkedColorTokenCanvas() {
+  const tokenById = new Map(state.tokens.map((token) => [token.id, token]));
+  return `<div class="token-canvas">
+    <div class="token-swatch-board">
+      ${linkedColorTokenGroups.map(([label, ids]) => `<section class="token-swatch-group">
+        <div class="token-swatch-head token-swatch-head-default"><h3>${label}</h3></div>
+        <div class="token-default-grid">
+          ${ids.map((id) => {
+            const token = tokenById.get(id);
+            if (!token) return '';
+            const value = tokenDraftValue(id, 'light');
+            const selected = state.selectedTokenId === id ? 'is-selected' : '';
+            return `<button class="token-swatch-card ${selected}" data-action="select-token" data-id="${id}" title="${escapeHtml(token.name)} - Default - ${escapeHtml(value)}"><span class="token-swatch-fill" style="background:${escapeHtml(value)}"></span></button>`;
+          }).join('')}
+        </div>
+      </section>`).join('')}
+    </div>
+  </div>`;
+}
+
+function linkedColorTokenTree(tokens, selected) {
+  const visible = new Set(tokens.map((token) => token.id));
+  const tokenById = new Map(tokens.map((token) => [token.id, token]));
+  return linkedColorTokenGroups.map(([label, ids]) => {
+    const rows = ids.filter((id) => visible.has(id) || id.startsWith('__')).map((id) => {
+      if (id.startsWith('__')) {
+        const labelText = linkedColorTokenLabels[id];
+        const preview = id === '__text-gradient'
+          ? 'linear-gradient(135deg, #8a16bf 0%, #4197e2 50%, #c347fd 51%, #79befb 100%)'
+          : 'linear-gradient(180deg, rgba(30,34,40,.7) 0 50%, rgba(255,255,255,.7) 50% 100%)';
+        const promo = id === '__text-promo' ? ' is-muted' : '';
+        return `<div class="token-row token-row-ghost${promo}"><i class="token-status token-color-preview" style="background:${preview}"></i><span>${escapeHtml(labelText)}</span></div>`;
+      }
+      const token = tokenById.get(id);
+      const light = tokenDraftValue(token.id, 'light');
+      const dark = tokenDraftValue(token.id, 'dark');
+      const preview = dark && dark !== light ? `linear-gradient(180deg, ${escapeHtml(light)} 0 50%, ${escapeHtml(dark)} 50% 100%)` : escapeHtml(light);
+      const labelText = linkedColorTokenLabels[token.id] || token.name.replace(/^color\./, '');
+      return `<button class="token-row ${selected.id === token.id ? 'is-selected' : ''}" data-action="select-token" data-id="${token.id}"><i class="token-status token-color-preview ${tokenSeverityClass(token.id)}" style="background:${preview}"></i><span>${escapeHtml(labelText)}</span>${selected.id === token.id ? '<b class="token-row-eye">◌</b>' : ''}</button>`;
+    }).join('');
+    return `<div class="token-tree-group ${rows ? 'is-open' : 'is-collapsed'}"><span>${rows ? '⌄' : '›'} ${label}</span>${rows}</div>`;
+  }).join('');
+}
 function themeOverviewPreview() {
+  if (state.editorTab === 'colors') return linkedColorTokenCanvas();
   const primary = escapeHtml(tokenDraftValue('primary')), onPrimary = escapeHtml(tokenDraftValue('on-primary'));
   const rounding = Number(tokenDraftValue('rounding')) || 8;
   const fontFamily = escapeHtml(tokenDraftValue('font-family') || 'Inter');
@@ -3456,3 +3905,4 @@ function initSmoothScroll() {
 initSmoothScroll();
 
 render();
+
