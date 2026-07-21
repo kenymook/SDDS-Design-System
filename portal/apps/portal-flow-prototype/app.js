@@ -39,7 +39,7 @@ const initialState = {
   tokenSearch: '',
   issueFilter: false,
   workspaceMode: 'overview',
-  canvasComponent: 'button',
+  canvasComponent: 'palette',
   canvasComponentMenuOpen: false,
   componentMode: 'properties',
   componentSearch: '',
@@ -2482,12 +2482,13 @@ function editor() {
   const tokenTree = state.editorTab === 'colors'
     ? linkedColorTokenTree(tokens, selected)
     : `<div class="token-tree-group is-open"><span>⌄ ${groupLabel}${groupIssues ? ` <b class="tree-issue-badge">${groupIssues}</b>` : ''}</span>${tokens.map((token) => `<button class="token-row ${selected.id === token.id ? 'is-selected' : ''}" data-action="select-token" data-id="${token.id}"><i class="token-status ${tokenSeverityClass(token.id)}"></i><span>${escapeHtml(token.name.replace(/^[^.]+\./, ''))}</span></button>`).join('')}</div>`;
-  // Выпадашка «Palette ∨» из макета стала рабочей: выбор компонента для живого примера.
-  // Живёт в preview-toolbar (canvas-toolbar в этом виде скрыт стилями).
-  const canvasComponents = [['button', 'Button'], ['input', 'Input'], ['link', 'Link'], ['card', 'Card'], ['checkbox', 'Checkbox']];
-  const currentCanvasComp = (canvasComponents.find(([id]) => id === state.canvasComponent) || canvasComponents[0])[1];
+  // Селект вида канваса из макета (нода 729:6144, поповер 729:6970): «Palette» — борд
+  // свотчей по умолчанию; Button / Text Field / Typography — живой просмотр объекта
+  // на draft-значениях вместо борда. Живёт в preview-toolbar (canvas-toolbar скрыт стилями).
+  const canvasViews = [['palette', 'Palette'], ['button', 'Button'], ['input', 'Text Field'], ['typography', 'Typography']];
+  const currentCanvasView = (canvasViews.find(([id]) => id === state.canvasComponent) || canvasViews[0])[1];
   const canvasPicker = state.editorTab === 'colors'
-    ? `<div style="position:relative;margin-left:auto"><button data-action="toggle-canvas-component" aria-expanded="${state.canvasComponentMenuOpen}" title="Живой пример компонента на draft-значениях" style="display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:#d5dae2;font-size:13px;letter-spacing:1px;cursor:pointer;padding:4px 8px">${currentCanvasComp} ⌄</button>${state.canvasComponentMenuOpen ? `<div class="reset-dropdown" style="left:auto;right:0;display:block">${canvasComponents.map(([id, label]) => `<button data-action="select-canvas-component" data-id="${id}">${label}</button>`).join('')}</div>` : ''}</div>`
+    ? `<div style="position:relative;margin-left:auto"><button data-action="toggle-canvas-component" aria-expanded="${state.canvasComponentMenuOpen}" title="Что показывает канвас: палитра токенов или живой просмотр объекта" style="display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:#d5dae2;font-size:13px;letter-spacing:1px;cursor:pointer;padding:4px 8px">${currentCanvasView} ⌄</button>${state.canvasComponentMenuOpen ? `<div class="reset-dropdown" style="left:auto;right:0;display:block;min-width:150px">${canvasViews.map(([id, label]) => `<button data-action="select-canvas-component" data-id="${id}">${state.canvasComponent === id ? '✓ ' : '<span style="display:inline-block;width:14px"></span>'}${label}</button>`).join('')}<button disabled title="Остальные компоненты — в проработке" style="opacity:.55"><span style="display:inline-block;width:14px"></span>More</button></div>` : ''}</div>`
     : '';
   return `<section class="editor-workbench playground-workbench">
     <aside class="token-browser">
@@ -2506,8 +2507,9 @@ function editor() {
     </aside>
     <main class="preview-canvas">
       <div class="canvas-toolbar"><button>Typography</button><div>Light · Dark · Default</div></div>
-      ${state.workspaceMode === 'accessibility' ? themePreview(viewer) : themeOverviewPreview()}
-      ${state.editorTab === 'colors' && state.workspaceMode !== 'accessibility' ? canvasComponentExample() : ''}
+      ${state.workspaceMode === 'accessibility' ? themePreview(viewer)
+        : state.editorTab === 'colors' && state.canvasComponent !== 'palette' ? canvasComponentExample()
+        : themeOverviewPreview()}
     </main>
     ${colorPickerView()}
   </section>`;
@@ -2698,16 +2700,14 @@ function canvasComponentExample() {
   const inputRadius = Number(componentDraftValue('input')) || rounding;
   const bodies = {
     button: `<div><button class="lp-button">Основное действие</button><button class="lp-button lp-secondary">Вторичное</button></div>`,
-    input: `<label>Название<input class="lp-input" value="Пример поля" readonly></label>`,
-    link: `<p style="margin:0"><a href="#" style="color:${primary};text-decoration:underline;text-underline-offset:3px" onclick="return false">Открыть документацию</a></p>`,
-    card: `<div style="border:1px solid rgba(0,0,0,.14);border-radius:${rounding}px;padding:16px"><strong style="display:block;margin-bottom:6px">Карточка</strong><span style="opacity:.72">Связанный контент использует surface и outline темы.</span></div>`,
-    checkbox: `<label style="display:flex;gap:10px;align-items:center"><input type="checkbox" checked style="accent-color:${primary};width:18px;height:18px">Получать уведомления</label>`,
+    input: `<label>Название<input class="lp-input" value="Пример поля" readonly></label><p style="color:#59616b;font-size:13px;margin:10px 0 0">Радиус поля ${inputRadius}px · высота контрола ${buttonHeight}px</p>`,
+    typography: `<div style="display:grid;gap:10px"><span style="font-size:${Math.round(fontSize * 1.9)}px;font-weight:700;line-height:1.15">Заголовок экрана</span><span style="font-size:${fontSize}px;line-height:1.55">Основной текст набран шрифтом ${fontFamily}, ${fontSize}px. Он перекрашивается токенами textPrimary и масштабируется typography-токенами темы.</span><span style="font-size:${Math.round(fontSize * 0.8)}px;color:#59616b">Подпись · ${Math.round(fontSize * 0.8)}px</span></div>`,
   };
-  const labels = { button: 'Button', input: 'Input', link: 'Link', card: 'Card', checkbox: 'Checkbox' };
-  return `<div class="theme-overview-preview live-preview" style="--preview-primary:${primary};--preview-on-primary:${onPrimary};--preview-size:${buttonHeight}px;--preview-radius:${rounding}px;--preview-input-radius:${inputRadius}px;--preview-font:'${fontFamily}',Inter,sans-serif;--preview-font-size:${fontSize}px;position:sticky;bottom:14px;margin:16px 16px 16px auto;max-width:360px;min-height:0;height:auto;flex:none;padding:0;z-index:5">
-    <article style="margin:0">
-      <small>Live example · draft-значения</small>
-      <h2 style="font-size:19px;margin:6px 0 10px">${labels[state.canvasComponent] || 'Button'}</h2>
+  const labels = { button: 'Button', input: 'Text Field', typography: 'Typography' };
+  return `<div class="theme-overview-preview live-preview" style="--preview-primary:${primary};--preview-on-primary:${onPrimary};--preview-size:${buttonHeight}px;--preview-radius:${rounding}px;--preview-input-radius:${inputRadius}px;--preview-font:'${fontFamily}',Inter,sans-serif;--preview-font-size:${fontSize}px">
+    <article>
+      <small>Live preview · draft-значения</small>
+      <h2>${labels[state.canvasComponent] || 'Button'}</h2>
       ${bodies[state.canvasComponent] || bodies.button}
     </article>
   </div>`;
