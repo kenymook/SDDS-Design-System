@@ -42,6 +42,9 @@ const initialState = {
   // Context-подтемы: какие откреплены от наследования и их ручные значения
   contextUnlinked: {},
   contextOverrides: {},
+  // Ширины боковых панелей редактора (px), тянутся ручками в пределах 220–320
+  panelLeftWidth: 280,
+  panelRightWidth: 320,
   canvasComponent: 'palette',
   canvasComponentMenuOpen: false,
   componentMode: 'properties',
@@ -2528,7 +2531,9 @@ function editor() {
   const canvasPicker = ['colors', 'fonts', 'sizes'].includes(state.editorTab)
     ? `<div style="position:relative;margin-left:auto"><button data-action="toggle-canvas-component" aria-expanded="${state.canvasComponentMenuOpen}" title="Что показывает канвас: палитра токенов или живой просмотр объекта" style="display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:#d5dae2;font-size:13px;letter-spacing:1px;cursor:pointer;padding:4px 8px">${currentCanvasView} ⌄</button>${state.canvasComponentMenuOpen ? `<div class="reset-dropdown" style="left:auto;right:0;display:block;min-width:150px">${canvasViews.map(([id, label]) => `<button data-action="select-canvas-component" data-id="${id}">${state.canvasComponent === id ? '✓ ' : '<span style="display:inline-block;width:14px"></span>'}${label}</button>`).join('')}<button disabled title="Остальные компоненты — в проработке" style="opacity:.55"><span style="display:inline-block;width:14px"></span>More</button></div>` : ''}</div>`
     : '';
-  return `<section class="editor-workbench playground-workbench">
+  return `<section class="editor-workbench playground-workbench" style="--panel-left:${state.panelLeftWidth || 280}px;--panel-right:${state.panelRightWidth || 320}px">
+    <button class="panel-resizer panel-resizer-left" data-resize-panel="left" aria-label="Ширина панели токенов" title="Потяните, чтобы изменить ширину (220–320px)"></button>
+    <button class="panel-resizer panel-resizer-right" data-resize-panel="right" aria-label="Ширина панели свойств" title="Потяните, чтобы изменить ширину (220–320px)"></button>
     <aside class="token-browser">
       ${tokenBrowserHeader}
       ${tokenFilters}
@@ -3705,6 +3710,47 @@ app.addEventListener('change', (event) => {
   }
   addChange(input.dataset.action === 'edit-component' ? 'component' : 'token', input.dataset.id, input.value.trim(), input.dataset.mode || 'light');
   persist(); render();
+});
+
+// ---------- Ресайз боковых панелей редактора ----------
+// Во время перетаскивания правим CSS-переменную напрямую (без render на каждый кадр),
+// в state ширина уходит один раз — по отпусканию.
+const PANEL_MIN = 220, PANEL_MAX = 320;
+let panelDrag = null;
+app.addEventListener('pointerdown', (event) => {
+  const handle = event.target.closest('[data-resize-panel]');
+  if (!handle) return;
+  const workbench = handle.closest('.playground-workbench');
+  if (!workbench) return;
+  event.preventDefault();
+  const side = handle.dataset.resizePanel;
+  panelDrag = {
+    side, handle, workbench,
+    startX: event.clientX,
+    startWidth: side === 'left' ? (state.panelLeftWidth || 280) : (state.panelRightWidth || 320),
+  };
+  handle.classList.add('is-dragging');
+  document.body.classList.add('is-resizing-panel');
+  handle.setPointerCapture?.(event.pointerId);
+});
+addEventListener('pointermove', (event) => {
+  if (!panelDrag) return;
+  const delta = event.clientX - panelDrag.startX;
+  // левая панель растёт вправо, правая — влево
+  const raw = panelDrag.startWidth + (panelDrag.side === 'left' ? delta : -delta);
+  const width = Math.round(Math.max(PANEL_MIN, Math.min(PANEL_MAX, raw)));
+  panelDrag.workbench.style.setProperty(panelDrag.side === 'left' ? '--panel-left' : '--panel-right', `${width}px`);
+  panelDrag.current = width;
+});
+addEventListener('pointerup', () => {
+  if (!panelDrag) return;
+  const { side, handle, current } = panelDrag;
+  handle.classList.remove('is-dragging');
+  document.body.classList.remove('is-resizing-panel');
+  panelDrag = null;
+  if (current == null) return;
+  if (side === 'left') state.panelLeftWidth = current; else state.panelRightWidth = current;
+  persist();
 });
 
 let pickerDrag = null;
