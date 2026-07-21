@@ -2667,11 +2667,6 @@ const linkedColorContextValues = {
 // контексты. Ручная правка контекста открепляет его (unlink), клик по иконке связи
 // возвращает наследование и сбрасывает ручные значения.
 const colorContexts = [['ondark', 'OnDark'], ['onlight', 'OnLight'], ['inverse', 'Inverse']];
-function invertHex(value) {
-  const rgba = hexToRgba(value);
-  if (!rgba) return value;
-  return rgbaToHex({ r: 255 - rgba.r, g: 255 - rgba.g, b: 255 - rgba.b, a: rgba.a });
-}
 function contextInherits(tokenId, context) {
   return !state.contextUnlinked?.[`${tokenId}::${context}`];
 }
@@ -2681,7 +2676,8 @@ function contextInheritedValue(tokenId, context, mode) {
   const dark = tokenDraftValue(tokenId, 'dark');
   if (context === 'ondark') return dark;
   if (context === 'onlight') return light;
-  return invertHex(mode === 'dark' ? dark : light);
+  // Inverse — режимы меняются местами: Light берёт значение Dark, Dark берёт Light
+  return mode === 'dark' ? light : dark;
 }
 // Фактическое значение с учётом открепления
 function contextFieldValue(tokenId, context, mode) {
