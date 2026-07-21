@@ -39,6 +39,9 @@ const initialState = {
   tokenSearch: '',
   issueFilter: false,
   workspaceMode: 'overview',
+  // Context-подтемы: какие откреплены от наследования и их ручные значения
+  contextUnlinked: {},
+  contextOverrides: {},
   canvasComponent: 'palette',
   canvasComponentMenuOpen: false,
   componentMode: 'properties',
@@ -2260,9 +2263,6 @@ function tokenInspector(selected, draft, viewer) {
   const disabled = viewer ? 'disabled' : '';
   if (selected.group === 'colors') {
     const darkDraft = tokenDraftValue(selected.id, 'dark');
-    const onDark = linkedColorContextValues[selected.id]?.onDark || darkDraft;
-    const onLight = linkedColorContextValues[selected.id]?.onLight || draft;
-    const inverse = linkedColorContextValues[selected.id]?.inverse || darkDraft;
     return `
       <section class="inspector-section figma-inspector-copy"><p>${escapeHtml(colorTokenDescription(selected))}</p></section>
       <section class="inspector-section figma-inspector-group">
@@ -2271,16 +2271,16 @@ function tokenInspector(selected, draft, viewer) {
         ${colorInspectorField({ tokenId: selected.id, mode: 'dark', label: 'Dark', value: darkDraft, editable: true, disabled })}
       </section>
       <section class="inspector-section figma-inspector-group figma-subthemes">
-        <span class="inspector-heading">› Subthemes <i>ⓘ</i></span>
-        <div class="figma-subtheme-title"><span>OnDark</span><b>⌁</b></div>
-        ${colorInspectorField({ tokenId: selected.id, mode: 'ondark-light', label: 'Light', value: onDark })}
-        ${colorInspectorField({ tokenId: selected.id, mode: 'ondark-dark', label: 'Dark', value: onDark })}
-        <div class="figma-subtheme-title"><span>OnLight</span><b>⌁</b></div>
-        ${colorInspectorField({ tokenId: selected.id, mode: 'onlight-light', label: 'Light', value: onLight })}
-        ${colorInspectorField({ tokenId: selected.id, mode: 'onlight-dark', label: 'Dark', value: onLight })}
-        <div class="figma-subtheme-title"><span>Inverse</span><b>⌁</b></div>
-        ${colorInspectorField({ tokenId: selected.id, mode: 'inverse-light', label: 'Light', value: inverse })}
-        ${colorInspectorField({ tokenId: selected.id, mode: 'inverse-dark', label: 'Dark', value: draft })}
+        <span class="inspector-heading">› Context <i title="Context помогают настроить, как токен выглядит в отдельных контекстах, например на тёмной или светлой поверхности.&#10;&#10;Значения подтягиваются из Modes автоматически, но вы можете изменить их при необходимости.">ⓘ</i></span>
+        ${colorContexts.map(([context, label]) => {
+          const linked = contextInherits(selected.id, context);
+          const tip = linked
+            ? 'Контексты наследуют значения из Modes. Ручное изменение отключает связь. Нажмите на иконку связи, чтобы восстановить наследование и сбросить значения к дефолтным.'
+            : 'Связь отключена. Используются ручные значения. Нажмите на иконку связи, чтобы вернуть наследование из Modes и сбросить изменения.';
+          return `<div class="figma-subtheme-title"><span>${label}</span><b><button class="context-link-toggle ${linked ? 'is-linked' : 'is-unlinked'}" data-action="toggle-context-link" data-id="${selected.id}" data-context="${context}" title="${escapeHtml(tip)}" aria-label="${linked ? 'Связь с Modes включена' : 'Связь с Modes отключена'}" ${viewer ? 'disabled' : ''}>${linked ? '⛓' : '⛓̸'}</button></b></div>
+        ${colorInspectorField({ tokenId: selected.id, mode: `${context}-light`, label: 'Light', value: contextFieldValue(selected.id, context, 'light'), editable: true, disabled })}
+        ${colorInspectorField({ tokenId: selected.id, mode: `${context}-dark`, label: 'Dark', value: contextFieldValue(selected.id, context, 'dark'), editable: true, disabled })}`;
+        }).join('')}
       </section>
       ${tokenImpactSections(selected.id)}`;
   }
@@ -2661,9 +2661,41 @@ const linkedColorContextValues = {
   'data-warning': { onDark: '#fbffae', onLight: '#f0ae00', inverse: '#fbffae' },
   'data-critical': { onDark: '#fbffae', onLight: '#5a8dec', inverse: '#5a8dec' },
 };
+// ---------- Context (бывш. Subthemes): наследование значений из Default Themes ----------
+// Модель: OnDark берёт значения из Dark-режима, OnLight — из Light, Inverse — инверсию
+// значения соответствующего режима. Наследование живое: правка Default сразу меняет
+// контексты. Ручная правка контекста открепляет его (unlink), клик по иконке связи
+// возвращает наследование и сбрасывает ручные значения.
+const colorContexts = [['ondark', 'OnDark'], ['onlight', 'OnLight'], ['inverse', 'Inverse']];
+function invertHex(value) {
+  const rgba = hexToRgba(value);
+  if (!rgba) return value;
+  return rgbaToHex({ r: 255 - rgba.r, g: 255 - rgba.g, b: 255 - rgba.b, a: rgba.a });
+}
+function contextInherits(tokenId, context) {
+  return !state.contextUnlinked?.[`${tokenId}::${context}`];
+}
+// Унаследованное значение: чем контекст «должен» быть по правилам темы
+function contextInheritedValue(tokenId, context, mode) {
+  const light = tokenDraftValue(tokenId, 'light');
+  const dark = tokenDraftValue(tokenId, 'dark');
+  if (context === 'ondark') return dark;
+  if (context === 'onlight') return light;
+  return invertHex(mode === 'dark' ? dark : light);
+}
+// Фактическое значение с учётом открепления
+function contextFieldValue(tokenId, context, mode) {
+  if (!contextInherits(tokenId, context)) {
+    const manual = state.contextOverrides?.[`${tokenId}::${context}::${mode}`];
+    if (manual) return manual;
+  }
+  return contextInheritedValue(tokenId, context, mode);
+}
 function linkedColorContextValue(id, context) {
   if (context === 'default') return tokenDraftValue(id, 'light');
-  return linkedColorContextValues[id]?.[context] || tokenDraftValue(id, 'light');
+  const map = { onDark: 'ondark', onLight: 'onlight', inverse: 'inverse' };
+  const key = map[context] || context;
+  return contextFieldValue(id, key, key === 'ondark' ? 'dark' : 'light');
 }
 function linkedColorTokenCanvas() {
   const tokenById = new Map(state.tokens.map((token) => [token.id, token]));
@@ -3340,6 +3372,23 @@ app.addEventListener('click', async (event) => {
   if (target.dataset.action === 'toggle-issue-filter') state.issueFilter = !state.issueFilter;
   if (target.dataset.action === 'toggle-token-sort') state.tokenSort = state.tokenSort === 'az' ? 'source' : 'az';
   if (target.dataset.action === 'workspace-tab') state.workspaceMode = target.dataset.mode;
+  if (target.dataset.action === 'toggle-context-link') {
+    const key = `${target.dataset.id}::${target.dataset.context}`;
+    const unlinked = { ...(state.contextUnlinked || {}) };
+    if (unlinked[key]) {
+      // возврат наследования: снимаем открепление и стираем ручные значения
+      delete unlinked[key];
+      const overrides = { ...(state.contextOverrides || {}) };
+      delete overrides[`${key}::light`];
+      delete overrides[`${key}::dark`];
+      state.contextOverrides = overrides;
+      state.toastMessage = `${target.dataset.context}: наследование из Modes восстановлено.`;
+    } else {
+      unlinked[key] = true;
+      state.toastMessage = `${target.dataset.context}: связь отключена, значения теперь ручные.`;
+    }
+    state.contextUnlinked = unlinked;
+  }
   if (target.dataset.action === 'toggle-canvas-component') state.canvasComponentMenuOpen = !state.canvasComponentMenuOpen;
   if (target.dataset.action === 'select-canvas-component') { state.canvasComponent = target.dataset.id; state.canvasComponentMenuOpen = false; }
   if (target.dataset.action === 'component-tab') state.componentMode = target.dataset.mode;
@@ -3649,6 +3698,15 @@ app.addEventListener('change', (event) => {
   const input = event.target.closest('[data-action=edit-token], [data-action=edit-component]');
   if (!input) return;
   if (!canEditTheme()) { render(); return; }
+  // Правка контекстного поля (ondark/onlight/inverse) не идёт в токен темы: она
+  // открепляет контекст от Modes и запоминается как ручное значение.
+  const contextMode = /^(ondark|onlight|inverse)-(light|dark)$/.exec(input.dataset.mode || '');
+  if (contextMode) {
+    const [, context, mode] = contextMode;
+    state.contextUnlinked = { ...(state.contextUnlinked || {}), [`${input.dataset.id}::${context}`]: true };
+    state.contextOverrides = { ...(state.contextOverrides || {}), [`${input.dataset.id}::${context}::${mode}`]: input.value.trim() };
+    persist(); render(); return;
+  }
   addChange(input.dataset.action === 'edit-component' ? 'component' : 'token', input.dataset.id, input.value.trim(), input.dataset.mode || 'light');
   persist(); render();
 });
