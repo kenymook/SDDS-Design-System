@@ -39,6 +39,8 @@ const initialState = {
   tokenSearch: '',
   issueFilter: false,
   workspaceMode: 'overview',
+  canvasComponent: 'button',
+  canvasComponentMenuOpen: false,
   componentMode: 'properties',
   componentSearch: '',
   tokenSort: 'source',
@@ -364,11 +366,16 @@ function workspaceContextBar() {
   if (state.route === 'editor' && state.editorTab === 'colors') {
     const settingsIcon = 'https://www.figma.com/api/mcp/asset/3268525a-8eb3-4182-9ed7-cbf828bafee4';
     const caretIcon = 'https://www.figma.com/api/mcp/asset/287d01e6-80f2-4341-b281-ca24ab1670a3';
-    return `<div class="workspace-context-bar workspace-context-bar-editor" aria-label="Theme editor context">
+    return `<div class="workspace-context-bar workspace-context-bar-editor" aria-label="Theme editor context" style="position:relative">
       <nav class="workspace-breadcrumb" aria-label="Editor breadcrumbs">
         <button data-route="design-system">Design System</button><span>/</span>
         <strong>Color tokens editor</strong>
       </nav>
+      <div class="workspace-context-meta" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)">
+        <span class="context-version">v${escapeHtml(card.version)}</span>
+        <span class="status ${card.status === 'draft' ? '' : 'passed'}">${card.status === 'draft' ? 'Draft' : 'Published'}</span>
+        <span class="context-role">${roleLabel()}</span>
+      </div>
       <div class="workspace-context-meta">
         <button class="context-icon-button figma-topbar-icon" title="Settings" aria-label="Settings"><img src="${settingsIcon}" alt=""></button>
         <div class="figma-topbar-reset ${state.resetMenuOpen ? 'is-open' : ''}">
@@ -376,7 +383,7 @@ function workspaceContextBar() {
           <button class="figma-topbar-caret" data-action="toggle-reset-menu" aria-label="Reset options" aria-expanded="${state.resetMenuOpen}" ${state.changes.length && canEditTheme() ? '' : 'disabled'}><img src="${caretIcon}" alt=""></button>
           ${state.resetMenuOpen ? `<div class="reset-dropdown figma-topbar-dropdown"><button data-action="reset-section" ${sectionTokenChanges().length ? '' : 'disabled'}>Reset section ${sectionTokenChanges().length ? `· ${sectionTokenChanges().length}` : ''}</button><button data-action="reset-all" ${state.changes.length ? '' : 'disabled'}>Reset all · ${state.changes.length}</button></div>` : ''}
         </div>
-        <button class="figma-topbar-publish" data-route="publish" ${state.changes.length && canPublish() ? '' : 'disabled'}>Publish</button>
+        <button class="figma-topbar-publish" data-route="publish" ${state.changes.length && canPublish() ? '' : 'disabled'}>Publish · ${state.changes.length}</button>
       </div>
     </div>`;
   }
@@ -2475,6 +2482,13 @@ function editor() {
   const tokenTree = state.editorTab === 'colors'
     ? linkedColorTokenTree(tokens, selected)
     : `<div class="token-tree-group is-open"><span>⌄ ${groupLabel}${groupIssues ? ` <b class="tree-issue-badge">${groupIssues}</b>` : ''}</span>${tokens.map((token) => `<button class="token-row ${selected.id === token.id ? 'is-selected' : ''}" data-action="select-token" data-id="${token.id}"><i class="token-status ${tokenSeverityClass(token.id)}"></i><span>${escapeHtml(token.name.replace(/^[^.]+\./, ''))}</span></button>`).join('')}</div>`;
+  // Выпадашка «Palette ∨» из макета стала рабочей: выбор компонента для живого примера.
+  // Живёт в preview-toolbar (canvas-toolbar в этом виде скрыт стилями).
+  const canvasComponents = [['button', 'Button'], ['input', 'Input'], ['link', 'Link'], ['card', 'Card'], ['checkbox', 'Checkbox']];
+  const currentCanvasComp = (canvasComponents.find(([id]) => id === state.canvasComponent) || canvasComponents[0])[1];
+  const canvasPicker = state.editorTab === 'colors'
+    ? `<div style="position:relative;margin-left:auto"><button data-action="toggle-canvas-component" aria-expanded="${state.canvasComponentMenuOpen}" title="Живой пример компонента на draft-значениях" style="display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:#d5dae2;font-size:13px;letter-spacing:1px;cursor:pointer;padding:4px 8px">${currentCanvasComp} ⌄</button>${state.canvasComponentMenuOpen ? `<div class="reset-dropdown" style="left:auto;right:0;display:block">${canvasComponents.map(([id, label]) => `<button data-action="select-canvas-component" data-id="${id}">${label}</button>`).join('')}</div>` : ''}</div>`
+    : '';
   return `<section class="editor-workbench playground-workbench">
     <aside class="token-browser">
       ${tokenBrowserHeader}
@@ -2483,7 +2497,7 @@ function editor() {
     </aside>
     <header class="editor-toolbar">
       <div class="inspector-toolbar"><div class="selected-token-title"><i class="${tokenSeverityClass(selected.id)}"></i><strong>${escapeHtml(inspectorTitle)}</strong></div><div class="history-actions"><button data-action="undo-change" title="Undo" aria-label="Undo" ${state.undoStack?.length && canEditTheme() ? '' : 'disabled'}>↶</button><button data-action="redo-change" title="Redo" aria-label="Redo" ${state.redoStack?.length && canEditTheme() ? '' : 'disabled'}>↷</button></div></div>
-      <div class="preview-toolbar"><div class="workspace-tabs"><button data-action="workspace-tab" data-mode="overview" class="${state.workspaceMode === 'overview' ? 'is-active' : ''}">Overview</button><button data-action="workspace-tab" data-mode="accessibility" class="${state.workspaceMode === 'accessibility' ? 'is-active' : ''}">Accessibility</button></div><span class="mode-chip" title="Preview shows Light mode. Dark values are edited from the token picker or Palette cascade.">Preview: Light</span><div class="publish-actions"><span>System status: <b>${issueCount() ? `${issueCount()} issue` : 'No issues'}</b></span>${resetSplitButton(selected, change)}<button data-route="publish" ${state.changes.length && canPublish() ? '' : 'disabled'}>Publish · ${state.changes.length}</button></div></div>
+      <div class="preview-toolbar"><div class="workspace-tabs"><button data-action="workspace-tab" data-mode="overview" class="${state.workspaceMode === 'overview' ? 'is-active' : ''}">Overview</button><button data-action="workspace-tab" data-mode="accessibility" class="${state.workspaceMode === 'accessibility' ? 'is-active' : ''}">Accessibility</button></div>${canvasPicker}<span class="mode-chip" title="Preview shows Light mode. Dark values are edited from the token picker or Palette cascade.">Preview: Light</span><div class="publish-actions"><span>System status: <b>${issueCount() ? `${issueCount()} issue` : 'No issues'}</b></span>${resetSplitButton(selected, change)}<button data-route="publish" ${state.changes.length && canPublish() ? '' : 'disabled'}>Publish · ${state.changes.length}</button></div></div>
     </header>
     <aside class="properties-panel">
       ${draftStatusBanner()}
@@ -2493,6 +2507,7 @@ function editor() {
     <main class="preview-canvas">
       <div class="canvas-toolbar"><button>Typography</button><div>Light · Dark · Default</div></div>
       ${state.workspaceMode === 'accessibility' ? themePreview(viewer) : themeOverviewPreview()}
+      ${state.editorTab === 'colors' && state.workspaceMode !== 'accessibility' ? canvasComponentExample() : ''}
     </main>
     ${colorPickerView()}
   </section>`;
@@ -2669,6 +2684,31 @@ function themeOverviewPreview() {
       <div><button class="lp-button">Основное действие</button><button class="lp-button lp-secondary">Вторичное</button></div>
       <label>Название<input class="lp-input" value="Пример поля" readonly></label>
       <div class="live-preview-tokens"><span>Button ${buttonHeight}px</span><span>Radius ${rounding}px</span><span>Input radius ${inputRadius}px</span><span>${fontFamily} ${fontSize}px</span></div>
+    </article>
+  </div>`;
+}
+// Живой пример выбранного компонента на текущих draft-значениях —
+// возвращает в новый canvas Colors проверенный юзертестами принцип «это не макет»
+function canvasComponentExample() {
+  const primary = escapeHtml(tokenDraftValue('primary')), onPrimary = escapeHtml(tokenDraftValue('on-primary'));
+  const rounding = Number(tokenDraftValue('rounding')) || 8;
+  const fontFamily = escapeHtml(tokenDraftValue('font-family') || 'Inter');
+  const fontSize = Number(tokenDraftValue('font-size')) || 16;
+  const buttonHeight = Number(componentDraftValue('button')) || Number(tokenDraftValue('control-size')) || 40;
+  const inputRadius = Number(componentDraftValue('input')) || rounding;
+  const bodies = {
+    button: `<div><button class="lp-button">Основное действие</button><button class="lp-button lp-secondary">Вторичное</button></div>`,
+    input: `<label>Название<input class="lp-input" value="Пример поля" readonly></label>`,
+    link: `<p style="margin:0"><a href="#" style="color:${primary};text-decoration:underline;text-underline-offset:3px" onclick="return false">Открыть документацию</a></p>`,
+    card: `<div style="border:1px solid rgba(0,0,0,.14);border-radius:${rounding}px;padding:16px"><strong style="display:block;margin-bottom:6px">Карточка</strong><span style="opacity:.72">Связанный контент использует surface и outline темы.</span></div>`,
+    checkbox: `<label style="display:flex;gap:10px;align-items:center"><input type="checkbox" checked style="accent-color:${primary};width:18px;height:18px">Получать уведомления</label>`,
+  };
+  const labels = { button: 'Button', input: 'Input', link: 'Link', card: 'Card', checkbox: 'Checkbox' };
+  return `<div class="theme-overview-preview live-preview" style="--preview-primary:${primary};--preview-on-primary:${onPrimary};--preview-size:${buttonHeight}px;--preview-radius:${rounding}px;--preview-input-radius:${inputRadius}px;--preview-font:'${fontFamily}',Inter,sans-serif;--preview-font-size:${fontSize}px;position:sticky;bottom:14px;margin:16px 16px 16px auto;max-width:360px;min-height:0;height:auto;flex:none;padding:0;z-index:5">
+    <article style="margin:0">
+      <small>Live example · draft-значения</small>
+      <h2 style="font-size:19px;margin:6px 0 10px">${labels[state.canvasComponent] || 'Button'}</h2>
+      ${bodies[state.canvasComponent] || bodies.button}
     </article>
   </div>`;
 }
@@ -3213,6 +3253,8 @@ app.addEventListener('click', async (event) => {
   if (target.dataset.action === 'toggle-issue-filter') state.issueFilter = !state.issueFilter;
   if (target.dataset.action === 'toggle-token-sort') state.tokenSort = state.tokenSort === 'az' ? 'source' : 'az';
   if (target.dataset.action === 'workspace-tab') state.workspaceMode = target.dataset.mode;
+  if (target.dataset.action === 'toggle-canvas-component') state.canvasComponentMenuOpen = !state.canvasComponentMenuOpen;
+  if (target.dataset.action === 'select-canvas-component') { state.canvasComponent = target.dataset.id; state.canvasComponentMenuOpen = false; }
   if (target.dataset.action === 'component-tab') state.componentMode = target.dataset.mode;
   if (target.dataset.action === 'undo-change') undoChange();
   if (target.dataset.action === 'redo-change') redoChange();
