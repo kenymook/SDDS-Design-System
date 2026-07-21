@@ -363,13 +363,18 @@ function workspaceContextBar() {
   if (!project || !system || !theme) return '';
   const card = themeCardState(theme);
   const issues = issueCount();
-  if (state.route === 'editor' && state.editorTab === 'colors') {
+  // Единый топбар на всех вкладках редактора (Palette/Colors/Typography/Corner radius/
+  // Components): одна шапка, контекст по центру, Publish всегда в одном месте.
+  // Health/Versions/Changes — отдельные разделы, у них своя шапка с полными крошками.
+  if (state.route === 'editor' || state.route === 'components') {
+    const tabTitles = { palette: 'Palette', colors: 'Color tokens editor', fonts: 'Typography', sizes: 'Corner radius' };
+    const editorTitle = state.route === 'components' ? 'Components' : (tabTitles[state.editorTab] || 'Editor');
     const settingsIcon = 'https://www.figma.com/api/mcp/asset/3268525a-8eb3-4182-9ed7-cbf828bafee4';
     const caretIcon = 'https://www.figma.com/api/mcp/asset/287d01e6-80f2-4341-b281-ca24ab1670a3';
     return `<div class="workspace-context-bar workspace-context-bar-editor" aria-label="Theme editor context" style="position:relative">
       <nav class="workspace-breadcrumb" aria-label="Editor breadcrumbs">
         <button data-route="design-system">Design System</button><span>/</span>
-        <strong>Color tokens editor</strong>
+        <strong>${editorTitle}</strong>
       </nav>
       <div class="workspace-context-meta" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)">
         <span class="context-version">v${escapeHtml(card.version)}</span>
