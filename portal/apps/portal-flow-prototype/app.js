@@ -2205,6 +2205,19 @@ function colorTokenDescription(token) {
   return descriptions[token.id] || token.hint || 'Значение токена используется в связанных состояниях темы и наследуется компонентами дизайн-системы.';
 }
 
+// Инспектор шрифтов и размеров — тот же строчный вид, что у цветовых токенов
+// (лейбл слева, значение в рамке справа), чтобы паттерн правки не менялся по вкладкам.
+function unitInspectorField({ tokenId, label, value, suffix = '', disabled = '', readonly = false }) {
+  const attrs = readonly ? 'readonly' : `data-action="edit-token" data-id="${tokenId}"`;
+  return `<div class="figma-inspector-field">
+    <span class="figma-inspector-field-label">${label}</span>
+    <div class="figma-value-control">
+      <div class="figma-value-main"><input ${attrs} value="${escapeHtml(value)}" ${readonly ? '' : disabled}></div>
+      ${suffix ? `<div class="figma-value-alpha"><span>${suffix}</span></div>` : ''}
+    </div>
+  </div>`;
+}
+
 function colorValueLabel(value, fallback = '') {
   const normalized = String(value || '').trim().toLowerCase();
   if (normalized === '#000000' || normalized === '#000') return 'black100';
@@ -2276,15 +2289,27 @@ function tokenInspector(selected, draft, viewer) {
     const numeric = Number(draft);
     const inRange = rule ? numeric >= rule.min && numeric <= rule.max : true;
     return `
-      <section class="inspector-section"><span class="inspector-heading">Value</span><label>${rule ? rule.unit : 'px'}<div class="value-control"><input data-action="edit-token" data-id="${selected.id}" value="${escapeHtml(draft)}" ${disabled}></div></label>${baseValueLine(selected, draft)}</section>
-      <section class="inspector-section"><span class="inspector-heading">⌄ Constraints</span>${rule ? `<div class="property-line ${inRange ? '' : 'error'}"><span>Range</span><strong>${rule.min}–${rule.max} ${rule.unit}</strong><small>${inRange ? 'в пределах' : 'вне диапазона'}</small></div>` : ''}<p class="inspector-hint">${escapeHtml(selected.hint)}</p></section>
+      <section class="inspector-section figma-inspector-copy"><p>${escapeHtml(colorTokenDescription(selected))}</p></section>
+      <section class="inspector-section figma-inspector-group">
+        <span class="inspector-heading">Value</span>
+        ${unitInspectorField({ tokenId: selected.id, label: 'Value', value: draft, suffix: rule ? rule.unit : 'px', disabled })}
+        ${rule ? unitInspectorField({ tokenId: selected.id, label: 'Range', value: `${rule.min}–${rule.max}`, suffix: rule.unit, readonly: true }) : ''}
+      </section>
+      ${rule && !inRange ? `<section class="inspector-section"><div class="property-line error"><span>Range</span><strong>${rule.min}–${rule.max} ${rule.unit}</strong><small>вне диапазона</small></div></section>` : ''}
       ${tokenImpactSections(selected.id)}`;
   }
   const family = tokenDraftValue('font-family') || 'Inter';
   const size = Number(tokenDraftValue('font-size')) || 16;
   return `
-      <section class="inspector-section"><span class="inspector-heading">Value</span><label>${selected.id === 'font-size' ? 'px' : 'family'}<div class="value-control"><input data-action="edit-token" data-id="${selected.id}" value="${escapeHtml(draft)}" ${disabled}></div></label>${baseValueLine(selected, draft)}</section>
-      <section class="inspector-section"><span class="inspector-heading">⌄ Preview</span><div class="font-preview" style="font-family:'${escapeHtml(family)}',Inter,sans-serif;font-size:${size}px">Съешь ещё этих мягких французских булок</div><p class="inspector-hint">${escapeHtml(selected.hint)}</p></section>
+      <section class="inspector-section figma-inspector-copy"><p>${escapeHtml(colorTokenDescription(selected))}</p></section>
+      <section class="inspector-section figma-inspector-group">
+        <span class="inspector-heading">Value</span>
+        ${unitInspectorField({ tokenId: selected.id, label: selected.id === 'font-size' ? 'Size' : 'Family', value: draft, suffix: selected.id === 'font-size' ? 'px' : '', disabled })}
+      </section>
+      <section class="inspector-section figma-inspector-group">
+        <span class="inspector-heading">Preview</span>
+        <div class="font-preview" style="font-family:'${escapeHtml(family)}',Inter,sans-serif;font-size:${size}px">Съешь ещё этих мягких французских булок</div>
+      </section>
       ${tokenImpactSections(selected.id)}`;
 }
 function hexToRgba(hex) {
@@ -2480,19 +2505,27 @@ function editor() {
   const groupLabel = state.editorTab === 'colors' ? 'Text & Icons' : tokenGroupLabels[state.editorTab] || state.editorTab;
   const groupIssues = allTokens.filter((token) => { const entry = findChange('token', token.id); return entry && entry.severity !== 'Passed'; }).length;
   const inspectorTitle = state.editorTab === 'colors' ? colorTokenDisplayName(selected) : selected.name;
-  const tokenBrowserHeader = state.editorTab === 'colors'
-    ? `<div class="token-panel-header token-menu-header"><strong>Plumbus Design System</strong><div class="token-menu-controls"><button data-action="token-search-focus" aria-label="Search"><span>⌕</span></button><button data-action="toggle-issue-filter" class="${state.issueFilter ? 'is-active' : ''}" aria-label="Filters"><span>≛</span></button></div></div>`
-    : `<div class="token-panel-header"><strong>${tokenGroupLabels[state.editorTab] || 'Tokens'}</strong><input class="token-search" data-action="token-search" value="${escapeHtml(state.tokenSearch)}" placeholder="Search"></div>`;
-  const tokenFilters = state.editorTab === 'colors' ? '' : `<div class="token-filters"><button data-action="toggle-token-sort" class="${state.tokenSort === 'az' ? 'is-active' : ''}">A-Z</button><button data-action="toggle-issue-filter" class="${state.issueFilter ? 'is-active' : ''}">Issues ${issueCount()}</button></div>`;
+  // Шапка панели токенов одна на всех вкладках: имя реальной Design System (был
+  // плейсхолдер «Plumbus») + компактные иконки поиска и фильтра вместо большого поля.
+  const system = selectedSystem();
+  const tokenBrowserHeader = `<div class="token-panel-header token-menu-header"><strong>${escapeHtml(system?.name || 'Design System')}</strong><div class="token-menu-controls"><button data-action="token-search-focus" aria-label="Search"><span>⌕</span></button><button data-action="toggle-issue-filter" class="${state.issueFilter ? 'is-active' : ''}" aria-label="Filters"><span>≛</span></button></div></div>`;
+  const tokenFilters = '';
+  // Дерево: у цветов — чипы-превью цвета, у шрифтов и размеров — чипы текущего
+  // значения, чтобы список читался одинаково и значение было видно без клика.
   const tokenTree = state.editorTab === 'colors'
     ? linkedColorTokenTree(tokens, selected)
-    : `<div class="token-tree-group is-open"><span>⌄ ${groupLabel}${groupIssues ? ` <b class="tree-issue-badge">${groupIssues}</b>` : ''}</span>${tokens.map((token) => `<button class="token-row ${selected.id === token.id ? 'is-selected' : ''}" data-action="select-token" data-id="${token.id}"><i class="token-status ${tokenSeverityClass(token.id)}"></i><span>${escapeHtml(token.name.replace(/^[^.]+\./, ''))}</span></button>`).join('')}</div>`;
+    : `<div class="token-tree-group is-open"><span>⌄ ${groupLabel}${groupIssues ? ` <b class="tree-issue-badge">${groupIssues}</b>` : ''}</span>${tokens.map((token) => {
+        const value = tokenDraftValue(token.id);
+        const unit = token.group === 'sizes' ? 'px' : '';
+        return `<button class="token-row ${selected.id === token.id ? 'is-selected' : ''}" data-action="select-token" data-id="${token.id}"><i class="token-status ${tokenSeverityClass(token.id)}"></i><span>${escapeHtml(token.name.replace(/^[^.]+\./, ''))}</span><b class="token-row-value">${escapeHtml(String(value))}${unit}</b></button>`;
+      }).join('')}</div>`;
   // Селект вида канваса из макета (нода 729:6144, поповер 729:6970): «Palette» — борд
   // свотчей по умолчанию; Button / Text Field / Typography — живой просмотр объекта
   // на draft-значениях вместо борда. Живёт в preview-toolbar (canvas-toolbar скрыт стилями).
-  const canvasViews = [['palette', 'Palette'], ['button', 'Button'], ['input', 'Text Field'], ['typography', 'Typography']];
+  const boardLabels = { colors: 'Palette', fonts: 'Type scale', sizes: 'Radius scale' };
+  const canvasViews = [['palette', boardLabels[state.editorTab] || 'Palette'], ['button', 'Button'], ['input', 'Text Field'], ['typography', 'Typography']];
   const currentCanvasView = (canvasViews.find(([id]) => id === state.canvasComponent) || canvasViews[0])[1];
-  const canvasPicker = state.editorTab === 'colors'
+  const canvasPicker = ['colors', 'fonts', 'sizes'].includes(state.editorTab)
     ? `<div style="position:relative;margin-left:auto"><button data-action="toggle-canvas-component" aria-expanded="${state.canvasComponentMenuOpen}" title="Что показывает канвас: палитра токенов или живой просмотр объекта" style="display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:#d5dae2;font-size:13px;letter-spacing:1px;cursor:pointer;padding:4px 8px">${currentCanvasView} ⌄</button>${state.canvasComponentMenuOpen ? `<div class="reset-dropdown" style="left:auto;right:0;display:block;min-width:150px">${canvasViews.map(([id, label]) => `<button data-action="select-canvas-component" data-id="${id}">${state.canvasComponent === id ? '✓ ' : '<span style="display:inline-block;width:14px"></span>'}${label}</button>`).join('')}<button disabled title="Остальные компоненты — в проработке" style="opacity:.55"><span style="display:inline-block;width:14px"></span>More</button></div>` : ''}</div>`
     : '';
   return `<section class="editor-workbench playground-workbench">
@@ -2513,7 +2546,7 @@ function editor() {
     <main class="preview-canvas">
       <div class="canvas-toolbar"><button>Typography</button><div>Light · Dark · Default</div></div>
       ${state.workspaceMode === 'accessibility' ? themePreview(viewer)
-        : state.editorTab === 'colors' && state.canvasComponent !== 'palette' ? canvasComponentExample()
+        : ['colors', 'fonts', 'sizes'].includes(state.editorTab) && state.canvasComponent !== 'palette' ? canvasComponentExample()
         : themeOverviewPreview()}
     </main>
     ${colorPickerView()}
@@ -2675,8 +2708,57 @@ function linkedColorTokenTree(tokens, selected) {
     return `<div class="token-tree-group ${rows ? 'is-open' : 'is-collapsed'}"><span>${rows ? '⌄' : '›'} ${label}</span>${rows}</div>`;
   }).join('');
 }
+// Борд-обзор шкалы шрифтов: вкладка Typography показывает саму шкалу (как Colors —
+// палитру), а живой пример объекта живёт в селекте вида канваса. Раньше здесь висела
+// та же карточка «Интерфейс продукта», что дублировало вид Typography из селекта.
+function typographyScaleCanvas() {
+  const family = escapeHtml(tokenDraftValue('font-family') || 'Inter');
+  const base = Number(tokenDraftValue('font-size')) || 16;
+  const steps = [
+    ['Display', Math.round(base * 2.5), 700],
+    ['Heading', Math.round(base * 1.75), 700],
+    ['Title', Math.round(base * 1.25), 500],
+    ['Body', base, 400],
+    ['Caption', Math.round(base * 0.8), 400],
+  ];
+  return `<div class="token-canvas">
+    <div class="token-swatch-board">
+      <section class="token-swatch-group">
+        <div class="token-swatch-head" style="display:block;height:auto;margin-bottom:10px"><h3>${family} · шкала от body ${base}px</h3></div>
+        <div style="display:grid;gap:2px">
+          ${steps.map(([label, size, weight]) => `<div style="display:flex;align-items:baseline;gap:16px;padding:10px 12px;border-radius:8px;background:#1b222b">
+            <span style="width:76px;flex:none;color:#8f99a8;font-size:11px">${label}</span>
+            <span style="flex:1;min-width:0;font-family:'${family}',Inter,sans-serif;font-size:${size}px;font-weight:${weight};line-height:1.25;color:#e8edf4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Съешь ещё этих булок</span>
+            <span style="flex:none;color:#8f99a8;font-size:11px">${size}px · ${weight}</span>
+          </div>`).join('')}
+        </div>
+      </section>
+    </div>
+  </div>`;
+}
+// Борд-обзор скруглений: показывает текущий radius на разных размерах поверхностей.
+function radiusScaleCanvas() {
+  const radius = Number(tokenDraftValue('rounding')) || 8;
+  const control = Number(tokenDraftValue('control-size')) || 40;
+  const tiles = [['Control', control * 2.2, control], ['Card', 200, 120], ['Modal', 280, 150]];
+  return `<div class="token-canvas">
+    <div class="token-swatch-board">
+      <section class="token-swatch-group">
+        <div class="token-swatch-head" style="display:block;height:auto;margin-bottom:10px"><h3>Скругление ${radius}px · высота контрола ${control}px</h3></div>
+        <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end">
+          ${tiles.map(([label, w, h]) => `<div style="display:grid;gap:8px;justify-items:center">
+            <div style="width:${w}px;height:${h}px;border-radius:${radius}px;background:#2b3542;border:1px solid #3d4756"></div>
+            <span style="color:#8f99a8;font-size:11px">${label} · ${radius}px</span>
+          </div>`).join('')}
+        </div>
+      </section>
+    </div>
+  </div>`;
+}
 function themeOverviewPreview() {
   if (state.editorTab === 'colors') return linkedColorTokenCanvas();
+  if (state.editorTab === 'fonts') return typographyScaleCanvas();
+  if (state.editorTab === 'sizes') return radiusScaleCanvas();
   const primary = escapeHtml(tokenDraftValue('primary')), onPrimary = escapeHtml(tokenDraftValue('on-primary'));
   const rounding = Number(tokenDraftValue('rounding')) || 8;
   const fontFamily = escapeHtml(tokenDraftValue('font-family') || 'Inter');
