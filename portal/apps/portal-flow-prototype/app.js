@@ -2373,7 +2373,18 @@ function openColorPickerFor(tokenId, mode = 'light') {
 function commitColorPicker() {
   const picker = state.colorPicker;
   if (!picker || !canEditTheme()) return;
-  const next = rgbaToHex({ ...hsvToRgb(picker), a: picker.a });
+  let next = rgbaToHex({ ...hsvToRgb(picker), a: picker.a });
+  // Пипетка открыта со ступени палитры: выбранный цвет — это цвет ступени N.
+  // Пересчитываем базу 500: тон и насыщенность — от выбранного цвета, светлота —
+  // от него же со сдвигом на разницу канонических светлот ступени и базы.
+  // От текущей базы не зависим: у чёрной/белой базы тон и насыщенность вырождены.
+  if (picker.paletteStep && picker.paletteStep !== 500) {
+    const CANON_BASE_L = 48;
+    const stepL = (PALETTE_STEPS.find(([s]) => s === picker.paletteStep) || [null, CANON_BASE_L])[1] ?? CANON_BASE_L;
+    const pickedHsl = rgbToHsl(hexToRgba(next) || { r: 128, g: 128, b: 128, a: 1 });
+    const baseL = Math.max(8, Math.min(92, pickedHsl.l + (CANON_BASE_L - stepL)));
+    next = rgbaToHex({ ...hslToRgb({ h: pickedHsl.h, s: Math.max(0, Math.min(100, pickedHsl.s - 4)), l: baseL }), a: 1 });
+  }
   addChange('token', picker.tokenId, next, picker.mode || 'light');
   // Каскад палитры: правка базы (brand-500 = color.primary · Light) с вкладки Palette
   // автоматически пересчитывает Dark-значение — обе правки попадают в Changes.
@@ -2458,24 +2469,25 @@ function paletteEditor() {
   const dark = tokenDraftValue('primary', 'dark');
   const usage = tokenUsage.primary;
   const instances = usage.components.reduce((sum, [, count]) => sum + count, 0);
+  // Кликабельна каждая ступень: база (500) правится напрямую, остальные открывают
+  // пипетку своей ступени — палитра перестраивается вокруг выбранного цвета
   const brandSteps = PALETTE_STEPS.map(([step, l]) => {
     const hex = step === 500 ? base : paletteShade(base, l);
-    return step === 500
-      ? `<button class="pal-step pal-base" data-action="open-color-picker" data-id="primary" data-mode="light" ${viewer ? 'disabled' : ''} title="База палитры — клик открывает пипетку; Dark пересчитается автоматически"><span class="pal-sw" style="background:${hex}"></span><b>${step} · база</b><small>${hex.toUpperCase()}</small></button>`
-      : `<div class="pal-step" title="Расчётная ступень — следует за базой"><span class="pal-sw" style="background:${hex}"></span><b>${step}</b><small>${hex.toUpperCase()}</small></div>`;
+    if (step !== 500) return `<button class="pal-step" data-action="open-palette-step" data-step="${step}" data-hex="${hex}" ${viewer ? 'disabled' : ''} title="Ступень ${step} — клик открывает пипетку; палитра перестроится вокруг выбранного цвета"><span class="pal-sw" style="background:${hex}"></span><b>${step}</b><small>${hex.toUpperCase()}</small></button>`;
+    return `<button class="pal-step pal-base" data-action="open-color-picker" data-id="primary" data-mode="light" ${viewer ? 'disabled' : ''} title="База палитры — клик открывает пипетку; Dark пересчитается автоматически"><span class="pal-sw" style="background:${hex}"></span><b>${step} · база</b><small>${hex.toUpperCase()}</small></button>`;
   }).join('');
   const neutralSteps = PALETTE_STEPS.map(([step, l]) => {
-    const hex = rgbaToHex({ ...hslToRgb({ h: 215, s: 10, l: l ?? 48 }), a: 1 });
-    return `<div class="pal-step"><span class="pal-sw" style="background:${hex}"></span><b>${step}</b><small>${hex.toUpperCase()}</small></div>`;
+    const hex = rgbaToHex({ ...hslToRgb({ h: 215, s: 10, l: l ?? 48 }), a: 1 }).toUpperCase();
+    return `<button class="pal-step pal-copy" data-action="cp-copy" data-value="${hex}" title="Фиксировано системой — клик копирует HEX"><span class="pal-sw" style="background:${hex}"></span><b>${step}</b><small>${hex}</small></button>`;
   }).join('');
-  const statusRow = [['Success', '#24b23e'], ['Warning', '#f5a623'], ['Error', '#ef4444']].map(([label, hex]) => `<div class="pal-step"><span class="pal-sw" style="background:${hex}"></span><b>${label}</b><small>${hex}</small></div>`).join('');
+  const statusRow = [['Success', '#24b23e'], ['Warning', '#f5a623'], ['Error', '#ef4444']].map(([label, hex]) => `<button class="pal-step pal-copy" data-action="cp-copy" data-value="${hex.toUpperCase()}" title="Фиксировано системой — клик копирует HEX"><span class="pal-sw" style="background:${hex}"></span><b>${label}</b><small>${hex}</small></button>`).join('');
   return `<section class="workspace-page palette-page">
     ${draftStatusBanner()}
     <div class="workspace-page-header"><div><h1>Palette</h1><p>Палитра бренда: правите базу — семантические токены пересчитываются каскадом</p></div><span class="mode-chip" title="Каскад обновляет и Light, и Dark значения. Точечная правка режимов — во вкладке Colors.">☼ Light + ● Dark — каскадом</span></div>
     ${viewer ? `<div class="viewer-banner">Read-only access ${state.accessRequested ? '· запрос отправлен' : '<button data-action="request-access">Request edit access</button>'}</div>` : ''}
     <section class="form-card">
       <h2>Brand</h2>
-      <p class="pal-note">Кликните базовую ступень <b>500</b>, чтобы сменить бренд-цвет — остальные ступени и Dark-режим пересчитаются.</p>
+      <p class="pal-note">Кликните любую ступень, чтобы выбрать цвет — палитра перестроится вокруг него, база <b>500</b> и Dark-режим пересчитаются.</p>
       <div class="pal-ramp">${brandSteps}</div>
     </section>
     <section class="form-card pal-links">
@@ -3141,7 +3153,7 @@ app.addEventListener('click', async (event) => {
     pendingFocusSelector = '';
   }
   if (target.type === 'submit' && target.form) return;
-  if (['fix-contrast', 'save-token', 'revert', 'reset-token', 'apply-suggestion', 'restore-version', 'open-color-picker', 'cp-preset', 'toggle-reset-menu', 'reset-section', 'reset-all', 'rebase-draft'].includes(target.dataset.action) && !canEditTheme()) return;
+  if (['fix-contrast', 'save-token', 'revert', 'reset-token', 'apply-suggestion', 'restore-version', 'open-color-picker', 'open-palette-step', 'cp-preset', 'toggle-reset-menu', 'reset-section', 'reset-all', 'rebase-draft'].includes(target.dataset.action) && !canEditTheme()) return;
   if (target.dataset.action === 'toggle-reset-menu') {
     state.resetMenuOpen = !state.resetMenuOpen;
     state.accountMenuOpen = false;
@@ -3342,6 +3354,13 @@ app.addEventListener('click', async (event) => {
       if (token?.group === 'colors') openColorPickerFor(token.id);
       else state.colorPicker = null;
     }
+  }
+  if (target.dataset.action === 'open-palette-step') {
+    // Пипетка для расчётной ступени: пикер открывается её цветом, а paletteStep
+    // говорит commitColorPicker, что базу надо пересчитать от этой ступени
+    const rgba = hexToRgba(target.dataset.hex) || { r: 128, g: 128, b: 128, a: 1 };
+    const hsv = rgbToHsv(rgba);
+    state.colorPicker = { tokenId: 'primary', mode: 'light', h: hsv.h, s: hsv.s, v: hsv.v, a: 1, tab: 'custom', format: 'hex', paletteStep: Number(target.dataset.step) };
   }
   if (target.dataset.action === 'open-color-picker') {
     const mode = target.dataset.mode || 'light';
