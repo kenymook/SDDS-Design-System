@@ -2970,8 +2970,14 @@ function publishView() {
   return `<section class="workspace-page"><div class="workspace-page-header"><div><h1>Publish Version</h1><p>Прямая публикация · review и approve не требуются</p></div></div>${state.publicationError?`<div class="notice error-notice">${escapeHtml(state.publicationError)}</div>`:''}${canPublish()?'':'<div class="viewer-banner">Publish недоступен для Viewer. Запросите доступ Editor.</div>'}<div class="summary-grid"><article><span>Theme</span><strong>${escapeHtml(selectedTheme()?.name||'')}</strong></article><article><span>Changes</span><strong>${state.changes.length}</strong></article><article><span>Issues</span><strong>${issueCount()}</strong></article></div><form id="publish-form" class="form-card"><label>Version<input name="version" value="${nextVersion()}" required pattern="\\d+\\.\\d+\\.\\d+"></label><label>Changelog<textarea name="changelog" required>Theme configuration updated.</textarea></label>${hasIssues?`<label class="checkbox"><input type="checkbox" name="confirmIssues" required> Я понимаю риски и публикую с ${issueCount()} validation issues</label><p class="risk-note">Issues не блокируют публикацию: они сохранятся в Version snapshot и будут видны разработчикам при получении конфигурации через CLI.</p>`:''}<details class="prototype-debug"><summary>Отладка прототипа</summary><label class="checkbox prototype-control"><input type="checkbox" name="simulateFailure"> Симулировать сбой сохранения конфигурации — для демонстрации сценария ошибки публикации</label></details><div class="publication-snapshot"><strong>Validation snapshot</strong>${state.changes.map((c)=>`<div class="snapshot-line"><span class="status ${c.severity.toLowerCase()}">${c.severity}</span><span class="snapshot-body">${escapeHtml(c.label)}: <span class="diff-pair">${diffPair(c)}</span></span>${c.message?`<small>${escapeHtml(c.message)}</small>`:''}${c.suggestion?`<small class="snapshot-hint">Рекомендация: ${escapeHtml(c.suggestion.label)}</small>`:''}</div>`).join('')}</div><div class="form-actions"><button type="button" class="secondary" data-route="changes">Отмена</button><button type="submit" ${canPublish()?'':'disabled'}>Publish Version</button></div></form></section>`;
 }
 function nextVersion() {
-  const latest = state.versions.filter(v=>v.status==='Published').map(v=>v.version).sort((a,b)=>compareVersions(b,a))[0] || '1.0.0';
-  const parts = latest.split('.').map(Number); parts[1] += 1; parts[2] = 0; return parts.join('.');
+  // Semver свой у каждой темы: следующая версия считается от текущей версии ЭТОЙ темы
+  // (та же, что в топбаре), а не от максимума по всем Published-версиям системы.
+  // Иначе новая тема v0.1.0 предлагала 1.1.0 — находка сквозного прогона стори (22.07.2026).
+  const theme = selectedTheme();
+  const current = theme ? themeCardState(theme).version : '1.0.0';
+  const parts = String(current).split('.').map(Number);
+  parts[1] += 1; parts[2] = 0;
+  return parts.join('.');
 }
 function compareVersions(a, b) {
   const left = String(a).split('.').map(Number), right = String(b).split('.').map(Number);
