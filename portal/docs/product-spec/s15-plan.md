@@ -9,7 +9,7 @@
 
 ## Приоритеты
 
-- **P0 — DS Builder:** UI direction · key screens · Builder shell · Project/DS/Theme · Tenant Model UI v1 · RBAC UI MVP · access states · подготовка первых dev slices.
+- **P0 — DS Builder:** UI direction · key screens · Builder shell · Project/DS/Theme · Project & Design System Management UI v1 · RBAC UI MVP · access states · gradient support · подготовка первых dev slices.
 - **P1 — SDDS Portal MVP:** минимальная entry page · CTA «Открыть Builder» · базовая навигация · auth / no access · **онбординг и документация MVP (Ася)** — отрисовка публичных разделов по спекам.
 - **P2 — не делаем:** полноценный портал · онбординг/документация сверх MVP (полный каталог ~80 компонентов, прогресс онбординга вне раздела) · все edge cases Builder · продвинутая ролевая админка · полный polished handoff · Modal/Drawer.
 
@@ -28,11 +28,11 @@
 |---|---|---|
 | UI direction Builder | Кадры нарезки — референс структуры и поведения, **не визуала**; открытые вопросы визуала — в [журнале решений](decisions-log.md) | Новая работа: зафиксировать визуальный стандарт |
 | Builder shell + навигация | Схема shell в спеках (рейл, контекст-бар, тултипы — проверены юзертестом) | Отрисовать в финальном визуале |
-| Key screens MVP | Приоритеты P0 в [scope Builder](../deliverables/02-ds-builder-mvp-scope.md#5-приоритеты-p0p1p2-и-рамка-q3): стартовый, обзоры, редактор (+Palette), Changes, Publish, итог | Отрисовка по спекам; порядок — по P0 |
+| Key screens MVP | Приоритеты P0 в [scope Builder](../deliverables/02-ds-builder-mvp-scope.md#5-приоритеты-p0p1p2-и-рамка-q3): стартовый, обзоры, редактор (+Palette и gradients), Changes, Publish, итог | Отрисовка по спекам; порядок — по P0 |
 | UI-паттерны списков/карточек/пустых | [Паттерны](../design-spec/patterns.md) + кадры S1–S5 (пустые состояния) с находками (у Versions нет заглушки — нужен empty-state) | Перевести в UI-кит макетов |
 | Что в handoff S16 / что в Q4 | Рамка Q3/Q4 в scope | Уточнить по факту отрисовки |
 
-⚠️ Из юзертестов в UI direction обязательно перенести: тултипы рейла, «Что произошло» после Publish, visual diff, Palette-вкладку — это уже проверенные решения, их нельзя потерять при перерисовке.
+⚠️ Из юзертестов и S14-реализации в UI direction обязательно перенести: тултипы рейла, «Что произошло» после Publish, visual diff, Palette-вкладку и gradient support — это уже проверенные решения, их нельзя потерять при перерисовке.
 
 ### [S15] RBAC UI MVP Rules & Access States — Руслан · P0
 
@@ -66,11 +66,11 @@
 
 ⚠️ Из юзертестов сохранить обязательно: Storybook-паттерн документации и честную подпись «показаны 10 из ~80» — это проверенные решения раунда 1.
 
-### [S15] Tenant Model UI v1 — Лиза · P0
+### [S15] Project & Design System Management UI v1 — Лиза · P0
 
 | Критерий | Что уже есть | Что делать |
 |---|---|---|
-| UI списка проектов, создание/обзор/настройки Project, DS, Theme | [Тенантная модель](../deliverables/05-tenant-and-project-model.md) + спеки всех 8 экранов + кадры нарезки (9–18) | Отрисовка v1 по спекам |
+| UI списка проектов, создание/обзор/настройки Project, DS, Theme | [Модель проектов и дизайн-систем](../deliverables/05-project-and-design-system-model.md) + спеки всех 8 экранов + кадры нарезки (9–18) | Отрисовка v1 по спекам |
 | Переходы между сущностями | Проверены юзертестом (3/3 прошли путь) | — |
 | Empty states | Кадры S1–S2 + находка про редирект новичка в create-project | Решить и отрисовать |
 | Спорные сценарии | Открытые вопросы в спеках + журнале | Собрать заметки к review |
@@ -85,12 +85,13 @@
 2. **Builder UI Sync** (Руслан, Лиза, PM/dev) — shell, сущности, порядок handoff, RBAC states MVP, блокеры. *Готовая повестка: незакрытые решения (CLI, props компонентов, вход) — они держат часть handoff.*
 3. **Design 2.0 Review** — отдельный трек.
 4. **Support Check** (Руслан, Ася).
-5. **S15 Review** (+PM/dev) — direction, key screens, Tenant UI v1, RBAC MVP, entry page, онбординг/документация MVP, шаблон v1, Draft v1 ×6, список handoff S16, риски.
+5. **S15 Review** (+PM/dev) — direction, key screens, Project/DS Management UI v1, RBAC MVP, gradients, entry page, онбординг/документация MVP, шаблон v1, Draft v1 ×6, список handoff S16, риски.
 
 ## Definition of Done (Builder/Portal-часть)
 
 - есть первые реальные UI-макеты Builder и зафиксирован UI direction;
-- Tenant Model — в UI v1; RBAC — на уровне MVP-контракта;
+- Project & Design System Management — в UI v1; RBAC — на уровне MVP-контракта;
+- gradient support перенесён в UI-макеты редактора темы;
 - Portal ограничен MVP: entry page + онбординг и документация отрисованы по спекам;
 - понятно, что идёт в handoff S16 и что переносится в future/Q4.
 
@@ -101,9 +102,10 @@
 | Portal разрастётся | Только entry page MVP | IA и scope зафиксированы; расширения уже помечены «не берём» |
 | Builder расползётся на все экраны | Key screens + UI-система, не edge cases | Edge cases уже сняты на нарезке — их не надо «открывать», только отложить |
 | RBAC заблокирует дизайн | RBAC UI MVP, сложное — в future | Паттерны реализованы и проверены — контракт пишется с натуры |
-| Tenant Model уйдёт в архитектуру | Фиксируем путь Project → DS → Theme | Путь проверен юзертестом, спорное — списком в журнале |
+| Project/DS Management уйдёт в архитектуру | Фиксируем пользовательский путь Project → DS → Theme | Путь проверен юзертестом, спорное — списком в журнале |
+| Градиенты потеряются при отрисовке | Включаем gradient support в key screens редактора | Функционал зафиксирован отдельным deliverable и уже есть в прототипе/Builder |
 | Support съест capacity | Отдельная задача, фиксация объёма | Метрика заведена в экономике |
 
 ## Связанные документы
 
-[План S14](s14-plan.md) · [Scope Builder](../deliverables/02-ds-builder-mvp-scope.md) · [RBAC](../deliverables/03-rbac-ui-rules.md) · [Scope портала](../deliverables/04-sdds-portal-mvp-scope.md) · [Тенантная модель](../deliverables/05-tenant-and-project-model.md) · [Инвентарь экранов](../design-spec/screen-inventory.md) · [Журнал решений](decisions-log.md) · [Отчёт по интервью](../research/2026-07-07-interviews-round1.md) · [Лестница качества](quality-ladder.md) · [Нарезка экранов в Figma](https://www.figma.com/design/3qtcAteqALdFuRL6EvR7qr/DS-BUILDER-%7C-PLAYGROUND?node-id=591-4822)
+[План S14](s14-plan.md) · [Scope Builder](../deliverables/02-ds-builder-mvp-scope.md) · [RBAC](../deliverables/03-rbac-ui-rules.md) · [Scope портала](../deliverables/04-sdds-portal-mvp-scope.md) · [Модель проектов и дизайн-систем](../deliverables/05-project-and-design-system-model.md) · [Gradient Support](../deliverables/06-builder-gradient-support.md) · [Инвентарь экранов](../design-spec/screen-inventory.md) · [Журнал решений](decisions-log.md) · [Отчёт по интервью](../research/2026-07-07-interviews-round1.md) · [Лестница качества](quality-ladder.md) · [Нарезка экранов в Figma](https://www.figma.com/design/3qtcAteqALdFuRL6EvR7qr/DS-BUILDER-%7C-PLAYGROUND?node-id=591-4822)

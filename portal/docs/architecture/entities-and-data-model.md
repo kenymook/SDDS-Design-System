@@ -10,7 +10,7 @@ User
               └── Design System
                     ├── Component
                     └── Theme
-                          ├── Token / Typography / Rounding
+                          ├── Token / Gradient / Typography / Rounding
                           ├── Change
                           ├── Publication
                           ├── Version
@@ -23,7 +23,7 @@ Developer CLI
 
 ## Project Membership
 
-Связь `User ↔ Project`, содержащая роль и состояние доступа пользователя в проекте.
+Связь `User ↔ Project`, содержащая роль и состояние доступа пользователя в проекте. Design System и Theme наследуют доступы Project и не имеют собственных members.
 
 ## Notification
 
@@ -40,6 +40,8 @@ Developer CLI
 | currentVersion | Последняя опубликованная версия |
 | status | active / archived |
 
+Design System находится внутри Project и не хранит собственные роли доступа.
+
 ## Theme
 
 | Поле | Описание |
@@ -49,7 +51,7 @@ Developer CLI
 | status | draft / published / archived |
 | currentVersionId | Последняя опубликованная версия |
 | modes / subThemes | Modes и подтемы |
-| tokens / typography / rounding | Значения темы |
+| tokens / gradients / typography / rounding | Значения темы |
 | ownerId | Ответственный дизайнер |
 
 ## Component
@@ -68,7 +70,7 @@ Developer CLI
 | linkedTokens | Используемые токены |
 | documentationLink | Ссылка на документацию |
 
-## Token / Typography / Rounding
+## Token / Gradient / Typography / Rounding
 
 Каждая редактируемая сущность хранит текущее и inherited-значение, usage, validation issues, автора и дату изменения.
 
@@ -76,7 +78,7 @@ Developer CLI
 
 | Поле | Описание |
 |---|---|
-| entityType / entityId | token / typography / rounding / component / theme |
+| entityType / entityId | token / gradient / typography / rounding / component / theme |
 | oldValue / newValue | Было / стало |
 | authorId / createdAt | Автор и время |
 | status | draft / reverted / published |

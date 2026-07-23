@@ -1,6 +1,6 @@
-# Спринт-материалы (дизайн-лид)
+# Спринт-материалы S13–S14 (дизайн-лид)
 
-Материалы по четырём спринт-задачам, подготовленные на основе прототипа [SDDS Portal](https://portal-flow-prototype.vercel.app). Каждый документ привязан к экранам прототипа и содержит открытые вопросы для смежных команд.
+Материалы по спринт-задачам, подготовленные на основе прототипа [SDDS Portal](https://portal-flow-prototype.vercel.app). Каждый документ привязан к экранам прототипа и содержит открытые вопросы для смежных команд.
 
 | # | Задача спринта | Документ | Тип |
 |---|---|---|---|
@@ -8,7 +8,8 @@
 | 2 | Зафиксировать DS Builder MVP Scope | [02-ds-builder-mvp-scope.md](02-ds-builder-mvp-scope.md) | Scope (locked) |
 | 3 | Описать RBAC UI правила | [03-rbac-ui-rules.md](03-rbac-ui-rules.md) | UI-правила |
 | 4 | Зафиксировать SDDS Portal MVP | [04-sdds-portal-mvp-scope.md](04-sdds-portal-mvp-scope.md) | Scope (locked) |
-| 5 | Базовая тенантная модель (задача дизайнера) | [05-tenant-and-project-model.md](05-tenant-and-project-model.md) | Модель + навигация |
+| 5 | Модель проектов и дизайн-систем | [05-project-and-design-system-model.md](05-project-and-design-system-model.md) | Модель + навигация |
+| 6 | Поддержка градиентов в Builder | [06-builder-gradient-support.md](06-builder-gradient-support.md) | Новый функционал |
 
 ## Как пользоваться на защите
 

@@ -2,11 +2,11 @@
 
 ## Текущее состояние
 
-Реализовано редактирование color tokens, typography и rounding; компоненты добавлены частично. Текущий уровень — `Basic Editing`.
+Реализовано редактирование color tokens, gradients, typography и rounding; компоненты добавлены частично. Текущий уровень — `Basic Editing` с расширением визуальных значений.
 
 ## Этап 1. Stabilize existing editors
 
-Единый layout, inspector, inherited/overridden state, old/new diff, preview, validation, revert и Draft Changes для color/typography/rounding.
+Единый layout, inspector, inherited/overridden state, old/new diff, preview, validation, revert и Draft Changes для color/gradients/typography/rounding.
 
 **Exit criteria:** все существующие редакторы используют одну модель Change и одинаковые состояния UI.
 
@@ -15,6 +15,8 @@
 Project, Project Membership, создание Design System и Theme, а также роли Owner/Editor/Viewer.
 
 **Почему раньше публикации:** доступ, изоляция данных и контекст Version/Configuration зависят от этой модели.
+
+**Решение продукта:** управление участниками и ролями происходит только на уровне Project; Design System и Theme наследуют доступы проекта.
 
 ## Этап 3. Component editing
 
@@ -44,7 +46,7 @@ Compare versions, configuration history и rollback как новая публи
 
 1. Builder Home и context selector.
 2. Project / Design System / Theme Overview.
-3. Existing token editors и Inspector.
+3. Existing token editors, Gradient support и Inspector.
 4. Components Editor.
 5. Changes и validation states.
 6. Publish.

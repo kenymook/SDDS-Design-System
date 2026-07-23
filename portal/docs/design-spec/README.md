@@ -7,7 +7,7 @@
 ## Как этим пользоваться
 
 1. Прототип — источник поведения. Тестовые учётки Builder: `anna` (Owner), `ivan` (Editor), `maria` (Viewer), пароль у всех `demo`.
-2. Продуктовые решения — границы MVP, роли, авторизация, тенант — лежат в [разделе решений](../deliverables/README.md). Здесь мы на них ссылаемся, а не повторяем.
+2. Продуктовые решения — границы MVP, роли, авторизация, модель проектов, градиенты — лежат в [разделе решений](../deliverables/README.md). Здесь мы на них ссылаемся, а не повторяем.
 3. Каждый экран описан по [единому шаблону](_screen-spec-template.md): зачем он, из каких зон состоит, **все состояния**, отличия по ролям, входы и выходы, тексты, что именно отрисовать.
 4. Финальные макеты собираются в Figma. Эта документация — их задание и заодно чек-лист, чтобы ничего не забыть.
 
@@ -64,7 +64,8 @@
 | Информационная архитектура и навигация | [architecture/information-architecture.md](../architecture/information-architecture.md) |
 | Роли и права | [deliverables/03](../deliverables/03-rbac-ui-rules.md) |
 | Авторизация | [deliverables/01](../deliverables/01-builder-auth-spec.md) |
-| Тенант и путь до работы | [deliverables/05](../deliverables/05-tenant-and-project-model.md) |
+| Модель проектов и путь до работы | [deliverables/05](../deliverables/05-project-and-design-system-model.md) |
+| Поддержка градиентов | [deliverables/06](../deliverables/06-builder-gradient-support.md) |
 | Границы MVP | [deliverables/02](../deliverables/02-ds-builder-mvp-scope.md), [deliverables/04](../deliverables/04-sdds-portal-mvp-scope.md) |
 
 ## Насколько заполнено

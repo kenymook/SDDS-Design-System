@@ -39,13 +39,14 @@
 | 2026-07-01 | Основной пользователь MVP — Designer | Accepted | Product / UX |
 | 2026-07-01 | Developer применяет опубликованную Version через CLI | Accepted | Publication / Handoff |
 | 2026-07-01 | Иерархия: User → Project → Design System → Theme | Accepted | IA / Data Model |
-| 2026-07-01 | Project является пользовательской границей данных и доступа; термин Tenant не используется | Accepted | IA / Access |
+| 2026-07-01 | Project является пользовательской границей данных и доступа | Accepted | IA / Access |
 | 2026-07-01 | Публичные разделы Portal доступны без авторизации; вход требуется только для DS Builder | Accepted | Portal / Auth |
 | 2026-07-01 | Создатель Project становится Owner и приглашает пользователей как Editor или Viewer | Accepted | Access / Administration |
 | 2026-07-01 | Роль не выбирается при входе, а загружается из Project Membership | Accepted | Auth / RBAC |
 | 2026-07-01 | Авторизация DS Builder выполняется по email или логину и паролю | Accepted | Auth |
 | 2026-07-01 | После входа пользователь попадает в Personal Space с My Projects и Shared With Me | Accepted | Builder Home / Membership |
 | 2026-07-01 | Project Settings и приглашение пользователей существуют только в контексте конкретного Project | Accepted | Project / Administration |
+| 2026-07-01 | Design System и Theme наследуют доступы Project и не имеют собственных участников | Accepted | Access / Administration |
 | 2026-07-01 | Пользователей Editor/Viewer можно пригласить уже на шаге создания Project | Accepted | Project Creation / Access |
 | 2026-07-01 | Design System создаётся Owner внутри конкретного Project | Accepted | Design System Creation |
 | 2026-07-01 | Theme создаётся Owner или Editor внутри конкретной Design System | Accepted | Theme Creation |
@@ -64,6 +65,7 @@
 | 2026-07-03 | Viewer видит только опубликованные значения, а не чужие черновики | Accepted | Permissions UX |
 | 2026-07-03 | Validation issues сопровождаются fix suggestions, применяемыми в один клик | Accepted | Validation / UX |
 | 2026-07-03 | Цвет токена выбирается через color picker: Custom (SV/hue/alpha, Hex/RGB/HSL) и Library (пресеты палитр) | Accepted | Editor UX |
+| 2026-07-22 | Градиенты редактируются через gradient picker и сохраняются как часть Theme | Accepted | Editor UX |
 | 2026-07-03 | Version details включают diff с предыдущей опубликованной Version | Accepted | Versions |
 | 2026-07-03 | Rollback выполняется через «Восстановить как draft» с подтверждением; история Versions не переписывается | Accepted | Versions / Publication |
 | 2026-07-03 | Успешная публикация уведомляет участников Project (in-app + email) | Accepted | Notifications / Publication |

@@ -52,9 +52,11 @@
 
 - Основной пользователь — Designer; Developer применяет опубликованную Version через CLI.
 - Иерархия: User → Project → Design System → Theme.
+- Project — граница данных и доступа; Design System и Theme наследуют роли Project.
 - Designer публикует изменения самостоятельно, без Review и Approve.
 - Validation issues не блокируют Publish; Builder сохраняет Version и Published Configuration для CLI.
 - Components являются редактируемыми сущностями с ограничениями.
+- Builder поддерживает редактирование визуальных значений: цвет, градиенты, типографика и скругления.
 - Черновики изолированы по пользователю; tokens, Versions и Published Configuration общие для Project.
 - Version details включают diff с предыдущей Version; rollback — через «Восстановить как draft».
 - Публикация уведомляет участников Project; канал уведомлений единый с доступами.

@@ -26,13 +26,15 @@ Review и approve не входят в MVP. Дизайнер может само
 
 Любое действие выполняется в контексте `Project / Design System / Theme`.
 
+Project является границей данных и доступа; Design System и Theme наследуют роли проекта.
+
 ### Safe but non-blocking
 
 Изменения видимы, обратимы и проверяемы. Ошибки validation не блокируют публикацию, но остаются видимыми и сохраняются в истории. Ошибка сохранения Publication/Version блокирует Publish; ошибки генерации файлов обрабатывает CLI.
 
 ### Token-first
 
-Кастомизация выполняется через управляемые токены и разрешённые настройки компонентов.
+Кастомизация выполняется через управляемые токены, градиенты и разрешённые настройки компонентов.
 
 ### Design-code parity
 
@@ -48,7 +50,7 @@ Review и approve не входят в MVP. Дизайнер может само
 | Project model | Project → Design System → Theme |
 | Access basics | Owner / Editor / Viewer |
 | Theme Overview | Статус, версия, changes и health |
-| Token editing | Color, typography и rounding |
+| Token editing | Color, gradients, typography и rounding |
 | Component editing | Редактируемые компоненты с системными ограничениями |
 | Preview | Проверка темы и компонентов |
 | Changes | Old/new, affected entities и revert |
@@ -72,7 +74,7 @@ Review и approve не входят в MVP. Дизайнер может само
 Дизайнер может:
 
 1. выбрать проект, дизайн-систему и тему;
-2. отредактировать токены и разрешённые свойства компонентов;
+2. отредактировать токены, градиенты и разрешённые свойства компонентов;
 3. увидеть diff, preview и влияние изменений;
 4. увидеть validation issues без блокировки работы;
 5. опубликовать изменения без review;

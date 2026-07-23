@@ -55,7 +55,7 @@ Component coverage, themes, current version, changes, health и CLI entry point.
 
 ## Create Theme
 
-Экран доступен Owner и Editor внутри конкретной Design System. Содержит название и стартовую палитру SDDS Base / Contrast / Custom. При выборе Custom в форме раскрываются готовые пресеты и ручной ввод HEX-значений; режимы Light и Dark создаются автоматически; после создания открывается Theme Editor.
+Экран доступен Owner и Editor внутри конкретной Design System. Содержит название и стартовую палитру Base / Malachite / B2B / Custom. При выборе Custom в форме раскрываются готовые пресеты и ручной ввод HEX-значений; режимы Light и Dark создаются автоматически; после создания открывается Theme Editor.
 
 ## Theme Overview
 
@@ -69,6 +69,7 @@ Category navigation, search/filter, token table, value editor, mode switcher, in
 
 - severity-индикаторы у токенов в дереве (изменён / warning / error) и badge с числом issues на группе;
 - color picker у свотча значения (Custom: SV/hue/alpha, форматы Hex/RGB/HSL, копирование; Library: пресеты палитр);
+- gradient picker для градиентных значений: тип, preview, stop-значения, цвет, прозрачность, позиция;
 - live preview реальных компонентов на draft-значениях;
 - режим Accessibility с WCAG-расчётом контраста и «Fix it» при провале AA;
 - Base value с меткой inherited/overridden;

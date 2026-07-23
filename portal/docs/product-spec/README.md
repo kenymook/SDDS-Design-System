@@ -30,7 +30,8 @@ SDDS Portal & Builder — Documentation
 │     ├── DS Builder MVP Scope
 │     ├── RBAC UI правила
 │     ├── SDDS Portal MVP Scope
-│     └── Тенантная модель
+│     ├── Модель проектов и дизайн-систем
+│     └── Поддержка градиентов в Builder
 └── 3. Design Spec  (как выглядит — экраны/состояния) → ../design-spec/
       ├── Каталог состояний
       ├── Паттерны, Контент/глоссарий

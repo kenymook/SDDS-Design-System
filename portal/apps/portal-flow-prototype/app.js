@@ -1,4 +1,5 @@
 import { mountHero, unmountHero } from './hero.js';
+import { SDDS_ADDITIONAL_PALETTE } from './sdds-additional-palette.js';
 
 const initialState = {
   route: 'portal-home',
@@ -37,11 +38,33 @@ const initialState = {
   editorTab: 'colors',
   selectedTokenId: 'primary',
   tokenSearch: '',
+  collapsedTokenGroups: {},
+  sourcePaletteSelected: { row: 'Hue120', step: '500', hex: '#15A315' },
+  sourcePaletteMode: 'sber',
+  sourcePaletteMapping: {},
+  sourcePaletteOverrides: {},
+  sourcePaletteRowSources: {},
+  sourcePaletteReplaceTarget: '',
+  sourcePaletteRebuild: null,
+  resetConfirm: null,
+  sourcePaletteRemoveTarget: '',
+  sourcePaletteRemoveIntent: 'remove',
+  sourcePaletteUsageScope: 'swatch',
+  sourcePaletteSearch: '',
+  sourcePaletteFilter: 'all',
+  sourcePaletteCollapsedGroups: {},
+  sourcePaletteAddCategory: '',
+  sourcePaletteAddedRowsByCategory: {},
+  sourcePaletteCustomCategories: [],
+  sourcePaletteGroupModalOpen: false,
+  sourcePaletteDisabledRows: [],
   issueFilter: false,
   workspaceMode: 'overview',
   // Context-подтемы: какие откреплены от наследования и их ручные значения
   contextUnlinked: {},
   contextOverrides: {},
+  contextPanelCollapsed: false,
+  colorValueLabels: {},
   // Ширины боковых панелей редактора (px), тянутся ручками в пределах 220–320
   panelLeftWidth: 280,
   panelRightWidth: 320,
@@ -131,8 +154,8 @@ const catalog = [
   {
     id: 'sberbusiness', name: 'SberBusiness', description: 'Основной продуктовый проект',
     systems: [
-      { id: 'crm', name: 'CRM Design System', themes: [{ id: 'light', name: 'Light Theme', version: '1.4.0', palette: 'sdds-base' }, { id: 'dark', name: 'Dark Theme', version: '1.2.0', palette: 'contrast' }] },
-      { id: 'mobile', name: 'Mobile Design System', themes: [{ id: 'default', name: 'Default Theme', version: '2.0.0', palette: 'sdds-base' }] },
+      { id: 'crm', name: 'CRM Design System', themes: [{ id: 'light', name: 'Light Theme', version: '1.4.0', palette: 'sber-base' }, { id: 'dark', name: 'Dark Theme', version: '1.2.0', palette: 'sber-b2b' }] },
+      { id: 'mobile', name: 'Mobile Design System', themes: [{ id: 'default', name: 'Default Theme', version: '2.0.0', palette: 'sber-base' }] },
     ],
   },
   {
@@ -143,6 +166,19 @@ const catalog = [
 
 const tokenGroupLabels = { colors: 'Colors', sizes: 'Sizes', fonts: 'Fonts' };
 const sizeConstraints = { 'control-size': { min: 32, max: 64, unit: 'px' }, rounding: { min: 0, max: 24, unit: 'px' } };
+const fallbackColorTokenIds = new Set(initialState.tokens.filter((token) => token.group === 'colors').map((token) => token.id));
+const colorContextModeMap = { ondark: 'onDark', onlight: 'onLight', inverse: 'Inverse' };
+const colorSectionOrder = ['Text&Icons', 'Surfaces', 'Outlines', 'BG', 'Overlay', 'Data', 'Syntax', 'TechnicalTokens'];
+const colorSectionLabels = {
+  'Text&Icons': 'Text & Icons',
+  Surfaces: 'Surfaces',
+  Outlines: 'Outlines',
+  BG: 'BG',
+  Overlay: 'Overlays',
+  Data: 'Data',
+  Syntax: 'Syntax',
+  TechnicalTokens: 'Technical',
+};
 // Прототипная модель зависимостей: какие tokens/components ссылаются на token.
 const tokenUsage = {
   primary: { tokens: ['on-primary'], components: [['Button', 4], ['IconButton', 3], ['Link', 8], ['Checkbox', 2]] },
@@ -237,9 +273,9 @@ const docPages = {
       </ul></section>
   ` },
   introducing: { section: 'Home', title: 'Introducing', body: [['What it is', 'SDDS — дизайн-система Сбера: единый источник токенов, компонентов и правил для дизайна и кода. Portal — точка входа в документацию, onboarding и DS Builder.'], ['Как устроен путь', 'Designer настраивает Theme в DS Builder и публикует Version; Developer применяет её через CLI. Изменения проходят цикл Changes → validation → Publish.']] },
-  changelog: { section: 'Home', title: 'Changelog', body: [['SDDS Core 3.12.0', 'Новые размеры контролов, режим Contrast для палитр, исправления Typography.'], ['DS Builder', 'Color picker, diff и rollback Versions, per-user черновики, уведомления о публикации.']] },
+  changelog: { section: 'Home', title: 'Changelog', body: [['SDDS Core 3.12.0', 'Новые размеры контролов, B2B для стартовых палитр, исправления Typography.'], ['DS Builder', 'Color picker, diff и rollback Versions, per-user черновики, уведомления о публикации.']] },
   tokens: { section: 'Guidelines', title: 'Tokens', body: [['What it is', 'Семантические токены — именованные значения цвета, размеров и типографики. Компоненты ссылаются на токены, а не на литеральные значения.'], ['When to use', 'Используйте семантические токены вместо hex-значений: они адаптируются к режимам Light/Dark и темам проекта.']] },
-  theming: { section: 'Guidelines', title: 'Theming', body: [['What it is', 'Theme — набор значений токенов поверх базовой SDDS: палитра, режимы Light/Dark и subthemes.'], ['When to use', 'Создавайте Theme на базе стартовой палитры SDDS Base, Contrast или Custom и настраивайте значения в DS Builder.']] },
+  theming: { section: 'Guidelines', title: 'Theming', body: [['What it is', 'Theme — набор значений токенов поверх базовой SDDS: палитра, режимы Light/Dark и subthemes.'], ['When to use', 'Создавайте Theme на базе стартовой палитры Base, Malachite, B2B или Custom и настраивайте значения в DS Builder.']] },
   typography: { section: 'Guidelines', title: 'Typography', body: [['What it is', 'Типографическая шкала SDDS: семейства, размеры и высоты строк, связанные с токенами typography.*.'], ['When to use', 'Не переопределяйте шрифты внутри компонентов: меняйте значения токенов в Theme.']] },
   button: { section: 'Components', group: 'Actions', title: 'Button', component: 'button', properties: [['Variant', 'Primary'], ['Size', 'M'], ['State', 'Default'], ['Content', 'Primary Button']], body: [['What it is', 'Button — основной элемент взаимодействия. Инициирует действие: отправку формы, подтверждение операции, переход к следующему шагу. В отличие от Link, не ведёт к ресурсу — всегда запускает процесс.'], ['When to use', 'Use — когда нужно инициировать действие: отправить форму, подтвердить удаление, запустить процесс, сохранить изменения, перейти к следующему шагу мастера.'], ['Don’t use', 'Не используйте Button для навигации к ресурсу — для этого есть Link. Не размещайте два Primary-действия рядом.']] },
   textfield: { section: 'Components', group: 'Forms', title: 'Input', component: 'input', properties: [['Radius', '8'], ['Size', 'M 48'], ['State', 'Default'], ['Label', 'Email']], body: [['What it is', 'Input — поле ввода однострочного текста с label, placeholder, helper-текстом и состоянием ошибки.'], ['When to use', 'Use — для ввода коротких значений: email, имя, поисковый запрос. Для длинного текста используйте TextArea.'], ['Don’t use', 'Не используйте Input для выбора из фиксированного списка — для этого есть Select.']] },
@@ -254,6 +290,220 @@ const docPages = {
 };
 
 const gatedRoutes = ['builder-home', 'create-project', 'project', 'project-settings', 'create-design-system', 'design-system', 'design-system-settings', 'create-theme', 'theme-settings', 'editor', 'changes', 'publish', 'result', 'components', 'health', 'versions', 'account-settings'];
+
+function normalizeTokenPart(value) {
+  return String(value || '').replace(/[\s_&-]+/g, '').toLowerCase();
+}
+
+function slugFromTokenPath(path) {
+  return path.join('-')
+    .replace(/&/g, 'and')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+}
+
+function camelFromParts(parts) {
+  return parts.filter(Boolean).map((part, index) => {
+    const clean = String(part).replace(/[^a-zA-Z0-9]/g, '');
+    if (!clean) return '';
+    return index === 0 ? clean.charAt(0).toLowerCase() + clean.slice(1) : clean.charAt(0).toUpperCase() + clean.slice(1);
+  }).join('');
+}
+
+function colorTokenLabelFromPath(path) {
+  const [section, context, ...rest] = path;
+  const prefix = {
+    'Text&Icons': 'text',
+    Surfaces: 'surface',
+    Outlines: 'outline',
+    BG: 'bg',
+    Overlay: 'overlay',
+    Data: 'data',
+    Syntax: 'syntax',
+    TechnicalTokens: 'technical',
+  }[section] || section;
+  const prefixKey = normalizeTokenPart(prefix);
+  const useful = rest
+    .filter((part) => !['General'].includes(part))
+    .map((part) => {
+      const normalized = normalizeTokenPart(part);
+      return normalized.startsWith(prefixKey) && normalized.length > prefixKey.length ? String(part).slice(String(prefix).length) : part;
+    })
+    .filter(Boolean)
+    .filter((part, index, list) => index === 0 || normalizeTokenPart(part) !== normalizeTokenPart(list[index - 1]))
+    .filter((part, index, list) => !(index === 0 && list[1] && normalizeTokenPart(list[1]).startsWith(normalizeTokenPart(part)) && normalizeTokenPart(list[1]) !== normalizeTokenPart(part)));
+  return camelFromParts([prefix, ...useful]) || camelFromParts([section, context, ...rest]);
+}
+
+function walkTokenLeaves(node, visitor, path = []) {
+  if (!node || typeof node !== 'object') return;
+  if ('$type' in node && '$value' in node) {
+    visitor(path, node);
+    return;
+  }
+  Object.entries(node).forEach(([key, value]) => {
+    if (!key.startsWith('$')) walkTokenLeaves(value, visitor, [...path, key]);
+  });
+}
+
+function readPathLoose(root, path) {
+  let current = root;
+  for (const part of path) {
+    if (!current || typeof current !== 'object') return null;
+    if (part in current) {
+      current = current[part];
+      continue;
+    }
+    const normalized = normalizeTokenPart(part);
+    const match = Object.keys(current).find((key) => normalizeTokenPart(key) === normalized);
+    if (!match) return null;
+    current = current[match];
+  }
+  return current;
+}
+
+function resolveBaseColorValue(rawValue, themeModeRoot) {
+  const value = String(rawValue ?? '').trim();
+  const reference = /^\{(.+)\}$/.exec(value);
+  if (!reference) return value;
+  const leaf = readPathLoose(themeModeRoot, reference[1].split('.'));
+  if (!leaf || typeof leaf !== 'object' || !('$value' in leaf)) return value;
+  return resolveBaseColorValue(leaf.$value, themeModeRoot);
+}
+
+function isResolvedColorValue(value) {
+  return /^#([0-9a-f]{3,8})$/i.test(String(value || '').trim()) || /^rgba?\(/i.test(String(value || '').trim()) || /^linear-gradient\(/i.test(String(value || '').trim());
+}
+
+function fallbackBaseColor(path, mode = 'light') {
+  const normalized = path.map((part) => normalizeTokenPart(part));
+  const joined = normalized.join('.');
+  const dark = mode === 'dark';
+  const minor = joined.includes('minor') || joined.includes('tertiary');
+  const alpha = minor ? (dark ? '8f' : '47') : '';
+  const roleColors = [
+    ['negative', dark ? '#ff6b5f' : '#d62d20'],
+    ['warning', '#f3a912'],
+    ['positive', dark ? '#1a9e32' : '#108e26'],
+    ['info', dark ? '#79befb' : '#4197e2'],
+    ['accent', dark ? '#1a9e32' : '#108e26'],
+    ['syntaxred', dark ? '#ff6b5f' : '#d62d20'],
+    ['syntaxspring', dark ? '#1a9e32' : '#108e26'],
+    ['syntaxpink', '#e34ed9'],
+    ['syntaxorange', '#f3a912'],
+    ['syntaxyellow', '#ffe05c'],
+    ['syntaxskyblue', dark ? '#79befb' : '#4197e2'],
+    ['datayellow', '#f3a912'],
+  ];
+  const role = roleColors.find(([key]) => joined.includes(key));
+  if (role) return minor && /^#[0-9a-f]{6}$/i.test(role[1]) ? `${role[1]}${alpha}` : role[1];
+  if (joined.startsWith('bg.')) return dark ? '#080808' : '#f7f7f7';
+  if (joined.startsWith('surfaces.')) {
+    if (joined.includes('card')) return dark ? '#202020' : '#ffffff';
+    if (joined.includes('primary')) return dark ? '#1f1f1f' : '#f7f7f7';
+    if (joined.includes('secondary')) return dark ? '#292929' : '#f2f2f2';
+    if (joined.includes('tertiary')) return dark ? '#333333' : '#e8e8e8';
+    return dark ? '#171717' : '#ffffff';
+  }
+  if (joined.startsWith('outlines.')) {
+    if (joined.includes('secondary')) return dark ? '#f5f5f529' : '#17171729';
+    if (joined.includes('tertiary')) return dark ? '#f5f5f514' : '#17171714';
+    return dark ? '#f5f5f53d' : '#17171733';
+  }
+  if (joined.startsWith('overlay.')) return dark ? '#000000b8' : '#0000008f';
+  return dark ? '#f5f5f5f5' : '#171717f5';
+}
+
+function resolvedOrFallback(value, path, mode) {
+  return isResolvedColorValue(value) ? value : fallbackBaseColor(path, mode);
+}
+
+function contextValueFromSubTheme(subThemeModes, modeName, path, themeModeRoot, fallback = '', visualMode = 'light') {
+  const leaf = readPathLoose(subThemeModes?.[modeName], path);
+  if (!leaf || typeof leaf !== 'object' || !('$value' in leaf)) return fallback;
+  return resolvedOrFallback(resolveBaseColorValue(leaf.$value, themeModeRoot), path, visualMode) || fallback;
+}
+
+function buildBaseColorTokens(tokenSource) {
+  const collections = tokenSource?.$collections || {};
+  const themeModes = collections['01. Theme']?.$modes || {};
+  const subThemeModes = collections['02. SubTheme']?.$modes || {};
+  const themeLight = themeModes['🌕 Light'] || themeModes.Light || Object.values(themeModes)[0] || {};
+  const themeDark = themeModes['🌑 Dark'] || themeModes.Dark || Object.values(themeModes)[1] || themeLight;
+  const subThemeDefault = subThemeModes.Default || {};
+  const result = [];
+  let sourceIndex = 0;
+
+  walkTokenLeaves(subThemeDefault, (path, leaf) => {
+    const section = path[0];
+    if (leaf.$type !== 'color' || !section || path[1] !== 'Default') return;
+    const light = resolvedOrFallback(resolveBaseColorValue(leaf.$value, themeLight), path, 'light');
+    const dark = resolvedOrFallback(resolveBaseColorValue(leaf.$value, themeDark), path, 'dark');
+    const id = `base-${slugFromTokenPath(path)}`;
+    result.push({
+      id,
+      group: 'colors',
+      name: `color.${path.join('.')}`,
+      displayName: colorTokenLabelFromPath(path),
+      value: light,
+      darkValue: dark,
+      paletteLinks: {
+        light: sourcePaletteLinkForValue(light),
+        dark: sourcePaletteLinkForValue(dark),
+      },
+      hint: `${colorSectionLabels[section] || section} / ${path.slice(2).join(' / ')}`,
+      sourcePath: path.join('.'),
+      colorSection: section,
+      colorSectionLabel: colorSectionLabels[section] || section,
+      sourceIndex: sourceIndex++,
+      contextValues: Object.fromEntries(Object.entries(colorContextModeMap).map(([contextKey, modeName]) => [contextKey, {
+        light: contextValueFromSubTheme(subThemeModes, modeName, path, themeLight, light, 'light'),
+        dark: contextValueFromSubTheme(subThemeModes, modeName, path, themeDark, dark, 'dark'),
+      }])),
+    });
+  });
+
+  return result;
+}
+
+function syncBaseTokensIntoState(baseTokens) {
+  if (!baseTokens.length) return;
+  const currentById = new Map((state.tokens || []).map((token) => [token.id, token]));
+  const aliasTokens = initialState.tokens
+    .filter((token) => token.group === 'colors' && fallbackColorTokenIds.has(token.id))
+    .map((token) => ({ ...token, isInternalAlias: true }));
+  const nonColorTokens = (state.tokens || initialState.tokens)
+    .filter((token) => token.group !== 'colors')
+    .map((token) => ({ ...(initialState.tokens.find((item) => item.id === token.id) || token), ...token }));
+  const nextTokens = [
+    ...baseTokens.map((token) => ({ ...(currentById.get(token.id) || {}), ...token })),
+    ...aliasTokens,
+    ...nonColorTokens,
+  ];
+  initialState.tokens = structuredClone([...baseTokens, ...aliasTokens, ...nonColorTokens]);
+  state.tokens = structuredClone(nextTokens);
+  Object.values(state.themeWorkspaces || {}).forEach((workspace) => {
+    workspace.tokens = structuredClone(nextTokens);
+  });
+  if (!state.tokens.some((token) => token.id === state.selectedTokenId && !token.isInternalAlias && token.group === 'colors')) {
+    state.selectedTokenId = baseTokens[0].id;
+  }
+}
+
+async function loadBaseTokens() {
+  try {
+    const response = await fetch('./tokens.json', { cache: 'no-store' });
+    if (!response.ok) return;
+    const tokenSource = await response.json();
+    const baseTokens = buildBaseColorTokens(tokenSource);
+    syncBaseTokensIntoState(baseTokens);
+    persist();
+    render();
+  } catch {
+    // Если файл недоступен, прототип остаётся на встроенном демо-наборе.
+  }
+}
 
 let state = loadState();
 initializeThemeWorkspaceState();
@@ -390,11 +640,14 @@ function workspaceContextBar() {
       <div class="workspace-context-meta">
         <button class="context-icon-button figma-topbar-icon" title="Settings" aria-label="Settings"><img src="${settingsIcon}" alt=""></button>
         <div class="figma-topbar-reset ${state.resetMenuOpen ? 'is-open' : ''}">
-          <button data-action="reset-all" ${state.changes.length && canEditTheme() ? '' : 'disabled'}>Reset</button>
-          <button class="figma-topbar-caret" data-action="toggle-reset-menu" aria-label="Reset options" aria-expanded="${state.resetMenuOpen}" ${state.changes.length && canEditTheme() ? '' : 'disabled'}><img src="${caretIcon}" alt=""></button>
-          ${state.resetMenuOpen ? `<div class="reset-dropdown figma-topbar-dropdown"><button data-action="reset-section" ${sectionTokenChanges().length ? '' : 'disabled'}>Reset section ${sectionTokenChanges().length ? `· ${sectionTokenChanges().length}` : ''}</button><button data-action="reset-all" ${state.changes.length ? '' : 'disabled'}>Reset all · ${state.changes.length}</button></div>` : ''}
+          <button data-action="reset-all" ${totalChangeCount() && canEditTheme() ? '' : 'disabled'}>Reset</button>
+          <button class="figma-topbar-caret" data-action="toggle-reset-menu" aria-label="Reset options" aria-expanded="${state.resetMenuOpen}" ${totalChangeCount() && canEditTheme() ? '' : 'disabled'}><img src="${caretIcon}" alt=""></button>
+          ${state.resetMenuOpen ? (() => {
+            const sectionCount = state.editorTab === 'palette' ? paletteEditCount() : sectionTokenChanges().length;
+            return `<div class="reset-dropdown figma-topbar-dropdown"><button data-action="reset-section" ${sectionCount ? '' : 'disabled'}>Reset section ${sectionCount ? `· ${sectionCount}` : ''}</button><button data-action="reset-all" ${totalChangeCount() ? '' : 'disabled'}>Reset all · ${totalChangeCount()}</button></div>`;
+          })() : ''}
         </div>
-        <button class="figma-topbar-publish" data-route="publish" ${state.changes.length && canPublish() ? '' : 'disabled'}>Publish · ${state.changes.length}</button>
+        <button class="figma-topbar-publish" data-route="publish" ${totalChangeCount() && canPublish() ? '' : 'disabled'}>Publish · ${totalChangeCount()}</button>
       </div>
     </div>`;
   }
@@ -453,7 +706,8 @@ function builderSidebar() {
   const notifications = currentNotifications();
   const unreadCount = notifications.filter((entry) => !entry.read).length;
   const railAssets = {
-    mark: 'https://www.figma.com/api/mcp/asset/4d3fc357-326d-4f80-94de-4f5519283e8c',
+    // Логотип выгружен локально: временный Figma-URL протухал и лого пропадало
+    mark: 'assets/icons/rail-mark.svg',
   };
   const railIcon = (src) => `<img class="builder-rail-icon" src="${src}" alt="">`;
   // Иконки рейла — фирменный набор из макета DS BUILDER | PLAYGROUND (нода 714:17802),
@@ -534,6 +788,33 @@ function builderBar() {
   `;
 }
 
+// render() пересобирает DOM целиком (app.innerHTML), поэтому скролл внутренних
+// контейнеров без восстановления сбрасывался бы в начало при каждом клике.
+function captureScrollPositions() {
+  const entries = [];
+  const counters = new Map();
+  app.querySelectorAll('*').forEach((el) => {
+    const key = `${el.tagName}.${[...el.classList].sort().join('.')}`;
+    const index = counters.get(key) || 0;
+    counters.set(key, index + 1);
+    if (el.scrollTop || el.scrollLeft) entries.push({ key, index, top: el.scrollTop, left: el.scrollLeft });
+  });
+  return entries;
+}
+
+function restoreScrollPositions(entries) {
+  if (!entries.length) return;
+  const wanted = new Map(entries.map((entry) => [`${entry.key}#${entry.index}`, entry]));
+  const counters = new Map();
+  app.querySelectorAll('*').forEach((el) => {
+    const key = `${el.tagName}.${[...el.classList].sort().join('.')}`;
+    const index = counters.get(key) || 0;
+    counters.set(key, index + 1);
+    const entry = wanted.get(`${key}#${index}`);
+    if (entry) { el.scrollTop = entry.top; el.scrollLeft = entry.left; }
+  });
+}
+
 function render() {
   if (gatedRoutes.includes(state.route) && !state.authenticated) state.route = 'auth';
   if (state.route === 'builder-home' && state.authenticated) {
@@ -575,7 +856,9 @@ function render() {
     lastTrackedRoute = state.route;
     track('view:' + state.route); // просмотр раздела (SPA-«страница»)
   }
-  app.innerHTML = portalShell(view());
+  const scrollKeep = captureScrollPositions();
+  app.innerHTML = portalShell(view()) + resetConfirmModal();
+  restoreScrollPositions(scrollKeep);
   if (state.route === 'portal-home' || state.route === 'builder-about') {
     // Эти страницы используют те же landing-секции (reveal); hero-canvas есть только на главной.
     mountHero(app.querySelector('#hero-canvas'));
@@ -603,7 +886,25 @@ function render() {
   } else if (state.colorPicker) {
     const selector = pendingPickerFocusSelector;
     pendingPickerFocusSelector = '';
-    requestAnimationFrame(() => (selector ? app.querySelector(selector) : app.querySelector('.color-picker-popover [data-autofocus], .color-picker-popover button, .color-picker-popover input'))?.focus());
+    requestAnimationFrame(() => {
+      const picker = app.querySelector('.color-picker-popover');
+      const libraryList = picker?.querySelector('.cp-library-list');
+      if (libraryList && state.colorPicker?.tab === 'library') {
+        if (Number.isFinite(state.colorPicker.libraryScrollTop) && !state.colorPicker.libraryEnsureActive) {
+          libraryList.scrollTop = state.colorPicker.libraryScrollTop;
+        } else {
+          const activePreset = libraryList.querySelector('.cp-preset.is-active');
+          if (activePreset) {
+            const listRect = libraryList.getBoundingClientRect();
+            const activeRect = activePreset.getBoundingClientRect();
+            libraryList.scrollTop += activeRect.top - listRect.top - (libraryList.clientHeight - activeRect.height) / 2;
+          }
+          state.colorPicker.libraryEnsureActive = false;
+          state.colorPicker.libraryScrollTop = libraryList.scrollTop;
+        }
+      }
+      (selector ? app.querySelector(selector) : picker?.querySelector('[data-autofocus], button, input'))?.focus();
+    });
   } else if (pendingFocusSelector) {
     const selector = pendingFocusSelector;
     pendingFocusSelector = '';
@@ -942,10 +1243,11 @@ function authView() {
         <h1>Авторизация</h1>
         <p>Documentation, Onboarding, Releases и Support доступны без входа. Авторизация требуется только для Builder.</p>
         ${state.authError ? `<div class="notice error-notice">${escapeHtml(state.authError)}</div>` : ''}
-        <label>Email или логин<input name="identifier" value="anna" autocomplete="username" required /></label>
+        <label>Логин<input name="identifier" value="anna" autocomplete="username" required /></label>
         <label>Пароль<input name="password" type="password" value="demo" autocomplete="current-password" required /></label>
         <small>Права загружаются из membership проекта. Тест: anna / demo, ivan / demo, maria / demo.</small>
-        <div class="form-actions"><button type="button" class="secondary" data-route="portal-home">Отмена</button><button type="submit">Войти в DS Builder</button></div>
+        <small>Логин и пароль выдаёт команда SDDS. Нет аккаунта или доступа к проекту? Запросите доступ через поддержку.</small>
+        <div class="form-actions auth-actions"><button type="submit">Войти в DS Builder</button><button type="button" class="secondary" data-route="support" data-support-type="access">Запросить доступ</button><button type="button" class="secondary" data-route="portal-home">Отмена</button></div>
       </form>
     </div>
   `;
@@ -1660,16 +1962,24 @@ function pendingAccessRequest(projectId = state.projectId, email = state.userEma
   return (state.accessRequests || []).find((request)=>request.projectId===projectId&&request.requesterEmail.toLowerCase()===email.toLowerCase()&&request.status==='pending');
 }
 function paletteLabel(value) {
-  return { 'sdds-base': 'SDDS Base', contrast: 'Contrast', custom: 'Custom' }[value] || 'SDDS Base';
+  return {
+    'sber-base': 'Base',
+    'sber-malachite': 'Malachite',
+    'sber-b2b': 'B2B',
+    custom: 'Custom',
+    'sdds-base': 'Base',
+    contrast: 'B2B',
+  }[value] || 'Base';
 }
 
 function applyPalette(value) {
   const palettes = {
-    'sdds-base': { primary: '#3b78ff', 'on-primary': '#ffffff', 'primary:dark': '#8fb3ff', 'on-primary:dark': '#071226' },
-    contrast: { primary: '#111827', 'on-primary': '#f8fafc', 'primary:dark': '#f8fafc', 'on-primary:dark': '#111827' },
+    'sber-base': { primary: '#108E26', 'on-primary': '#ffffff', 'primary:dark': '#1A9E32', 'on-primary:dark': '#07150A' },
+    'sber-malachite': { primary: '#107F8C', 'on-primary': '#ffffff', 'primary:dark': '#19B9A5', 'on-primary:dark': '#031716' },
+    'sber-b2b': { primary: '#1B1D22', 'on-primary': '#ffffff', 'primary:dark': '#F8FAFC', 'on-primary:dark': '#111827' },
     custom: state.customPaletteValues || { primary: '#556070', 'on-primary': '#f8fafc', background: '#ffffff', text: '#111827' },
   };
-  const palette = palettes[value] || palettes['sdds-base'];
+  const palette = palettes[value] || palettes['sber-base'];
   state.tokens.forEach((token) => {
     if (palette[token.id]) token.value = palette[token.id];
     if (token.group === 'colors' && palette[`${token.id}:dark`]) token.darkValue = palette[`${token.id}:dark`];
@@ -1839,7 +2149,7 @@ function releases() {
     <section class="list">
       ${latest ? `<article><span class="status passed">Latest</span><h2>${escapeHtml(latest.designSystemName)} · v${escapeHtml(latest.version)}</h2><p>${escapeHtml(latest.projectName)} · Theme: ${escapeHtml(latest.themeName)} · ${escapeHtml(latest.date)} · ${escapeHtml(latest.changelog)}</p><button data-action="open-version-details" data-version="${escapeHtml(latest.version)}" data-project-id="${escapeHtml(latest.projectId)}" data-design-system-id="${escapeHtml(latest.designSystemId)}" data-theme-id="${escapeHtml(latest.themeId)}">Version details</button></article>` : ''}
       ${published.slice(1).map((version) => `<article><h2>${escapeHtml(version.designSystemName)} · v${escapeHtml(version.version)}</h2><p>${escapeHtml(version.projectName)} · ${escapeHtml(version.themeName)} · ${escapeHtml(version.date)} · ${escapeHtml(version.changelog)} · ${version.issueCount} issues</p><button class="secondary" data-action="open-version-details" data-version="${escapeHtml(version.version)}" data-project-id="${escapeHtml(version.projectId)}" data-design-system-id="${escapeHtml(version.designSystemId)}" data-theme-id="${escapeHtml(version.themeId)}">Version details</button></article>`).join('')}
-      <article><h2>SDDS Core · 3.12.0</h2><p>Обновление базовой библиотеки: новые размеры контролов, режим Contrast для палитр, исправления Typography.</p><button data-route="documentation">Что нового в документации</button></article>
+      <article><h2>SDDS Core · 3.12.0</h2><p>Обновление базовой библиотеки: новые размеры контролов, B2B для стартовых палитр, исправления Typography.</p><button data-route="documentation">Что нового в документации</button></article>
       <article><h2>CLI contract</h2><p>Команды, авторизация, schema compatibility и CI остаются открытыми решениями — следите за обновлениями.</p><button data-route="documentation">Открыть документацию</button></article>
     </section>
   `;
@@ -1855,6 +2165,7 @@ function support() {
     <form id="support-form" class="form-card">
       <label>Тип запроса<select name="type"><option ${(state.supportPrefill || state.supportTypePrefill === 'consult') ? 'selected' : ''}>Демо или консультация</option><option ${(state.supportPrefill || state.supportTypePrefill === 'consult') ? '' : 'selected'}>Запрос доступа</option></select></label>
       <label>Команда / продукт<input name="team" value="${escapeHtml(state.project || '')}" placeholder="Название команды или продукта" required></label>
+      <label>Аккаунты и роли<textarea name="accounts" placeholder="Для запроса доступа: сколько аккаунтов нужно и какие роли. Например: 1 Owner, 2 Editor, 3 Viewer."></textarea></label>
       <label>Описание<textarea name="description" required placeholder="Что требуется?">${escapeHtml(state.supportPrefill || '')}</textarea></label>
       <div class="form-actions"><button type="button" class="secondary" data-route="${state.supportReturnRoute || 'portal-home'}">Отмена</button><button type="submit">Отправить</button></div>
     </form>
@@ -2150,14 +2461,15 @@ function createThemeView() {
       <label>Название<input name="name" required placeholder="Например, Light Theme" /></label>
       <fieldset class="invite-fieldset">
         <legend>Стартовая палитра</legend>
-        <p>Палитра задаёт начальные Colors. После создания значения редактируются внутри Theme.</p>
+        <p>Палитра задаёт начальные Colors. Sber Base, Malachite и B2B соответствуют брендовой палитре Сбера и рекомендуются для внешних продуктов. Custom можно использовать, но такая Theme перестанет считаться бренд-соответствующей.</p>
         <div class="palette-options">
-          <label class="palette-option"><input type="radio" name="palette" value="sdds-base" checked /><span class="swatches"><i class="blue"></i><i class="dark"></i><i class="light"></i></span><strong>SDDS Base</strong><small>Базовая палитра</small></label>
-          <label class="palette-option"><input type="radio" name="palette" value="contrast" /><span class="swatches"><i class="light"></i><i class="dark"></i><i class="yellow"></i><i class="red"></i></span><strong>Contrast</strong><small>Контрастная</small></label>
-          <label class="palette-option"><input type="radio" name="palette" value="custom" /><span class="swatches"><i class="gray"></i><i class="muted"></i><i class="light"></i></span><strong>Custom</strong><small>Нейтральная база</small></label>
+          <label class="palette-option palette-card-preview" style="--pal-primary:#108E26;--pal-on-primary:#FFFFFF;--pal-bg:#F7FAF7;--pal-surface:#FFFFFF;--pal-text:#171717;--pal-muted:#6B7280;--pal-outline:#108E2647"><input type="radio" name="palette" value="sber-base" checked /><span class="palette-card-top"><span class="swatches"><i style="background:#108E26"></i><i style="background:#FFFFFF"></i><i style="background:#171717"></i></span><span class="palette-badge">Base</span></span><strong>Base</strong><small>Системная стартовая тема</small><span class="palette-mini-ui"><span class="mini-title"></span><span class="mini-text"></span><span class="mini-row"><span class="mini-button">Action</span><span class="mini-field"></span></span></span><span class="palette-impact">Accent · Text · Surfaces</span></label>
+          <label class="palette-option palette-card-preview" style="--pal-primary:#107F8C;--pal-on-primary:#FFFFFF;--pal-bg:#F3FBFA;--pal-surface:#FFFFFF;--pal-text:#031716;--pal-muted:#57706D;--pal-outline:#107F8C55"><input type="radio" name="palette" value="sber-malachite" /><span class="palette-card-top"><span class="swatches"><i style="background:#107F8C"></i><i style="background:#FFFFFF"></i><i style="background:#031716"></i></span><span class="palette-badge">Brand</span></span><strong>Malachite</strong><small>Малахитовый бренд-акцент</small><span class="palette-mini-ui"><span class="mini-title"></span><span class="mini-text"></span><span class="mini-row"><span class="mini-button">Action</span><span class="mini-field"></span></span></span><span class="palette-impact">Accent · Links · Focus</span></label>
+          <label class="palette-option palette-card-preview" style="--pal-primary:#1B1D22;--pal-on-primary:#FFFFFF;--pal-bg:#F4F6F8;--pal-surface:#FFFFFF;--pal-text:#1B1D22;--pal-muted:#697386;--pal-outline:#8A94A666"><input type="radio" name="palette" value="sber-b2b" /><span class="palette-card-top"><span class="swatches"><i style="background:#1B1D22"></i><i style="background:#F8FAFC"></i><i style="background:#8A94A6"></i></span><span class="palette-badge">B2B</span></span><strong>B2B</strong><small>Строгая B2B-основа</small><span class="palette-mini-ui"><span class="mini-title"></span><span class="mini-text"></span><span class="mini-row"><span class="mini-button">Action</span><span class="mini-field"></span></span></span><span class="palette-impact">Text · Outlines · Status</span></label>
+          <label class="palette-option palette-card-preview palette-option-warning" style="--pal-primary:#556070;--pal-on-primary:#F8FAFC;--pal-bg:#FFFFFF;--pal-surface:#F8FAFC;--pal-text:#111827;--pal-muted:#667085;--pal-outline:#98A2B355"><input type="radio" name="palette" value="custom" /><span class="palette-card-top"><span class="swatches"><i class="gray"></i><i class="muted"></i><i class="light"></i></span><span class="palette-badge">Custom</span></span><strong>Custom</strong><small>Можно изменить, но не соответствует брендбуку Сбера</small><span class="palette-mini-ui"><span class="mini-title"></span><span class="mini-text"></span><span class="mini-row"><span class="mini-button">Action</span><span class="mini-field"></span></span></span><span class="palette-impact">Требует отдельного согласования</span></label>
         </div>
         <section class="custom-palette-editor">
-          <div><h2>Custom palette</h2><p>Выберите основу или задайте HEX-значения вручную. Они применятся к режимам Light и Dark.</p></div>
+          <div><h2>Custom palette</h2><p>Выберите основу или задайте HEX-значения вручную. Важно: после ручной замены палитра больше не считается соответствующей брендбуку Сбера.</p></div>
           <div class="custom-preset-options">
             <label><input type="radio" name="customPreset" value="neutral" data-action="custom-preset" checked><span class="preset-swatches"><i style="background:#556070"></i><i style="background:#f8fafc"></i></span><strong>Neutral</strong></label>
             <label><input type="radio" name="customPreset" value="brand" data-action="custom-preset"><span class="preset-swatches"><i style="background:#6d5dfc"></i><i style="background:#ffffff"></i></span><strong>Brand</strong></label>
@@ -2201,7 +2513,7 @@ function baseValueLine(selected, draft, mode = 'light') {
 }
 
 function colorTokenDisplayName(token) {
-  return linkedColorTokenLabels[token.id] || token.name.replace(/^color\./, '');
+  return token.displayName || linkedColorTokenLabels[token.id] || token.name.replace(/^color\./, '');
 }
 
 function colorTokenDescription(token) {
@@ -2226,6 +2538,8 @@ function unitInspectorField({ tokenId, label, value, suffix = '', disabled = '',
 
 function colorValueLabel(value, fallback = '') {
   const normalized = String(value || '').trim().toLowerCase();
+  const parts = colorHexParts(normalized);
+  if (parts?.alphaHex && parts.alphaHex !== 'ff') return parts.rgbHex.toUpperCase();
   if (normalized === '#000000' || normalized === '#000') return 'black100';
   if (normalized === '#ffffff' || normalized === '#fff') return 'white100';
   if (normalized === '#fbffae') return 'FBFFAE';
@@ -2234,18 +2548,139 @@ function colorValueLabel(value, fallback = '') {
   return fallback || String(value || '').replace(/^#/, '').toUpperCase();
 }
 
+function colorValueLabelKey(tokenId, mode = 'light') {
+  return `${tokenId}::${mode || 'light'}`;
+}
+
+function colorLibraryDisplayLabel(rowName, step) {
+  return `${String(rowName || '')} ${step}`.trim();
+}
+
+function setColorLibraryValueLabel(tokenId, mode, value, label) {
+  const parts = colorHexParts(value);
+  if (!parts || !label) return;
+  state.colorValueLabels ||= {};
+  state.colorValueLabels[colorValueLabelKey(tokenId, mode)] = { rgbHex: parts.rgbHex.toUpperCase(), label };
+}
+
+function clearColorLibraryValueLabel(tokenId, mode) {
+  if (!state.colorValueLabels) return;
+  delete state.colorValueLabels[colorValueLabelKey(tokenId, mode)];
+}
+
+function colorFieldPaletteLink(tokenId, mode, value) {
+  const token = state.tokens.find((item) => item.id === tokenId && !item.isInternalAlias);
+  if (!token) return null;
+  const contextMode = /^(ondark|onlight|inverse)-(light|dark)$/.exec(mode || '');
+  let sourceMode = mode;
+  if (contextMode && contextInherits(tokenId, contextMode[1])) {
+    const [, context, visualMode] = contextMode;
+    if (context === 'ondark') sourceMode = 'dark';
+    else if (context === 'onlight') sourceMode = 'light';
+    else sourceMode = visualMode === 'dark' ? 'light' : 'dark';
+  } else if (contextMode) return null;
+  if (sourceMode !== 'light' && sourceMode !== 'dark') return null;
+  const original = sourceMode === 'dark' ? (token.darkValue ?? token.value ?? '') : (token.value ?? '');
+  const link = sourcePaletteTokenLink(token, sourceMode);
+  const linkedValue = sourcePaletteLinkedValue(link, original);
+  return link && String(linkedValue).toLowerCase() === String(value).toLowerCase() ? link : null;
+}
+
+function inheritedContextSourceMode(tokenId, mode) {
+  const contextMode = /^(ondark|onlight|inverse)-(light|dark)$/.exec(mode || '');
+  if (!contextMode || !contextInherits(tokenId, contextMode[1])) return null;
+  const [, context, visualMode] = contextMode;
+  if (context === 'ondark') return 'dark';
+  if (context === 'onlight') return 'light';
+  return visualMode === 'dark' ? 'light' : 'dark';
+}
+
+function colorFieldLibraryLabel(tokenId, mode, value) {
+  const directLabel = currentColorLibraryValueLabel(tokenId, mode, value);
+  if (directLabel) return directLabel;
+  const sourceMode = inheritedContextSourceMode(tokenId, mode);
+  if (sourceMode) {
+    const sourceValue = tokenDraftValue(tokenId, sourceMode);
+    if (String(sourceValue).toLowerCase() === String(value).toLowerCase()) {
+      const inheritedLabel = currentColorLibraryValueLabel(tokenId, sourceMode, sourceValue);
+      if (inheritedLabel) return inheritedLabel;
+    }
+  }
+  const paletteLink = colorFieldPaletteLink(tokenId, mode, value);
+  return paletteLink ? colorLibraryDisplayLabel(paletteLink.row, paletteLink.step) : '';
+}
+
+function colorFieldDisplayValue(tokenId, mode, value) {
+  if (isGradientValue(value)) return 'Linear gradient';
+  const libraryLabel = colorFieldLibraryLabel(tokenId, mode, value);
+  if (libraryLabel) return libraryLabel;
+  return colorValueLabel(value);
+}
+
+function currentColorLibraryValueLabel(tokenId, mode, value = tokenValueForMode(tokenId, mode)) {
+  const parts = colorHexParts(value);
+  const entry = state.colorValueLabels?.[colorValueLabelKey(tokenId, mode)];
+  return parts && entry?.rgbHex === parts.rgbHex.toUpperCase() ? entry.label : '';
+}
+
+function isGradientValue(value) {
+  return /^linear-gradient\(/i.test(String(value || '').trim());
+}
+
+function colorHexParts(value) {
+  let raw = String(value || '').trim().replace(/^#/, '');
+  if (/^[0-9a-f]{3}$/i.test(raw)) raw = raw.split('').map((char) => char + char).join('');
+  if (/^[0-9a-f]{4}$/i.test(raw)) raw = raw.split('').map((char) => char + char).join('');
+  if (!/^[0-9a-f]{6}([0-9a-f]{2})?$/i.test(raw)) return null;
+  const alphaHex = raw.length === 8 ? raw.slice(6, 8).toLowerCase() : 'ff';
+  const alphaPercent = Math.round((parseInt(alphaHex, 16) / 255) * 100);
+  return { rgbHex: raw.slice(0, 6), alphaHex, alphaPercent };
+}
+
+function colorWithRgbPreservingAlpha(rawRgb, currentValue) {
+  let rgb = String(rawRgb || '').trim().replace(/^#/, '');
+  if (/^[0-9a-f]{3}$/i.test(rgb)) rgb = rgb.split('').map((char) => char + char).join('');
+  if (/^[0-9a-f]{8}$/i.test(rgb)) return `#${rgb}`;
+  if (!/^[0-9a-f]{6}$/i.test(rgb)) return String(rawRgb || '').trim();
+  const currentAlpha = colorHexParts(currentValue)?.alphaHex || 'ff';
+  return `#${rgb}${currentAlpha === 'ff' ? '' : currentAlpha}`;
+}
+
+function colorWithOpacity(value, opacity) {
+  const parts = colorHexParts(value);
+  if (!parts) return value;
+  const numeric = Number.parseFloat(String(opacity).replace('%', ''));
+  if (!Number.isFinite(numeric)) return value;
+  const alpha = Math.round(Math.max(0, Math.min(100, numeric)) / 100 * 255).toString(16).padStart(2, '0');
+  return `#${parts.rgbHex}${alpha === 'ff' ? '' : alpha}`;
+}
+
+function tokenValueForMode(tokenId, mode = 'light') {
+  const contextMode = /^(ondark|onlight|inverse)-(light|dark)$/.exec(mode || '');
+  if (contextMode) return contextFieldValue(tokenId, contextMode[1], contextMode[2]);
+  return tokenDraftValue(tokenId, mode || 'light');
+}
+
 function colorInspectorField({ tokenId, mode, label, value, editable = false, disabled = '' }) {
   const isOpen = state.colorPicker?.tokenId === tokenId && state.colorPicker?.mode === mode;
+  const colorParts = colorHexParts(value);
+  const alphaPercent = colorParts?.alphaPercent ?? 100;
+  const alphaHex = (colorParts?.alphaHex || 'ff').toUpperCase();
+  const hasLibraryLabel = Boolean(colorFieldLibraryLabel(tokenId, mode, value));
   const pickerAttrs = editable ? `data-action="open-color-picker" data-id="${tokenId}" data-mode="${mode}" aria-label="Open color picker for ${label}" aria-expanded="${isOpen}"` : '';
-  const inputAttrs = editable ? `data-action="edit-token" data-id="${tokenId}" data-mode="${mode}"` : 'readonly';
+  const inputAttrs = editable
+    ? hasLibraryLabel
+      ? `readonly data-action="open-color-picker" data-id="${tokenId}" data-mode="${mode}" aria-label="Open color picker for ${label}" aria-expanded="${isOpen}"`
+      : `data-action="edit-token" data-id="${tokenId}" data-mode="${mode}"`
+    : 'readonly';
   return `<div class="figma-inspector-field">
     <span class="figma-inspector-field-label">${label}</span>
     <div class="figma-value-control">
       <div class="figma-value-main">
         <button type="button" class="swatch-button ${isOpen ? 'is-open' : ''}" ${pickerAttrs} style="background:${escapeHtml(value)}" ${editable ? disabled : 'disabled'}></button>
-        <input ${inputAttrs} value="${escapeHtml(colorValueLabel(value))}" ${editable ? disabled : ''}>
+        <input ${inputAttrs} value="${escapeHtml(colorFieldDisplayValue(tokenId, mode, value))}" ${editable ? disabled : ''}>
       </div>
-      <div class="figma-value-alpha"><span>100</span><i>%</i></div>
+      ${hasLibraryLabel ? '' : `<div class="figma-value-alpha" title="Alpha ${escapeHtml(alphaHex)}"><input data-action="edit-token-alpha" data-id="${tokenId}" data-mode="${mode}" value="${alphaPercent}" ${editable ? disabled : 'readonly'}><i>%</i></div>`}
     </div>
   </div>`;
 }
@@ -2266,6 +2701,7 @@ function tokenInspector(selected, draft, viewer) {
   const disabled = viewer ? 'disabled' : '';
   if (selected.group === 'colors') {
     const darkDraft = tokenDraftValue(selected.id, 'dark');
+    const contextCollapsed = Boolean(state.contextPanelCollapsed);
     return `
       <section class="inspector-section figma-inspector-copy"><p>${escapeHtml(colorTokenDescription(selected))}</p></section>
       <section class="inspector-section figma-inspector-group">
@@ -2274,8 +2710,8 @@ function tokenInspector(selected, draft, viewer) {
         ${colorInspectorField({ tokenId: selected.id, mode: 'dark', label: 'Dark', value: darkDraft, editable: true, disabled })}
       </section>
       <section class="inspector-section figma-inspector-group figma-subthemes">
-        <span class="inspector-heading">› Context <i title="Context помогают настроить, как токен выглядит в отдельных контекстах, например на тёмной или светлой поверхности.&#10;&#10;Значения подтягиваются из Modes автоматически, но вы можете изменить их при необходимости.">ⓘ</i></span>
-        ${colorContexts.map(([context, label]) => {
+        <button type="button" class="inspector-heading inspector-collapse-heading" data-action="toggle-context-panel" aria-expanded="${contextCollapsed ? 'false' : 'true'}"><span>${contextCollapsed ? '›' : '⌄'} Context</span><i title="Context помогают настроить, как токен выглядит в отдельных контекстах, например на тёмной или светлой поверхности.&#10;&#10;Значения подтягиваются из Modes автоматически, но вы можете изменить их при необходимости.">ⓘ</i></button>
+        ${contextCollapsed ? '' : colorContexts.map(([context, label]) => {
           const linked = contextInherits(selected.id, context);
           const tip = linked
             ? 'Контексты наследуют значения из Modes. Ручное изменение отключает связь. Нажмите на иконку связи, чтобы восстановить наследование и сбросить значения к дефолтным.'
@@ -2365,12 +2801,28 @@ function hslToRgb({ h, s, l }) {
 }
 
 function openColorPickerFor(tokenId, mode = 'light') {
-  const rgba = hexToRgba(tokenDraftValue(tokenId, mode)) || { r: 128, g: 128, b: 128, a: 1 };
+  const currentValue = tokenValueForMode(tokenId, mode);
+  const gradient = parseLinearGradient(currentValue, currentValue);
+  const rgba = hexToRgba(isGradientValue(currentValue) ? gradient.stops[0].color : currentValue) || { r: 128, g: 128, b: 128, a: 1 };
   const hsv = rgbToHsv(rgba);
-  state.colorPicker = { tokenId, mode, h: hsv.h, s: hsv.s, v: hsv.v, a: rgba.a, tab: state.colorPicker?.tab || 'custom', format: state.colorPicker?.format || 'hex' };
+  const hasLibraryValue = Boolean(colorFieldLibraryLabel(tokenId, mode, currentValue));
+  state.colorPicker = {
+    tokenId,
+    mode,
+    h: hsv.h,
+    s: hsv.s,
+    v: hsv.v,
+    a: rgba.a,
+    tab: hasLibraryValue ? 'library' : 'custom',
+    paint: isGradientValue(currentValue) ? 'gradient' : 'solid',
+    gradient,
+    format: state.colorPicker?.format || 'hex',
+    libraryScrollTop: null,
+    libraryEnsureActive: hasLibraryValue,
+  };
 }
 
-function commitColorPicker() {
+function commitColorPicker(sourceLabel = '') {
   const picker = state.colorPicker;
   if (!picker || !canEditTheme()) return;
   let next = rgbaToHex({ ...hsvToRgb(picker), a: picker.a });
@@ -2385,15 +2837,184 @@ function commitColorPicker() {
     const baseL = Math.max(8, Math.min(92, pickedHsl.l + (CANON_BASE_L - stepL)));
     next = rgbaToHex({ ...hslToRgb({ h: pickedHsl.h, s: Math.max(0, Math.min(100, pickedHsl.s - 4)), l: baseL }), a: 1 });
   }
-  addChange('token', picker.tokenId, next, picker.mode || 'light');
+  return commitPickerValue(next, sourceLabel);
+  const pickerMode = picker.mode || 'light';
+  const contextMode = /^(ondark|onlight|inverse)-(light|dark)$/.exec(pickerMode);
+  if (contextMode) {
+    const [, context, mode] = contextMode;
+    state.contextUnlinked = { ...(state.contextUnlinked || {}), [`${picker.tokenId}::${context}`]: true };
+    state.contextOverrides = { ...(state.contextOverrides || {}), [`${picker.tokenId}::${context}::${mode}`]: next };
+  } else {
+    addChange('token', picker.tokenId, next, pickerMode);
+  }
+  if (sourceLabel) setColorLibraryValueLabel(picker.tokenId, pickerMode, next, sourceLabel);
+  else clearColorLibraryValueLabel(picker.tokenId, pickerMode);
   // Каскад палитры: правка базы (brand-500 = color.primary · Light) с вкладки Palette
   // автоматически пересчитывает Dark-значение — обе правки попадают в Changes.
-  if (state.editorTab === 'palette' && picker.tokenId === 'primary' && (picker.mode || 'light') === 'light') {
+  if (!contextMode && state.editorTab === 'palette' && picker.tokenId === 'primary' && pickerMode === 'light') {
+    addChange('token', 'primary', paletteDarkFromBase(next), 'dark');
+  }
+}
+
+function commitGradientPicker() {
+  const picker = state.colorPicker;
+  if (!picker || !canEditTheme()) return;
+  commitPickerValue(gradientToCss(picker.gradient), '');
+}
+
+function commitPickerValue(next, sourceLabel = '') {
+  const picker = state.colorPicker;
+  if (!picker || !canEditTheme()) return;
+  const pickerMode = picker.mode || 'light';
+  const contextMode = /^(ondark|onlight|inverse)-(light|dark)$/.exec(pickerMode);
+  if (contextMode) {
+    const [, context, mode] = contextMode;
+    state.contextUnlinked = { ...(state.contextUnlinked || {}), [`${picker.tokenId}::${context}`]: true };
+    state.contextOverrides = { ...(state.contextOverrides || {}), [`${picker.tokenId}::${context}::${mode}`]: next };
+  } else {
+    addChange('token', picker.tokenId, next, pickerMode);
+  }
+  if (sourceLabel) setColorLibraryValueLabel(picker.tokenId, pickerMode, next, sourceLabel);
+  else clearColorLibraryValueLabel(picker.tokenId, pickerMode);
+  if (!contextMode && !isGradientValue(next) && state.editorTab === 'palette' && picker.tokenId === 'primary' && pickerMode === 'light') {
     addChange('token', 'primary', paletteDarkFromBase(next), 'dark');
   }
 }
 
 const colorPickerPresets = ['#107f8c', '#3b78ff', '#111827', '#f8fafc', '#6d5dfc', '#d45b35', '#556070', '#f7b733', '#ef5b5b', '#48d184', '#ffffff', '#000000'];
+
+function pickerDisplayHex(value) {
+  const parts = colorHexParts(value);
+  return parts ? `#${parts.rgbHex}` : String(value || '');
+}
+
+function defaultGradientFromColor(value) {
+  const base = pickerDisplayHex(value || '#232323').toUpperCase();
+  return { type: 'linear', angle: 90, activeStop: 0, stops: [{ color: base, position: 0 }, { color: '#F5F5F5', position: 100 }] };
+}
+
+function parseLinearGradient(value, fallbackColor = '#232323') {
+  const text = String(value || '').trim();
+  const match = /^linear-gradient\(\s*([0-9.]+)deg\s*,\s*(.+)\s*\)$/i.exec(text);
+  if (!match) return defaultGradientFromColor(fallbackColor);
+  const stops = match[2].split(/\s*,\s*/).map((part) => {
+    const stopMatch = /^(#[0-9a-f]{6}(?:[0-9a-f]{2})?)\s+([0-9.]+)%$/i.exec(part.trim());
+    return stopMatch ? { color: stopMatch[1].toUpperCase(), position: Math.round(Number(stopMatch[2])) } : null;
+  }).filter(Boolean);
+  if (stops.length < 2) return defaultGradientFromColor(fallbackColor);
+  return { type: 'linear', angle: Math.round(Number(match[1])), activeStop: 0, stops };
+}
+
+function gradientToCss(gradient) {
+  const stops = (gradient?.stops?.length ? gradient.stops : defaultGradientFromColor('#232323').stops)
+    .map((stop) => `${stop.color} ${Math.max(0, Math.min(100, Number(stop.position) || 0))}%`);
+  return `linear-gradient(${Math.round(Number(gradient?.angle ?? 90))}deg, ${stops.join(', ')})`;
+}
+
+function syncPickerToGradientStop(picker) {
+  const stop = picker.gradient?.stops?.[picker.gradient.activeStop || 0];
+  const rgba = hexToRgba(stop?.color || '#232323') || { r: 35, g: 35, b: 35, a: 1 };
+  const hsv = rgbToHsv(rgba);
+  Object.assign(picker, { h: hsv.h, s: hsv.s, v: hsv.v, a: rgba.a });
+}
+
+function updateActiveGradientStopColor(picker, sourceLabel = '') {
+  if (picker?.paint !== 'gradient' || !picker.gradient?.stops?.length) return;
+  const index = picker.gradient.activeStop || 0;
+  const stop = picker.gradient.stops[index];
+  stop.color = rgbaToHex({ ...hsvToRgb(picker), a: picker.a }).toUpperCase();
+  if (sourceLabel) stop.label = sourceLabel;
+  else delete stop.label;
+}
+
+function colorPickerLibraryView(activeHex, presetAction = 'cp-preset') {
+  const active = String(activeHex || '').toUpperCase();
+  const groupLabel = (name) => `color/${String(name).replace(/\s+/g, '-').toLowerCase()}`;
+  return `<div class="cp-library cp-source-library">
+    <div class="cp-library-search"><span>⌕</span><input value="" placeholder="Найти" aria-label="Найти цвет в библиотеке"></div>
+    <div class="cp-library-list">
+      ${SDDS_ADDITIONAL_PALETTE.rows.map((row) => `<section class="cp-library-group">
+        <h3>${escapeHtml(groupLabel(row.name))}</h3>
+        <div class="cp-library-swatches">
+          ${row.values.map((hex, index) => hex
+            ? `<button type="button" class="cp-preset ${String(hex).toUpperCase() === active ? 'is-active' : ''}" data-action="cp-preset" data-value="${escapeHtml(hex)}" data-label="${escapeHtml(colorLibraryDisplayLabel(row.name, SDDS_ADDITIONAL_PALETTE.steps[index]))}" style="background:${escapeHtml(hex)}" title="${escapeHtml(row.name)} ${escapeHtml(SDDS_ADDITIONAL_PALETTE.steps[index])} · ${escapeHtml(hex)}" aria-label="${escapeHtml(row.name)} ${escapeHtml(SDDS_ADDITIONAL_PALETTE.steps[index])} ${escapeHtml(hex)}"></button>`
+            : `<span class="cp-preset cp-preset-empty" title="${escapeHtml(row.name)} ${escapeHtml(SDDS_ADDITIONAL_PALETTE.steps[index])}: значение не найдено"></span>`).join('')}
+        </div>
+      </section>`).join('')}
+    </div>
+  </div>`;
+}
+
+function colorPickerPaintToolbar(picker) {
+  const paint = picker.paint || 'solid';
+  return `<div class="cp-tool-row" role="group" aria-label="Fill type">
+    <div>
+      <button type="button" class="${paint === 'solid' ? 'is-active' : ''}" data-action="cp-paint" data-paint="solid" aria-label="Solid">▣</button>
+      <button type="button" class="${paint === 'gradient' ? 'is-active' : ''}" data-action="cp-paint" data-paint="gradient" aria-label="Gradient">◇</button>
+      <button type="button" disabled aria-label="Image">◒</button>
+    </div>
+    <div><span>⊕</span><span>●</span><span>▥</span></div>
+  </div>`;
+}
+
+function colorPickerGradientStopColorView(picker) {
+  const rgb = hsvToRgb(picker);
+  const displayHex = pickerDisplayHex(rgbaToHex({ ...rgb, a: picker.a }));
+  const hueColor = rgbaToHex({ ...hsvToRgb({ h: picker.h, s: 1, v: 1 }), a: 1 });
+  const stopTab = picker.stopPickerTab || 'custom';
+  return `<section class="cp-stop-popover" role="dialog" aria-label="Stop color picker">
+    <div class="cp-stop-popover-head"><div class="cp-tabs"><button type="button" class="${stopTab === 'library' ? '' : 'is-active'}" data-action="cp-stop-tab" data-tab="custom">Custom</button><button type="button" class="${stopTab === 'library' ? 'is-active' : ''}" data-action="cp-stop-tab" data-tab="library">Library</button></div><button type="button" data-action="cp-close-stop-picker" aria-label="Close stop color picker">&times;</button></div>
+    ${stopTab === 'library' ? colorPickerLibraryView(displayHex) : `
+    <div class="cp-sv" data-cp-sv data-action="cp-key-slider" data-kind="sv" role="slider" tabindex="0" aria-label="Saturation and brightness" aria-valuetext="${Math.round(picker.s * 100)}%, ${Math.round(picker.v * 100)}%" style="background-color:${hueColor}"><i class="cp-cursor" style="left:clamp(7px, ${picker.s * 100}%, calc(100% - 7px));top:clamp(7px, ${(1 - picker.v) * 100}%, calc(100% - 7px))"></i></div>
+    <div class="cp-slider cp-hue" data-cp-hue data-action="cp-key-slider" data-kind="hue" role="slider" tabindex="0" aria-label="Hue" aria-valuemin="0" aria-valuemax="360" aria-valuenow="${Math.round(picker.h)}"><i style="left:${picker.h / 360 * 100}%"></i></div>
+    <div class="cp-slider cp-alpha" data-cp-alpha data-action="cp-key-slider" data-kind="alpha" role="slider" tabindex="0" aria-label="Opacity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(picker.a * 100)}" style="--cp-current:${rgbaToHex({ ...rgb, a: 1 })}"><i style="left:${picker.a * 100}%"></i></div>
+    <div class="cp-format-row">
+      <select aria-label="Color format" disabled><option selected>Hex</option></select>
+      <input class="cp-field cp-hex-field" data-action="cp-input" data-field="hex" value="${displayHex.toUpperCase()}" aria-label="Hex">
+      <input class="cp-field cp-alpha-field" data-action="cp-input" data-field="a" value="${Math.round(picker.a * 100)}%" aria-label="Opacity">
+    </div>
+    `}
+  </section>`;
+}
+
+function colorPickerGradientView(picker) {
+  const gradient = picker.gradient || defaultGradientFromColor(rgbaToHex({ ...hsvToRgb(picker), a: picker.a }));
+  const css = gradientToCss(gradient);
+  return `${colorPickerPaintToolbar(picker)}
+    <div class="cp-gradient-kind-row">
+      <select data-action="cp-gradient-type" aria-label="Gradient type"><option value="linear" selected>Linear</option></select>
+    </div>
+    <div class="cp-gradient-preview" style="background:${escapeHtml(css)}">
+      ${gradient.stops.map((stop, index) => `<button type="button" class="cp-gradient-stop ${gradient.activeStop === index ? 'is-active' : ''}" data-action="cp-gradient-stop" data-index="${index}" style="left:${Math.max(0, Math.min(100, Number(stop.position) || 0))}%;--stop-color:${escapeHtml(stop.color)}" aria-label="Gradient stop ${index + 1}"><i></i></button>`).join('')}
+    </div>
+    <div class="cp-gradient-stops-head">
+      <span>Stops</span>
+      <button type="button" data-action="cp-gradient-add-stop" aria-label="Add gradient stop">+</button>
+    </div>
+    <div class="cp-gradient-stops">
+      ${gradient.stops.map((stop, index) => {
+        const rgba = hexToRgba(stop.color) || { a: 1 };
+        const isActive = gradient.activeStop === index;
+        const isTokenValue = Boolean(stop.label);
+        const stopValueLabel = stop.label || pickerDisplayHex(stop.color).replace('#', '').toUpperCase();
+        return `<div class="cp-gradient-stop-row ${isActive ? 'is-active' : ''} ${isTokenValue ? 'is-token-value' : ''}" data-index="${index}">
+          <input class="cp-stop-position-field" data-action="cp-gradient-position" data-index="${index}" value="${Math.max(0, Math.min(100, Number(stop.position) || 0))}" inputmode="numeric" aria-label="Stop position">
+          <button type="button" class="cp-stop-color-field" data-action="cp-open-stop-picker" data-index="${index}" aria-label="Edit stop color">
+            <i style="background:${escapeHtml(stop.color)}"></i>
+            <span>${escapeHtml(stopValueLabel)}</span>
+          </button>
+          ${isTokenValue ? '' : `<input class="cp-stop-opacity-field" data-action="cp-gradient-stop-alpha" data-index="${index}" value="${Math.round((rgba.a ?? 1) * 100)}%" inputmode="numeric" aria-label="Stop opacity">`}
+          <button type="button" class="cp-stop-remove" data-action="cp-gradient-remove-stop" data-index="${index}" aria-label="Remove gradient stop">−</button>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="cp-sv" data-cp-sv data-action="cp-key-slider" data-kind="sv" role="slider" tabindex="0" aria-label="Насыщенность и яркость" aria-valuetext="${Math.round(picker.s * 100)}%, ${Math.round(picker.v * 100)}%" style="background-color:${rgbaToHex({ ...hsvToRgb({ h: picker.h, s: 1, v: 1 }), a: 1 })}"><i class="cp-cursor" style="left:clamp(7px, ${picker.s * 100}%, calc(100% - 7px));top:clamp(7px, ${(1 - picker.v) * 100}%, calc(100% - 7px))"></i></div>
+    ${picker.stopPickerOpen ? colorPickerGradientStopColorView(picker) : ''}
+    <dl class="cp-info cp-gradient-info">
+      <div><dt>Gradient</dt><dd>Linear · ${Math.round(Number(gradient.angle) || 90)}°</dd></div>
+      <div><dt>Stop</dt><dd>${escapeHtml(gradient.stops[gradient.activeStop || 0]?.color || '#232323')}</dd></div>
+    </dl>`;
+}
 
 function colorPickerView() {
   const picker = state.colorPicker;
@@ -2402,19 +3023,30 @@ function colorPickerView() {
   if (!token || token.group !== 'colors') return '';
   const rgb = hsvToRgb(picker);
   const hex = rgbaToHex({ ...rgb, a: picker.a });
+  const displayHex = pickerDisplayHex(hex);
   const hsl = rgbToHsl(rgb);
   const hueColor = rgbaToHex({ ...hsvToRgb({ h: picker.h, s: 1, v: 1 }), a: 1 });
   const format = picker.format || 'hex';
   const formatInputs = format === 'hex'
-    ? `<input class="cp-field cp-hex-field" data-action="cp-input" data-field="hex" value="${hex.toUpperCase()}" aria-label="Hex">`
+    ? `<input class="cp-field cp-hex-field" data-action="cp-input" data-field="hex" value="${displayHex.toUpperCase()}" aria-label="Hex">`
     : format === 'rgb'
       ? ['r', 'g', 'b'].map((field) => `<input class="cp-field" data-action="cp-input" data-field="${field}" value="${Math.round(rgb[field])}" aria-label="${field.toUpperCase()}">`).join('')
       : ['h', 's', 'l'].map((field) => `<input class="cp-field" data-action="cp-input" data-field="${field}" value="${hsl[field]}" aria-label="${field.toUpperCase()}">`).join('');
-  return `<section class="color-picker-popover" role="dialog" aria-modal="false" aria-label="Color picker: ${escapeHtml(token.name)}, ${picker.mode === 'dark' ? 'Dark' : 'Light'}">
+  if (picker.tab !== 'library' && picker.paint === 'gradient') {
+    return `<section class="color-picker-popover is-gradient" role="dialog" aria-modal="false" aria-label="Color picker: ${escapeHtml(token.name)}, ${picker.mode === 'dark' ? 'Dark' : 'Light'}">
+      <header><div class="cp-tabs"><button type="button" class="is-active" data-action="cp-tab" data-tab="custom" data-autofocus>Custom</button><button type="button" data-action="cp-tab" data-tab="library">Library</button></div><button type="button" class="cp-close" data-action="close-color-picker" aria-label="Закрыть">×</button></header>
+      ${colorPickerGradientView(picker)}
+    </section>`;
+  }
+  return `<section class="color-picker-popover ${picker.tab === 'library' ? 'is-library' : ''}" role="dialog" aria-modal="false" aria-label="Color picker: ${escapeHtml(token.name)}, ${picker.mode === 'dark' ? 'Dark' : 'Light'}">
     <header><div class="cp-tabs"><button type="button" class="${picker.tab === 'library' ? '' : 'is-active'}" data-action="cp-tab" data-tab="custom" data-autofocus>Custom</button><button type="button" class="${picker.tab === 'library' ? 'is-active' : ''}" data-action="cp-tab" data-tab="library">Library</button></div><button type="button" class="cp-close" data-action="close-color-picker" aria-label="Закрыть">×</button></header>
-    ${picker.tab === 'library' ? `
-    <div class="cp-library">${colorPickerPresets.map((color) => `<button type="button" class="cp-preset ${color === hex ? 'is-active' : ''}" data-action="cp-preset" data-value="${color}" style="background:${color}" title="${color}" aria-label="${color}"></button>`).join('')}</div>` : `
-    <div class="cp-sv" data-cp-sv data-action="cp-key-slider" data-kind="sv" role="slider" tabindex="0" aria-label="Насыщенность и яркость" aria-valuetext="${Math.round(picker.s * 100)}%, ${Math.round(picker.v * 100)}%" style="background-color:${hueColor}"><i class="cp-cursor" style="left:${picker.s * 100}%;top:${(1 - picker.v) * 100}%"></i></div>
+    ${picker.tab === 'library' ? colorPickerLibraryView(displayHex) : `
+    ${colorPickerPaintToolbar(picker)}
+    <div class="cp-tool-row cp-tool-row-legacy" aria-hidden="true" hidden>
+      <div><span>▣</span><span>◈</span><span>◒</span></div>
+      <div><span>⊕</span><span>●</span><span>▥</span></div>
+    </div>
+    <div class="cp-sv" data-cp-sv data-action="cp-key-slider" data-kind="sv" role="slider" tabindex="0" aria-label="Насыщенность и яркость" aria-valuetext="${Math.round(picker.s * 100)}%, ${Math.round(picker.v * 100)}%" style="background-color:${hueColor}"><i class="cp-cursor" style="left:clamp(7px, ${picker.s * 100}%, calc(100% - 7px));top:clamp(7px, ${(1 - picker.v) * 100}%, calc(100% - 7px))"></i></div>
     <div class="cp-slider cp-hue" data-cp-hue data-action="cp-key-slider" data-kind="hue" role="slider" tabindex="0" aria-label="Hue" aria-valuemin="0" aria-valuemax="360" aria-valuenow="${Math.round(picker.h)}"><i style="left:${picker.h / 360 * 100}%"></i></div>
     <div class="cp-slider cp-alpha" data-cp-alpha data-action="cp-key-slider" data-kind="alpha" role="slider" tabindex="0" aria-label="Opacity" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(picker.a * 100)}" style="--cp-current:${rgbaToHex({ ...rgb, a: 1 })}"><i style="left:${picker.a * 100}%"></i></div>
     <div class="cp-format-row">
@@ -2423,7 +3055,7 @@ function colorPickerView() {
       <input class="cp-field cp-alpha-field" data-action="cp-input" data-field="a" value="${Math.round(picker.a * 100)}%" aria-label="Opacity">
     </div>
     <dl class="cp-info">
-      <div><dt>Hex</dt><dd>${hex.toUpperCase()} <button type="button" class="cp-copy" data-action="cp-copy" data-value="${hex}" aria-label="Скопировать hex">⧉</button></dd></div>
+      <div><dt>Hex</dt><dd>${displayHex.toUpperCase()} <button type="button" class="cp-copy" data-action="cp-copy" data-value="${displayHex}" aria-label="Скопировать hex">⧉</button></dd></div>
       <div><dt>RGB</dt><dd>${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)}</dd></div>
       <div><dt>HSL</dt><dd>${hsl.h}, ${hsl.s}%, ${hsl.l}%</dd></div>
     </dl>`}
@@ -2434,15 +3066,82 @@ function sectionTokenChanges() {
   return state.changes.filter((entry) => entry.kind === 'token' && state.tokens.find((token) => token.id === entry.id)?.group === state.editorTab);
 }
 
+// Baseline палитры — состояние на момент последней публикации. Счётчики изменений
+// и Reset сравнивают с ним, а не с шаблоном: опубликованные правки не «висят» как новые.
+function publishedPaletteBaseline() {
+  return state.publishedPalette || { overrides: {}, rowSources: {} };
+}
+
+function paletteEditCount() {
+  const base = publishedPaletteBaseline();
+  let count = 0;
+  const overrideRows = new Set([...Object.keys(state.sourcePaletteOverrides || {}), ...Object.keys(base.overrides || {})]);
+  overrideRows.forEach((rowName) => {
+    const current = state.sourcePaletteOverrides?.[rowName] || {};
+    const published = base.overrides?.[rowName] || {};
+    new Set([...Object.keys(current), ...Object.keys(published)]).forEach((step) => {
+      if (current[step] !== published[step]) count += 1;
+    });
+  });
+  const sourceRows = new Set([...Object.keys(state.sourcePaletteRowSources || {}), ...Object.keys(base.rowSources || {})]);
+  sourceRows.forEach((rowName) => {
+    if ((state.sourcePaletteRowSources || {})[rowName] !== (base.rowSources || {})[rowName]) count += 1;
+  });
+  return count;
+}
+
+function totalChangeCount() {
+  return state.changes.length + paletteEditCount();
+}
+
+function resetPaletteEdits() {
+  const base = publishedPaletteBaseline();
+  state.sourcePaletteOverrides = structuredClone(base.overrides || {});
+  state.sourcePaletteRowSources = structuredClone(base.rowSources || {});
+  state.sourcePaletteMode = Object.keys(state.sourcePaletteOverrides).length || Object.keys(state.sourcePaletteRowSources).length ? 'custom' : 'sber';
+  state.sourcePaletteRebuild = null;
+  if (state.sourcePaletteSelected) {
+    state.sourcePaletteSelected = { ...state.sourcePaletteSelected, hex: paletteValue(state.sourcePaletteSelected.row, state.sourcePaletteSelected.step) };
+  }
+}
+
+// Собственная модалка вместо window.confirm: браузер может блокировать повторные
+// системные диалоги («не показывать больше»), и тогда сброс молча не выполнялся.
+function resetConfirmModal() {
+  const scope = state.resetConfirm?.scope;
+  if (!scope) return '';
+  const isPaletteSection = scope === 'section' && state.editorTab === 'palette';
+  const tokenCount = scope === 'all' ? state.changes.length : (isPaletteSection ? 0 : sectionTokenChanges().length);
+  const palCount = scope === 'all' || isPaletteSection ? paletteEditCount() : 0;
+  const count = tokenCount + palCount;
+  const title = scope === 'all' ? 'Сбросить все изменения?' : isPaletteSection ? 'Сбросить изменения палитры?' : `Сбросить раздел ${tokenGroupLabels[state.editorTab] || state.editorTab}?`;
+  return `<div class="modal-backdrop reset-confirm-backdrop">
+    <section class="entity-modal reset-confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="reset-confirm-title">
+      <header>
+        <h2 id="reset-confirm-title">${title}</h2>
+        <button class="source-palette-modal-close" data-action="close-reset-confirm" aria-label="Закрыть">×</button>
+      </header>
+      <ul class="reset-confirm-list">
+        ${tokenCount ? `<li>Изменения токенов · ${tokenCount} — можно вернуть через Undo.</li>` : ''}
+        ${palCount ? `<li>Значения палитры · ${palCount} — вернутся к последней публикации, без Undo.</li>` : ''}
+      </ul>
+      <footer>
+        <button class="secondary" data-action="close-reset-confirm">Отмена</button>
+        <button class="danger" data-action="confirm-reset" data-autofocus>Сбросить · ${count}</button>
+      </footer>
+    </section>
+  </div>`;
+}
+
 function resetSplitButton(token, change) {
   const sectionCount = sectionTokenChanges().length;
   const sectionLabel = tokenGroupLabels[state.editorTab] || state.editorTab;
   return `<div class="reset-split ${state.resetMenuOpen ? 'is-open' : ''}">
     <button class="secondary" data-action="reset-token" data-id="${token.id}" title="Сбросить Light и Dark изменения выбранного token" ${change && canEditTheme() ? '' : 'disabled'}>Сбросить</button>
-    <button class="secondary reset-caret" data-action="toggle-reset-menu" aria-label="Варианты сброса" aria-expanded="${state.resetMenuOpen}" ${state.changes.length && canEditTheme() ? '' : 'disabled'}>⌄</button>
+    <button class="secondary reset-caret" data-action="toggle-reset-menu" aria-label="Варианты сброса" aria-expanded="${state.resetMenuOpen}" ${totalChangeCount() && canEditTheme() ? '' : 'disabled'}>⌄</button>
     ${state.resetMenuOpen ? `<div class="reset-dropdown">
       <button data-action="reset-section" ${sectionCount ? '' : 'disabled'}>Сбросить раздел ${sectionLabel}${sectionCount ? ` · ${sectionCount}` : ''}</button>
-      <button data-action="reset-all" ${state.changes.length ? '' : 'disabled'}>Сбросить все изменения · ${state.changes.length}</button>
+      <button data-action="reset-all" ${totalChangeCount() ? '' : 'disabled'}>Сбросить все изменения · ${totalChangeCount()}</button>
     </div>` : ''}
   </div>`;
 }
@@ -2463,7 +3162,7 @@ function paletteDarkFromBase(baseHex) {
   return rgbaToHex({ ...hslToRgb({ h: hsl.h, s: Math.round(hsl.s * 0.55), l: 62 }), a: 1 });
 }
 
-function paletteEditor() {
+function legacyPaletteEditor() {
   const viewer = state.role === 'viewer';
   const base = tokenDraftValue('primary', 'light');
   const dark = tokenDraftValue('primary', 'dark');
@@ -2506,18 +3205,1236 @@ function paletteEditor() {
   </section>`;
 }
 
+function paletteValue(rowName, step) {
+  const override = state.sourcePaletteOverrides?.[rowName]?.[String(step)];
+  if (override) return override;
+  const sourceRowName = state.sourcePaletteRowSources?.[rowName] || rowName;
+  const row = SDDS_ADDITIONAL_PALETTE.rows.find((item) => item.name === sourceRowName);
+  const index = SDDS_ADDITIONAL_PALETTE.steps.indexOf(String(step));
+  return row?.values?.[index] || '';
+}
+
+function sourcePaletteSourceRowName(rowName) {
+  return state.sourcePaletteRowSources?.[rowName] || rowName;
+}
+
+function sourcePaletteRebuildValues(rowName, step, pickedHex) {
+  const row = SDDS_ADDITIONAL_PALETTE.rows.find((item) => item.name === sourcePaletteSourceRowName(rowName));
+  if (!row) return {};
+  const stepIndex = SDDS_ADDITIONAL_PALETTE.steps.indexOf(String(step));
+  const picked = rgbToHsl(hexToRgba(pickedHex));
+  const ref = rgbToHsl(hexToRgba(row.values[stepIndex] || pickedHex));
+  const hueShift = picked.h - ref.h;
+  const satRatio = ref.s >= 3 ? picked.s / Math.max(ref.s, 1) : null;
+  const result = {};
+  SDDS_ADDITIONAL_PALETTE.steps.forEach((stepName, index) => {
+    const baseHex = row.values[index];
+    if (!baseHex) return;
+    if (stepName === String(step)) { result[stepName] = pickedHex.toUpperCase(); return; }
+    const base = rgbToHsl(hexToRgba(baseHex));
+    const h = ((base.h + hueShift) % 360 + 360) % 360;
+    const s = Math.max(0, Math.min(100, Math.round(satRatio === null ? picked.s : base.s * satRatio)));
+    result[stepName] = rgbaToHex({ ...hslToRgb({ h, s, l: base.l }), a: 1 }).toUpperCase();
+  });
+  return result;
+}
+
+function sourcePaletteLinkForValue(value) {
+  const parts = colorHexParts(value);
+  if (!parts) return null;
+  const rgb = [0, 2, 4].map((index) => parseInt(parts.rgbHex.slice(index, index + 2), 16));
+  const chroma = Math.max(...rgb) - Math.min(...rgb);
+  const candidates = SDDS_ADDITIONAL_PALETTE.rows
+    .filter((row) => chroma <= 14 ? ['Gray', 'Cool Gray'].includes(row.name) : row.name.startsWith('Hue'))
+    .flatMap((row) => row.values.map((hex, index) => ({ row: row.name, step: SDDS_ADDITIONAL_PALETTE.steps[index], hex })).filter((item) => item.hex));
+  return candidates.reduce((closest, candidate) => {
+    const candidateParts = colorHexParts(candidate.hex);
+    const candidateRgb = [0, 2, 4].map((index) => parseInt(candidateParts.rgbHex.slice(index, index + 2), 16));
+    const distance = candidateRgb.reduce((sum, channel, index) => sum + (channel - rgb[index]) ** 2, 0);
+    return !closest || distance < closest.distance ? { ...candidate, distance } : closest;
+  }, null);
+}
+
+function sourcePaletteLinkFromLabel(label) {
+  const match = /^(Gray|Cool Gray|Hue\d+)\s+(\d+)$/.exec(String(label || '').trim());
+  return match ? { row: match[1], step: match[2], match: 'library' } : null;
+}
+
+function sourcePaletteLinkedValue(link, originalValue) {
+  if (!link) return '';
+  const value = paletteValue(link.row, link.step);
+  const alpha = colorHexParts(originalValue)?.alphaHex;
+  return value && alpha && alpha !== 'ff' ? `${value}${alpha}` : value;
+}
+
+function sourcePaletteTokenPathLabel(token) {
+  const parts = String(token?.sourcePath || '').split('.').filter((part) => part && part !== 'Default');
+  if (parts[0] === 'Text&Icons') parts[0] = 'Text & Icons';
+  if (parts[0] === 'BG') parts[0] = 'Background';
+  return parts.join(' / ') || colorTokenDisplayName(token);
+}
+
+function sourcePaletteTokenLink(token, mode = 'light') {
+  const original = mode === 'dark' ? (token.darkValue ?? token.value ?? '') : (token.value ?? '');
+  const change = findChange('token', token.id, mode);
+  const currentValue = change?.to ?? (token.paletteLinks?.[mode] ? sourcePaletteLinkedValue(token.paletteLinks[mode], original) : original);
+  const libraryLink = sourcePaletteLinkFromLabel(currentColorLibraryValueLabel(token.id, mode, currentValue));
+  if (libraryLink) return libraryLink;
+  if (change) return null;
+  return token.paletteLinks?.[mode] || null;
+}
+
+function sourcePaletteLegacyCategoryDefs() {
+  return [
+    { id: 'neutral', label: 'Neutral', helper: 'Текст, поверхности, контуры и фоны.', rows: ['Gray', 'Cool Gray'] },
+    { id: 'accent', label: 'Accent', helper: 'Брендовый акцент и продуктовые highlight-цвета.', rows: ['Hue120', 'Hue130', 'Hue160'] },
+    { id: 'status', label: 'Status', helper: 'Positive, warning, negative и info-состояния.', rows: ['Hue140', 'Hue40', 'Hue0', 'Hue210'] },
+    { id: 'data', label: 'Data', helper: 'Графики, визуализация данных и дополнительные серии.', rows: ['Hue220', 'Hue250', 'Hue280', 'Hue300'] },
+  ];
+}
+
+function sourcePaletteCategoryIdForToken(token) {
+  const path = String(token?.sourcePath || '');
+  const section = String(token?.colorSection || path.split('.')[0] || '').trim().toLowerCase();
+  const customCategory = (state.sourcePaletteCustomCategories || []).find((category) =>
+    category.id === section || String(category.label || '').trim().toLowerCase() === section);
+  if (customCategory) return customCategory.id;
+  if (token?.colorSection === 'Data' || path.startsWith('Data.')) return 'data';
+  if (token?.colorSection === 'Syntax' || path.startsWith('Syntax.')) return 'syntax';
+  if (path.includes('.Status.')) return 'status';
+  if (path.includes('.Accent.')) return 'accent';
+  return 'neutral';
+}
+
+function sourcePaletteUsedRowsForCategory(categoryId) {
+  const linkedRows = state.tokens
+    .filter((token) => token.group === 'colors' && !token.isInternalAlias && sourcePaletteCategoryIdForToken(token) === categoryId)
+    .flatMap((token) => ['light', 'dark'].map((mode) => sourcePaletteTokenLink(token, mode)?.row))
+    .filter(Boolean);
+  const manuallyAdded = state.sourcePaletteAddedRowsByCategory?.[categoryId] || [];
+  const order = new Map(SDDS_ADDITIONAL_PALETTE.rows.map((row, index) => [row.name, index]));
+  return [...new Set([...linkedRows, ...manuallyAdded])]
+    .sort((a, b) => (order.get(a) ?? 999) - (order.get(b) ?? 999));
+}
+
+function sourcePaletteDefaultCategoryDefs() {
+  const defaultCategories = [
+    { id: 'neutral', label: 'Neutral', helper: 'Текст, поверхности, контуры и фоны.' },
+    { id: 'accent', label: 'Accent', helper: 'Брендовый акцент и продуктовые highlight-цвета.' },
+    { id: 'status', label: 'Status', helper: 'Positive, warning, negative и info-состояния.' },
+    { id: 'data', label: 'Data', helper: 'Графики, визуализация данных и дополнительные серии.' },
+    { id: 'syntax', label: 'Syntax', helper: 'Цвета для подсветки синтаксиса и кода.' },
+  ];
+  const customCategories = (state.sourcePaletteCustomCategories || []).map((category) => ({
+    ...category,
+    helper: category.helper || 'Пользовательская группа палитр.',
+    isCustom: true,
+  }));
+  return [...defaultCategories, ...customCategories]
+    .map((category) => ({ ...category, rows: sourcePaletteUsedRowsForCategory(category.id) }));
+}
+
+function sourcePaletteTemplateRows() {
+  return sourcePaletteDefaultCategoryDefs()
+    .flatMap((category) => category.rows)
+    .filter((rowName, index, list) => list.indexOf(rowName) === index)
+    .filter((rowName) => SDDS_ADDITIONAL_PALETTE.rows.some((row) => row.name === rowName));
+}
+
+function sourcePaletteLibraryRows() {
+  return SDDS_ADDITIONAL_PALETTE.rows.map((row) => row.name);
+}
+
+function sourcePaletteIsRowEnabled(rowName) {
+  const disabled = new Set(state.sourcePaletteDisabledRows || []);
+  return sourcePaletteTemplateRows().includes(rowName) && !disabled.has(rowName);
+}
+
+function sourcePaletteFamilyBindings(rowName, categoryId = '') {
+  return state.tokens
+    .filter((token) => token.group === 'colors' && !token.isInternalAlias)
+    .filter((token) => !categoryId || sourcePaletteCategoryIdForToken(token) === categoryId)
+    .flatMap((token) => ['light', 'dark'].map((mode) => ({ token, mode, link: sourcePaletteTokenLink(token, mode) })))
+    .filter(({ link }) => link?.row === rowName);
+}
+
+function sourcePaletteGroupsForRow(rowName) {
+  return sourcePaletteDefaultCategoryDefs().filter((category) => category.rows.includes(rowName));
+}
+
+function sourcePaletteReassignGroup(rowName, categoryId, replacementRowName = '') {
+  const bindings = sourcePaletteFamilyBindings(rowName, categoryId);
+  bindings.forEach(({ token, mode, link }) => {
+    const currentValue = tokenDraftValue(token.id, mode);
+    if (replacementRowName) {
+      const nextValue = sourcePaletteLinkedValue({ row: replacementRowName, step: link.step }, currentValue);
+      addChange('token', token.id, nextValue, mode);
+      setColorLibraryValueLabel(token.id, mode, nextValue, colorLibraryDisplayLabel(replacementRowName, link.step));
+    } else {
+      addChange('token', token.id, currentValue, mode);
+      clearColorLibraryValueLabel(token.id, mode);
+    }
+  });
+  state.sourcePaletteAddedRowsByCategory ||= {};
+  state.sourcePaletteAddedRowsByCategory[categoryId] = (state.sourcePaletteAddedRowsByCategory[categoryId] || [])
+    .filter((item) => item !== rowName);
+  if (replacementRowName) {
+    state.sourcePaletteAddedRowsByCategory[categoryId] = [...new Set([
+      ...state.sourcePaletteAddedRowsByCategory[categoryId],
+      replacementRowName,
+    ])];
+  }
+  const category = sourcePaletteDefaultCategoryDefs().find((item) => item.id === categoryId);
+  state.sourcePaletteSelected = replacementRowName
+    ? { row: replacementRowName, categoryId, step: state.sourcePaletteSelected?.step || '500', hex: paletteValue(replacementRowName, state.sourcePaletteSelected?.step || '500') }
+    : state.sourcePaletteSelected;
+  state.sourcePaletteRemoveTarget = '';
+  state.sourcePaletteRemoveIntent = 'remove';
+  state.toastMessage = replacementRowName
+    ? `${rowName} заменена на ${replacementRowName} только в группе ${category?.label || categoryId}. Переназначено связей: ${bindings.length}.`
+    : `${rowName} убрана из группы ${category?.label || categoryId}. ${bindings.length ? 'Текущие значения сохранены как Custom.' : ''}`;
+}
+
+function sourcePaletteSelectFallback(removedRowName) {
+  const category = sourcePaletteCategoryForRow(removedRowName);
+  const fallbackRow = category.rows.find((rowName) => rowName !== removedRowName && sourcePaletteIsRowEnabled(rowName))
+    || sourcePaletteTemplateRows().find((rowName) => rowName !== removedRowName && sourcePaletteIsRowEnabled(rowName));
+  if (!fallbackRow) return;
+  const step = String(state.sourcePaletteSelected?.step || '500');
+  const nextStep = SDDS_ADDITIONAL_PALETTE.steps.includes(step) ? step : '500';
+  state.sourcePaletteSelected = { row: fallbackRow, categoryId: category.id, step: nextStep, hex: paletteValue(fallbackRow, nextStep) };
+}
+
+function sourcePaletteRemoveFamily(rowName, replacementRowName = '') {
+  const bindings = sourcePaletteFamilyBindings(rowName);
+  bindings.forEach(({ token, mode, link }) => {
+    const currentValue = tokenDraftValue(token.id, mode);
+    if (replacementRowName) {
+      const nextValue = sourcePaletteLinkedValue({ row: replacementRowName, step: link.step }, currentValue);
+      addChange('token', token.id, nextValue, mode);
+      setColorLibraryValueLabel(token.id, mode, nextValue, colorLibraryDisplayLabel(replacementRowName, link.step));
+    } else {
+      addChange('token', token.id, currentValue, mode);
+      clearColorLibraryValueLabel(token.id, mode);
+    }
+  });
+  const disabled = new Set(state.sourcePaletteDisabledRows || []);
+  disabled.add(rowName);
+  state.sourcePaletteDisabledRows = [...disabled];
+  state.sourcePaletteAddedRowsByCategory = Object.fromEntries(Object.entries(state.sourcePaletteAddedRowsByCategory || {})
+    .map(([categoryId, rows]) => [categoryId, rows.filter((item) => item !== rowName)]));
+  if (state.sourcePaletteSelected?.row === rowName) sourcePaletteSelectFallback(rowName);
+  state.sourcePaletteRemoveTarget = '';
+  state.toastMessage = replacementRowName
+    ? `${rowName} removed. ${bindings.length} theme links reassigned to ${replacementRowName}.`
+    : `${rowName} removed. ${bindings.length ? `${bindings.length} linked values preserved as Custom.` : 'No semantic links were affected.'}`;
+}
+
+function sourcePaletteRowByName(rowName) {
+  return SDDS_ADDITIONAL_PALETTE.rows.find((row) => row.name === rowName);
+}
+
+function sourcePaletteCategoryForRow(rowName) {
+  return sourcePaletteDefaultCategoryDefs().find((category) => category.rows.includes(rowName)) || { id: 'additional', label: 'Additional', helper: 'Дополнительная брендовая ось.', rows: [] };
+}
+
+function sourcePaletteSelectionCategoryId(rowName, preferred = '') {
+  const categories = sourcePaletteDefaultCategoryDefs();
+  if (preferred && categories.some((category) => category.id === preferred && category.rows.includes(rowName))) return preferred;
+  return categories.find((category) => category.rows.includes(rowName))?.id || '';
+}
+
+function sourcePaletteSemanticTokenDefs() {
+  return [
+    { sourcePath: 'Text&Icons.Default.General.Primary', row: 'Gray', step: '900', title: 'Text & Icons / General / Primary' },
+    { sourcePath: 'Text&Icons.Default.General.Secondary', row: 'Gray', step: '300', title: 'Text & Icons / General / Secondary' },
+    { sourcePath: 'Text&Icons.Default.General.Tertiary', row: 'Gray', step: '600', title: 'Text & Icons / General / Tertiary' },
+    { sourcePath: 'Text&Icons.Default.General.Paragraph', row: 'Gray', step: '700', title: 'Text & Icons / General / Paragraph' },
+    { sourcePath: 'Text&Icons.Default.Accent.Accent', row: 'Hue120', step: '500', title: 'Text & Icons / Accent / Accent' },
+    { sourcePath: 'Surfaces.Default.General.Solid.Primary', row: 'Cool Gray', step: '700', title: 'Surfaces / General / Solid / Primary' },
+    { sourcePath: 'Surfaces.Default.General.Solid.Secondary', row: 'Cool Gray', step: '600', title: 'Surfaces / General / Solid / Secondary' },
+    { sourcePath: 'Outlines.Default.General.Solid.Primary', row: 'Gray', step: '400', title: 'Outlines / General / Solid / Primary' },
+    { sourcePath: 'Outlines.Default.Accent.Solid.Accent', row: 'Hue120', step: '500', title: 'Outlines / Accent / Solid / Accent' },
+    { sourcePath: 'BG.Default.Primary', row: 'Gray', step: '100', title: 'Background / Primary' },
+    { sourcePath: 'Text&Icons.Default.Status.Positive', row: 'Hue140', step: '500', title: 'Text & Icons / Status / Positive' },
+    { sourcePath: 'Text&Icons.Default.Status.Warning', row: 'Hue40', step: '300', title: 'Text & Icons / Status / Warning' },
+    { sourcePath: 'Text&Icons.Default.Status.Negative', row: 'Hue0', step: '500', title: 'Text & Icons / Status / Negative' },
+    { sourcePath: 'Text&Icons.Default.Status.Info', row: 'Hue210', step: '500', title: 'Text & Icons / Status / Info' },
+  ];
+}
+
+function sourcePaletteLinkedTokens(rowName, step) {
+  const sourceLabel = colorLibraryDisplayLabel(rowName, step).toLowerCase();
+  const semanticDefs = sourcePaletteSemanticTokenDefs();
+  const dynamic = state.tokens
+    .filter((token) => token.group === 'colors')
+    .flatMap((token) => ['light', 'dark'].map((mode) => ({ token, mode, label: currentColorLibraryValueLabel(token.id, mode) })))
+    .filter((entry) => entry.label.toLowerCase() === sourceLabel)
+    .map(({ token, mode }) => ({
+      tokenId: token.id,
+      title: semanticDefs.find((item) => item.sourcePath === token.sourcePath)?.title || token.hint || colorTokenDisplayName(token),
+      detail: `${mode === 'dark' ? 'Dark' : 'Light'} · ${colorLibraryDisplayLabel(rowName, step)}`,
+      kind: 'Semantic token',
+    }));
+  const defaults = semanticDefs
+    .filter((item) => item.row === rowName && String(item.step) === String(step))
+    .map((item) => ({ item, token: state.tokens.find((token) => !token.isInternalAlias && token.sourcePath === item.sourcePath) }))
+    .filter(({ token }) => token)
+    .filter(({ token }) => !dynamic.some((entry) => entry.tokenId === token.id))
+    .map(({ item, token }) => ({
+      tokenId: token.id,
+      title: item.title,
+      detail: colorLibraryDisplayLabel(rowName, step),
+      kind: 'Semantic token',
+    }));
+  return [...dynamic, ...defaults];
+}
+
+function sourcePaletteLinkedTokensFromFile(rowName, step, categoryId = '') {
+  return state.tokens
+    .filter((token) => token.group === 'colors' && !token.isInternalAlias)
+    .filter((token) => !categoryId || sourcePaletteCategoryIdForToken(token) === categoryId)
+    .flatMap((token) => ['light', 'dark'].map((mode) => ({ token, mode, link: sourcePaletteTokenLink(token, mode) })))
+    .filter(({ link }) => link?.row === rowName && String(link.step) === String(step))
+    .map(({ token, mode, link }) => ({
+      tokenId: token.id,
+      title: colorTokenDisplayName(token),
+      detail: `${mode === 'dark' ? 'Dark' : 'Light'} · ${colorLibraryDisplayLabel(link.row, link.step)}`,
+      kind: 'Semantic token',
+      mode,
+    }));
+}
+
+function sourcePaletteRowUsage(rowName, step, categoryId = '') {
+  const exact = sourcePaletteRoleDefs.filter((role) => {
+    const mapped = sourcePaletteRoleMapping()[role.id];
+    return mapped.row === rowName && String(mapped.step) === String(step);
+  }).map((role) => ({
+    title: role.label,
+    detail: role.semantic,
+    kind: 'Semantic tokens',
+  }));
+  const familyUsage = {
+    Gray: [['Text & Icons', 'textPrimary, textSecondary, textTertiary'], ['Surfaces', 'surfacePrimary, bgPrimary, outlinePrimary']],
+    'Cool Gray': [['B2B neutral layer', 'secondary surfaces, outlines, disabled states']],
+    Hue120: [['Brand accent', 'textAccent, action, focus, accent surfaces']],
+    Hue130: [['Brand accent minor', 'minor акценты и дополнительные brand-состояния']],
+    Hue160: [['Data / accent extension', 'dataPositive, charts, secondary accent']],
+    Hue140: [['Positive status', 'statusPositive, success badges, validation']],
+    Hue40: [['Warning status', 'statusWarning, alerts, attention states']],
+    Hue0: [['Negative status', 'statusNegative, error, destructive']],
+    Hue210: [['Info status', 'statusInfo, help, informational states']],
+    Hue220: [['Data blue', 'charts, analytics, info visuals']],
+    Hue250: [['Data violet', 'charts, secondary data series']],
+    Hue280: [['Data purple', 'charts, complex dashboards']],
+    Hue300: [['Data pink', 'charts, accent data series']],
+  }[rowName] || [];
+  const family = familyUsage.map(([title, detail]) => ({ title, detail, kind: 'Family usage' }));
+  return sourcePaletteLinkedTokensFromFile(rowName, step, categoryId);
+}
+
+function sourcePaletteUsageForScope(rowName, step, categoryId, scope = 'swatch') {
+  const entries = scope === 'family'
+    ? SDDS_ADDITIONAL_PALETTE.steps.flatMap((paletteStep) => sourcePaletteLinkedTokensFromFile(rowName, paletteStep, categoryId)
+      .map((item) => ({ ...item, step: String(paletteStep), hex: paletteValue(rowName, paletteStep) })))
+    : sourcePaletteLinkedTokensFromFile(rowName, step, categoryId)
+      .map((item) => ({ ...item, step: String(step), hex: paletteValue(rowName, step) }));
+  const grouped = new Map();
+  entries.forEach((item) => {
+    const current = grouped.get(item.tokenId) || { ...item, modes: [], steps: [], hex: item.hex };
+    if (!current.modes.includes(item.mode)) current.modes.push(item.mode);
+    if (!current.steps.includes(item.step)) current.steps.push(item.step);
+    grouped.set(item.tokenId, current);
+  });
+  return [...grouped.values()];
+}
+
+const sourcePaletteRoleDefs = [
+  { id: 'text', label: 'Text base', semantic: 'textPrimary, textSecondary', row: 'Gray', step: '1000', helper: 'Базовая ось для текста и иконок.', usedBy: 8 },
+  { id: 'surface', label: 'Surface base', semantic: 'surfacePrimary, bgPrimary', row: 'Gray', step: '100', helper: 'Нейтральная основа для поверхностей и фонов.', usedBy: 7 },
+  { id: 'brand', label: 'Brand accent', semantic: 'textAccent, action, focus', row: 'Hue120', step: '500', helper: 'Главный брендовый акцент темы.', usedBy: 9 },
+  { id: 'positive', label: 'Positive', semantic: 'statusPositive, dataPositive', row: 'Hue140', step: '500', helper: 'Success-состояния, позитивные данные и подтверждения.', usedBy: 5 },
+  { id: 'warning', label: 'Warning', semantic: 'statusWarning', row: 'Hue40', step: '300', helper: 'Предупреждения, alert и attention-сценарии.', usedBy: 4 },
+  { id: 'negative', label: 'Negative', semantic: 'statusNegative, destructive', row: 'Hue0', step: '500', helper: 'Ошибки, destructive action и критичные статусы.', usedBy: 5 },
+  { id: 'info', label: 'Info', semantic: 'statusInfo, dataInfo', row: 'Hue210', step: '500', helper: 'Информационные статусы и вспомогательная data-визуализация.', usedBy: 4 },
+];
+
+function sourcePaletteRoleMapping() {
+  const custom = state.sourcePaletteMapping || {};
+  return Object.fromEntries(sourcePaletteRoleDefs.map((role) => {
+    const mapped = custom[role.id] || {};
+    const row = mapped.row || role.row;
+    const step = String(mapped.step || role.step);
+    const hex = mapped.hex || paletteValue(row, step);
+    return [role.id, { ...role, row, step, hex }];
+  }));
+}
+
+function wcagGrade(ratio) {
+  if (ratio === null) return { label: '—', ok: false, helper: 'Нет значения' };
+  if (ratio >= 7) return { label: 'AAA', ok: true, helper: 'Проходит AAA' };
+  if (ratio >= 4.5) return { label: 'AA', ok: true, helper: 'Проходит AA для обычного текста' };
+  if (ratio >= 3) return { label: 'Large', ok: false, helper: 'Только крупный текст или графика' };
+  return { label: 'Fail', ok: false, helper: 'Не проходит WCAG AA' };
+}
+
+function sourcePaletteWcagPairs(mapping) {
+  const surface = mapping.surface?.hex || '#ffffff';
+  return [
+    ['Text / Surface', mapping.text?.hex, surface, 'Обычный текст на базовой поверхности'],
+    ['Brand / Surface', mapping.brand?.hex, surface, 'Акцентный текст, ссылки и иконки'],
+    ['Positive / Surface', mapping.positive?.hex, surface, 'Success-состояния на поверхности'],
+    ['Warning / Surface', mapping.warning?.hex, surface, 'Warning-состояния на поверхности'],
+    ['Negative / Surface', mapping.negative?.hex, surface, 'Error-состояния на поверхности'],
+    ['Info / Surface', mapping.info?.hex, surface, 'Info-состояния на поверхности'],
+  ].map(([label, foreground, background, helper]) => {
+    const ratio = contrastRatio(foreground, background);
+    return { label, foreground, background, helper, ratio, grade: wcagGrade(ratio) };
+  });
+}
+
+function paletteKindLabel(rowName) {
+  if (rowName === 'Gray' || rowName === 'Cool Gray') return 'Neutral';
+  const hue = Number(String(rowName).replace('Hue', ''));
+  if (hue <= 30 || hue >= 330) return 'Red';
+  if (hue <= 60) return 'Orange / Yellow';
+  if (hue <= 150) return 'Green';
+  if (hue <= 190) return 'Cyan';
+  if (hue <= 240) return 'Blue';
+  if (hue <= 290) return 'Violet';
+  return 'Magenta';
+}
+
+function paletteRowChip(row) {
+  const colors = row.values.filter(Boolean);
+  const gradient = colors.length ? `linear-gradient(90deg, ${colors.join(',')})` : '#2b3038';
+  return `<span class="source-palette-row-chip" style="background:${gradient}"></span>`;
+}
+
+function sourcePaletteCell(row, step, hex) {
+  if (!hex) {
+    return `<span class="source-palette-cell source-palette-cell-empty" title="${escapeHtml(row.name)} ${escapeHtml(step)}: значение не найдено в Figma">—</span>`;
+  }
+  const rgb = hexToRgba(hex) || { r: 0, g: 0, b: 0, a: 1 };
+  const darkText = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000 > 158;
+  const selected = state.sourcePaletteSelected?.row === row.name && String(state.sourcePaletteSelected?.step) === String(step);
+  return `<button class="source-palette-cell ${darkText ? 'is-light' : 'is-dark'} ${selected ? 'is-selected' : ''}" data-action="select-source-color" data-row="${escapeHtml(row.name)}" data-step="${escapeHtml(step)}" data-hex="${escapeHtml(hex)}" style="background:${escapeHtml(hex)}" title="${escapeHtml(row.name)} ${escapeHtml(step)} · ${escapeHtml(hex)}">
+    <b>${escapeHtml(step)}</b>
+    <small>${escapeHtml(hex.replace('#', ''))}</small>
+  </button>`;
+}
+
+// Направление рамп в интерфейсе: светлые ступени слева (100), тёмные справа (1000).
+// Данные Plasma-палитры остаются в исходном порядке 1000→100 — разворачиваем только вывод,
+// чтобы индексы значений, связи и проверка монотонности светлоты не менялись.
+function sourcePaletteDisplaySteps() {
+  return [...SDDS_ADDITIONAL_PALETTE.steps].reverse();
+}
+
+function sourcePaletteRows(rows) {
+  const steps = sourcePaletteDisplaySteps();
+  return rows.map((row) => `<section class="source-palette-row">
+    <div class="source-palette-row-title">
+      ${paletteRowChip(row)}
+      <div><strong>${escapeHtml(row.name)}</strong><span>${escapeHtml(paletteKindLabel(row.name))}</span></div>
+    </div>
+    <div class="source-palette-scale" style="--source-step-count:${steps.length}">
+      ${steps.map((step) => sourcePaletteCell(row, step, paletteValue(row.name, step))).join('')}
+    </div>
+  </section>`).join('');
+}
+
+function sourcePaletteMatrix(title, rows, note = '') {
+  return `<section class="form-card source-palette-card">
+    <div class="source-palette-section-head">
+      <div><h2>${escapeHtml(title)}</h2>${note ? `<p>${escapeHtml(note)}</p>` : ''}</div>
+      <span>${rows.reduce((sum, row) => sum + row.values.filter(Boolean).length, 0)} colors</span>
+    </div>
+    <div class="source-palette-table">
+      <div class="source-palette-step-head">
+        <span></span>
+        <div class="source-palette-scale" style="--source-step-count:${SDDS_ADDITIONAL_PALETTE.steps.length}">
+          ${sourcePaletteDisplaySteps().map((step) => `<i>${escapeHtml(step)}</i>`).join('')}
+        </div>
+      </div>
+      ${sourcePaletteRows(rows)}
+    </div>
+  </section>`;
+}
+
+function semanticAnchorCard(label, semantic, row, step, helper) {
+  const hex = paletteValue(row, step);
+  return `<div class="source-palette-anchor">
+    <span class="source-palette-anchor-swatch" style="background:${escapeHtml(hex || '#2b3038')}"></span>
+    <div><strong>${escapeHtml(label)}</strong><code>${escapeHtml(semantic)}</code><small>${escapeHtml(row)} ${escapeHtml(String(step))}${hex ? ` · ${escapeHtml(hex)}` : ''}</small></div>
+    <p>${escapeHtml(helper)}</p>
+  </div>`;
+}
+
+function sourcePaletteConfigurator(viewer = false) {
+  const selected = state.sourcePaletteSelected || { row: 'Hue120', step: '500', hex: '#15A315' };
+  const mode = state.sourcePaletteMode || 'sber';
+  const mapping = sourcePaletteRoleMapping();
+  const wcagPairs = sourcePaletteWcagPairs(mapping);
+  const failedPairs = wcagPairs.filter((item) => !item.grade.ok).length;
+  const canMap = mode === 'custom' && !viewer;
+  return `<section class="form-card source-palette-config">
+    <div class="source-palette-section-head">
+      <div>
+        <h2>Настройка палитры</h2>
+        <p>Сначала выберите цвет в матрице, затем назначьте его на роль палитры. Роли дальше становятся источниками semantic tokens.</p>
+      </div>
+      <div class="source-palette-mode-switch" role="group" aria-label="Palette mode">
+        <button class="${mode === 'sber' ? 'is-active' : ''}" data-action="set-source-palette-mode" data-mode="sber">Sber palette</button>
+        <button class="${mode === 'custom' ? 'is-active' : ''}" data-action="set-source-palette-mode" data-mode="custom" ${viewer ? 'disabled' : ''}>Custom copy</button>
+      </div>
+    </div>
+    ${mode === 'custom' ? `<div class="source-palette-custom-warning"><strong>Custom copy</strong><span>Палитра больше не считается соответствующей брендбуку Сбера. Перед публикацией потребуется отдельное согласование.</span></div>` : `<div class="source-palette-locked"><strong>Sber palette locked</strong><span>Брендовая палитра доступна как рекомендуемый источник. Чтобы менять роли, создайте Custom copy.</span><button data-action="set-source-palette-mode" data-mode="custom" ${viewer ? 'disabled' : ''}>Настроить копию</button></div>`}
+    <div class="source-palette-config-grid">
+      <aside class="source-palette-selected-card">
+        <span class="source-palette-selected-swatch" style="background:${escapeHtml(selected.hex)}"></span>
+        <div><strong>${escapeHtml(selected.row)} · ${escapeHtml(String(selected.step))}</strong><code>${escapeHtml(selected.hex)}</code></div>
+        <button class="secondary" data-action="cp-copy" data-value="${escapeHtml(selected.hex)}">Copy HEX</button>
+      </aside>
+      <div class="source-palette-role-actions">
+        ${sourcePaletteRoleDefs.map((role) => `<button data-action="map-source-color" data-role="${role.id}" ${canMap ? '' : 'disabled'}><span>Назначить</span><strong>${escapeHtml(role.label)}</strong><small>${escapeHtml(role.semantic)}</small></button>`).join('')}
+      </div>
+    </div>
+    <div class="source-palette-mapping-table">
+      ${sourcePaletteRoleDefs.map((role) => {
+        const item = mapping[role.id];
+        return `<div class="source-palette-mapping-row">
+          <span class="source-palette-anchor-swatch" style="background:${escapeHtml(item.hex || '#2b3038')}"></span>
+          <strong>${escapeHtml(role.label)}</strong>
+          <code>${escapeHtml(role.semantic)}</code>
+          <span>${escapeHtml(item.row)} ${escapeHtml(item.step)}</span>
+          <b>${escapeHtml(item.hex || '—')}</b>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="source-palette-wcag">
+      <div class="source-palette-wcag-head"><h3>WCAG validation</h3><span class="${failedPairs ? 'is-bad' : ''}">${failedPairs ? `${failedPairs} issues` : 'AA passed'}</span></div>
+      <div class="source-palette-wcag-grid">
+        ${wcagPairs.map((item) => `<article class="${item.grade.ok ? '' : 'is-bad'}">
+          <div class="source-palette-wcag-preview" style="background:${escapeHtml(item.background || '#fff')};color:${escapeHtml(item.foreground || '#000')}">Aa</div>
+          <div><strong>${escapeHtml(item.label)}</strong><small>${escapeHtml(item.helper)}</small></div>
+          <b>${item.ratio ? item.ratio.toFixed(2) : '—'}</b>
+          <span>${escapeHtml(item.grade.label)}</span>
+          <em>${escapeHtml(item.grade.helper)}</em>
+        </article>`).join('')}
+      </div>
+    </div>
+  </section>`;
+}
+
+function paletteEditor() {
+  const viewer = state.role === 'viewer';
+  const neutralRows = SDDS_ADDITIONAL_PALETTE.rows.filter((row) => row.name === 'Gray' || row.name === 'Cool Gray');
+  const hueRows = SDDS_ADDITIONAL_PALETTE.rows.filter((row) => row.name.startsWith('Hue'));
+  const swatchCount = SDDS_ADDITIONAL_PALETTE.rows.reduce((sum, row) => sum + row.values.filter(Boolean).length, 0);
+  const missingCount = SDDS_ADDITIONAL_PALETTE.rows.reduce((sum, row) => sum + row.values.filter((value) => !value).length, 0);
+  const anchors = [
+    ['Text / main', 'textPrimary', 'Gray', '1000', 'Основной текст: тёмный в Light и светлая пара из этой же шкалы в Dark.'],
+    ['Surface / base', 'surfacePrimary', 'Gray', '100', 'Базовые поверхности берём из нейтральной шкалы, а не из brand.'],
+    ['Brand accent', 'textAccent', 'Hue120', '500', 'Стартовая зелёная ось для Sber Base / Malachite-подобных тем.'],
+    ['Positive', 'dataPositive', 'Hue140', '500', 'Статусы лучше держать в отдельной оси, даже если она близка к brand.'],
+    ['Warning', 'textStatusWarning', 'Hue40', '300', 'Жёлто-оранжевая зона для warning, badge и alert.'],
+    ['Negative', 'textStatusNegative', 'Hue0', '500', 'Красная зона для ошибок и destructive-состояний.'],
+    ['Info', 'textStatusInfo', 'Hue210', '500', 'Синяя зона для информационных состояний и data-визуализации.'],
+  ];
+  return `<section class="workspace-page palette-page source-palette-page">
+    ${draftStatusBanner()}
+    <div class="workspace-page-header source-palette-hero">
+      <div>
+        <span class="source-palette-eyebrow">${escapeHtml(SDDS_ADDITIONAL_PALETTE.source)}</span>
+        <h1>Palette</h1>
+        <p>Исходная палитра SDDS: сначала выбираем цветовую ось и шаг, потом привязываем semantic tokens во вкладке Colors.</p>
+      </div>
+      <div class="source-palette-stats">
+        <span><b>${swatchCount}</b> swatches</span>
+        <span><b>${SDDS_ADDITIONAL_PALETTE.rows.length}</b> families</span>
+        <span title="Hue110 / 1000 не найден в исходном фрейме"><b>${missingCount}</b> missing</span>
+      </div>
+    </div>
+    ${viewer ? `<div class="viewer-banner">Read-only access ${state.accessRequested ? '· request sent' : '<button data-action="request-access">Request edit access</button>'}</div>` : ''}
+    <section class="source-palette-brand-notice" aria-label="Brand compliance notice">
+      <div>
+        <strong>Палитра соответствует брендбуку Сбера</strong>
+        <p>Эти цвета рекомендованы для продуктов, которые взаимодействуют с внешними пользователями, не сотрудниками Сбера.</p>
+      </div>
+      <div>
+        <strong>Изменять можно, но с предупреждением</strong>
+        <p>Если команда заменяет эту палитру на свою, Theme перестаёт считаться бренд-соответствующей и должна пройти отдельное согласование.</p>
+      </div>
+    </section>
+    ${sourcePaletteConfigurator(viewer)}
+    <section class="form-card source-palette-guide">
+      <div>
+        <h2>Как читать экран</h2>
+        <p><b>1000–700</b> — тёмные значения для текста и тёмных поверхностей. <b>600–400</b> — насыщенная середина для brand/status/action. <b>300–100</b> — светлые фоны, подложки и minor-состояния.</p>
+      </div>
+      <div>
+        <h2>Что получит дизайнер</h2>
+        <p>После выбора шага можно использовать его как source color: скопировать hex сейчас, а следующим шагом — привязать semantic token к этой ячейке вместо ручного hex.</p>
+      </div>
+      <div>
+        <h2>Accessibility</h2>
+        <p>Валидация должна жить на связке semantic token + фон. Сама палитра показывает сырьё, а вкладка Colors проверяет пары вроде textPrimary / surfacePrimary.</p>
+      </div>
+    </section>
+    ${sourcePaletteMatrix('Neutral', neutralRows, 'Gray и Cool Gray — основа для текста, поверхностей, контуров и фонов.')}
+    <section class="form-card source-palette-card source-palette-anchors-card">
+      <div class="source-palette-section-head">
+        <div><h2>Рекомендуемые якоря для Base</h2><p>Не финальная автомапа, а стартовые подсказки: какие шкалы обычно становятся источником семантики.</p></div>
+        <button class="secondary" data-route="editor" data-tab="colors">Открыть semantic tokens</button>
+      </div>
+      <div class="source-palette-anchors">${anchors.map((item) => semanticAnchorCard(...item)).join('')}</div>
+    </section>
+    ${sourcePaletteMatrix('Hue spectrum', hueRows, 'Цветовые оси из Plasma Additional Palette: brand, status, data и syntax лучше выбирать отсюда, а не из произвольного picker.')}
+    <section class="form-card source-palette-next">
+      <h2>Что нужно добавить дальше</h2>
+      <div class="source-palette-next-grid">
+        <p><b>Mapping mode</b><span>Клик по semantic token → выбор source palette cell → связь хранится как ссылка, не как голый hex.</span></p>
+        <p><b>Used by</b><span>Показывать, какие semantic tokens и компоненты используют выбранный swatch.</span></p>
+        <p><b>Contrast pairs</b><span>Проверять пары text/surface/bg и подсвечивать fail прямо на связях.</span></p>
+      </div>
+    </section>
+    ${colorPickerView()}
+  </section>`;
+}
+
+function sourcePaletteTokenPathV2(row, step) {
+  const family = String(row).replace(/\s+/g, '-').toLowerCase();
+  return `color/${family}/${step}`;
+}
+
+function sourcePaletteTokenLabelV2(row, step) {
+  return `${row} ${step}`;
+}
+
+function sourcePaletteRoleCardV2(role, item) {
+  const changed = item.row !== role.row || String(item.step) !== String(role.step);
+  return `<article class="source-palette-role-card ${changed ? 'is-overridden' : ''}">
+    <span class="source-palette-anchor-swatch" style="background:${escapeHtml(item.hex || '#2b3038')}"></span>
+    <div>
+      <strong>${escapeHtml(role.label)}</strong>
+      <code>${escapeHtml(role.semantic)}</code>
+      <small>${escapeHtml(sourcePaletteTokenLabelV2(item.row, item.step))}${item.hex ? ` · ${escapeHtml(item.hex)}` : ''}</small>
+    </div>
+    <p>${escapeHtml(role.helper)}</p>
+    <b>${escapeHtml(String(role.usedBy || 0))} tokens</b>
+  </article>`;
+}
+
+function sourcePaletteSelectedPanelV2(viewer = false) {
+  const selected = state.sourcePaletteSelected || { row: 'Hue120', step: '500', hex: '#15A315' };
+  const mode = state.sourcePaletteMode || 'sber';
+  const mapping = sourcePaletteRoleMapping();
+  const wcagPairs = sourcePaletteWcagPairs(mapping);
+  const failedPairs = wcagPairs.filter((item) => !item.grade.ok).length;
+  const selectedRoles = Object.values(mapping).filter((item) => item.row === selected.row && String(item.step) === String(selected.step));
+  return `<aside class="source-palette-side">
+    <section class="form-card source-palette-selected-card-v2">
+      <div class="source-palette-side-head">
+        <span class="source-palette-state ${mode === 'custom' ? 'is-custom' : ''}">${mode === 'custom' ? 'Custom copy' : 'Sber palette'}</span>
+        <span class="source-palette-state ${failedPairs ? 'is-warning' : 'is-ok'}">${failedPairs ? `${failedPairs} WCAG issues` : 'WCAG AA'}</span>
+      </div>
+      <span class="source-palette-selected-swatch-v2" style="background:${escapeHtml(selected.hex)}"></span>
+      <div class="source-palette-selected-copy">
+        <h2>${escapeHtml(sourcePaletteTokenLabelV2(selected.row, selected.step))}</h2>
+        <code>${escapeHtml(sourcePaletteTokenPathV2(selected.row, selected.step))}</code>
+        <p>${escapeHtml(selected.hex)} · ${escapeHtml(paletteKindLabel(selected.row))}</p>
+      </div>
+      <div class="source-palette-selected-actions">
+        <button class="secondary" data-action="cp-copy" data-value="${escapeHtml(selected.hex)}">Copy HEX</button>
+        ${mode === 'custom'
+          ? `<button class="secondary" data-action="reset-source-palette-mapping" ${viewer ? 'disabled' : ''}>Reset to Sber</button>`
+          : `<button data-action="set-source-palette-mode" data-mode="custom" ${viewer ? 'disabled' : ''}>Create custom copy</button>`}
+      </div>
+      <div class="source-palette-usedby">
+        <strong>Used by</strong>
+        ${selectedRoles.length
+          ? selectedRoles.map((role) => `<span>${escapeHtml(role.label)} · ${escapeHtml(role.semantic)}</span>`).join('')
+          : '<span>Пока не назначен на semantic role</span>'}
+      </div>
+    </section>
+    <section class="form-card source-palette-assign-card">
+      <div class="source-palette-section-head">
+        <div><h2>Assign to semantic role</h2><p>Клик по сватчу только выбирает цвет. Применение — отдельная явная команда.</p></div>
+      </div>
+      <div class="source-palette-role-actions">
+        ${sourcePaletteRoleDefs.map((role) => `<button data-action="map-source-color" data-role="${role.id}" ${viewer ? 'disabled' : ''}><span>Assign selected</span><strong>${escapeHtml(role.label)}</strong><small>${escapeHtml(role.semantic)}</small></button>`).join('')}
+      </div>
+      <div class="source-palette-mode-note ${mode === 'custom' ? 'is-custom' : ''}">
+        ${mode === 'custom'
+          ? '<strong>Custom copy</strong><span>Есть ручные назначения. Тему нужно проверить перед публикацией.</span><button class="secondary" data-action="reset-source-palette-mapping">Reset</button>'
+          : '<strong>Brand-safe source</strong><span>Используется брендовая палитра Сбера. Ручное назначение создаст Custom copy.</span>'}
+      </div>
+    </section>
+  </aside>`;
+}
+
+function sourcePaletteValidationV2() {
+  const mapping = sourcePaletteRoleMapping();
+  const wcagPairs = sourcePaletteWcagPairs(mapping);
+  const failedPairs = wcagPairs.filter((item) => !item.grade.ok).length;
+  const changedRoles = sourcePaletteRoleDefs.filter((role) => {
+    const item = mapping[role.id];
+    return item.row !== role.row || String(item.step) !== String(role.step);
+  }).length;
+  return `<section class="source-palette-lower-grid">
+    <section class="form-card source-palette-roles-card">
+      <div class="source-palette-section-head">
+        <div><h2>Semantic anchors</h2><p>Это не все color tokens. Это опорные роли, от которых тема собирает семантику.</p></div>
+        <span>${changedRoles ? `${changedRoles} overrides` : 'Default mapping'}</span>
+      </div>
+      <div class="source-palette-role-list">
+        ${sourcePaletteRoleDefs.map((role) => sourcePaletteRoleCardV2(role, mapping[role.id])).join('')}
+      </div>
+    </section>
+    <section class="form-card source-palette-impact-card">
+      <div class="source-palette-wcag-head"><h3>Validation / Impact</h3><span class="${failedPairs ? 'is-bad' : ''}">${failedPairs ? `${failedPairs} issues` : 'AA passed'}</span></div>
+      <div class="source-palette-wcag-grid">
+        ${wcagPairs.map((item) => `<article class="${item.grade.ok ? '' : 'is-bad'}">
+          <div class="source-palette-wcag-preview" style="background:${escapeHtml(item.background || '#fff')};color:${escapeHtml(item.foreground || '#000')}">Aa</div>
+          <div><strong>${escapeHtml(item.label)}</strong><small>${escapeHtml(item.helper)}</small></div>
+          <b>${item.ratio ? item.ratio.toFixed(2) : '—'}</b>
+          <span>${escapeHtml(item.grade.label)}</span>
+          <em>${escapeHtml(item.grade.helper)}</em>
+        </article>`).join('')}
+      </div>
+      <div class="source-palette-impact-note">
+        <strong>Что проверять дальше</strong>
+        <span>Button, Link, Text Field, Alert, Badge и Data colors — первые потребители этих anchors.</span>
+      </div>
+    </section>
+  </section>`;
+}
+
+function sourcePaletteRowChipV3(rowName) {
+  const row = sourcePaletteRowByName(rowName);
+  if (!row) return '<span class="source-palette-family-chip"></span>';
+  const color = paletteValue(rowName, '500') || '#2b3038';
+  return `<span class="source-palette-family-chip" style="background:${escapeHtml(color)}"></span>`;
+}
+
+function sourcePaletteRowIsChanged(rowName) {
+  return sourcePaletteSourceRowName(rowName) !== rowName
+    || Boolean(Object.keys(state.sourcePaletteOverrides?.[rowName] || {}).length);
+}
+
+function sourcePaletteVisibleCategoriesV3() {
+  const query = String(state.sourcePaletteSearch || '').trim().toLowerCase();
+  const filter = ['used', 'changed'].includes(state.sourcePaletteFilter) ? state.sourcePaletteFilter : 'all';
+  return sourcePaletteDefaultCategoryDefs().map((category) => {
+    const categoryMatches = !query || `${category.label} ${category.helper}`.toLowerCase().includes(query);
+    const rows = category.rows.filter(sourcePaletteIsRowEnabled).filter((rowName) => {
+      const rowMatches = categoryMatches || `${rowName} ${paletteKindLabel(rowName)}`.toLowerCase().includes(query);
+      if (!rowMatches) return false;
+      if (filter === 'used') return sourcePaletteFamilyBindings(rowName, category.id).length > 0;
+      if (filter === 'changed') return sourcePaletteRowIsChanged(rowName)
+        || Boolean(state.sourcePaletteAddedRowsByCategory?.[category.id]?.includes(rowName));
+      return true;
+    });
+    return { ...category, rows };
+  }).filter((category) => category.rows.length);
+}
+
+function sourcePaletteFamilyMenuV3() {
+  const selected = state.sourcePaletteSelected || {};
+  const filter = ['used', 'changed'].includes(state.sourcePaletteFilter) ? state.sourcePaletteFilter : 'all';
+  const categories = sourcePaletteVisibleCategoriesV3();
+  return `<aside class="source-palette-family-menu form-card">
+    <div class="source-palette-family-head">
+      <strong>Палитра дизайн-системы</strong>
+      <button data-action="open-source-palette-group-add" title="Создать группу" aria-label="Создать группу">+</button>
+    </div>
+    <div class="source-palette-family-tools">
+      <label class="source-palette-family-search">
+        <span aria-hidden="true">⌕</span>
+        <input data-action="source-palette-search" value="${escapeHtml(state.sourcePaletteSearch || '')}" placeholder="Найти палитру" aria-label="Найти палитру" />
+        ${state.sourcePaletteSearch ? '<button type="button" data-action="clear-source-palette-search" aria-label="Очистить поиск">×</button>' : ''}
+      </label>
+      <div class="source-palette-family-filters" role="tablist" aria-label="Фильтр палитр">
+        <button class="${filter === 'all' ? 'is-active' : ''}" data-action="set-source-palette-filter" data-filter="all">Все</button>
+        <button class="${filter === 'used' ? 'is-active' : ''}" data-action="set-source-palette-filter" data-filter="used">Связанные</button>
+        <button class="${filter === 'changed' ? 'is-active' : ''}" data-action="set-source-palette-filter" data-filter="changed">Изменённые</button>
+      </div>
+    </div>
+    <div class="source-palette-family-categories">
+      ${categories.map((category) => `<section>
+        <div class="source-palette-family-category">
+          <button class="source-palette-family-category-toggle" data-action="toggle-source-palette-group" data-category="${escapeHtml(category.id)}" aria-expanded="${state.sourcePaletteCollapsedGroups?.[category.id] ? 'false' : 'true'}"><span>${state.sourcePaletteCollapsedGroups?.[category.id] ? '›' : '⌄'}</span><strong>${escapeHtml(category.label)}</strong></button>
+          <button data-action="open-source-palette-add" data-category="${escapeHtml(category.id)}" title="Добавить палитру в ${escapeHtml(category.label)}" aria-label="Добавить палитру в ${escapeHtml(category.label)}">+</button>
+        </div>
+        ${state.sourcePaletteCollapsedGroups?.[category.id] ? '' : category.rows.map((rowName) => {
+          const active = selected.row === rowName && selected.categoryId === category.id;
+          return `<div class="source-palette-family-item ${active ? 'is-active' : ''}">
+            <button class="source-palette-family-select" data-action="select-source-family" data-row="${escapeHtml(rowName)}" data-category="${escapeHtml(category.id)}">
+              ${sourcePaletteRowChipV3(rowName)}
+              <span>${escapeHtml(rowName)}</span>
+            </button>
+            <button class="source-palette-family-eye" data-action="request-remove-source-family" data-row="${escapeHtml(rowName)}" data-category="${escapeHtml(category.id)}" title="Убрать из группы ${escapeHtml(category.label)}" aria-label="Убрать ${escapeHtml(rowName)} из группы ${escapeHtml(category.label)}">×</button>
+          </div>`;
+        }).join('')}
+      </section>`).join('') || '<div class="source-palette-family-empty"><strong>Ничего не найдено</strong><span>Измените поиск или фильтр.</span><button data-action="reset-source-palette-filters">Показать все</button></div>'}
+    </div>
+  </aside>`;
+}
+
+function sourcePaletteRampStepV3(row, step, categoryId) {
+  const hex = paletteValue(row.name, step);
+  if (!hex) return `<span class="source-palette-ramp-step is-empty"><span>#</span><b>${escapeHtml(step)}</b></span>`;
+  const rgb = hexToRgba(hex) || { r: 0, g: 0, b: 0, a: 1 };
+  const darkText = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000 > 158;
+  const selected = state.sourcePaletteSelected?.row === row.name
+    && String(state.sourcePaletteSelected?.step) === String(step)
+    && state.sourcePaletteSelected?.categoryId === categoryId;
+  const usage = sourcePaletteLinkedTokensFromFile(row.name, step, categoryId);
+  const usageTitle = usage.length ? `Используется: ${usage.map((item) => item.title).join(', ')}` : '';
+  return `<button class="source-palette-ramp-step ${darkText ? 'is-light' : 'is-dark'} ${selected ? 'is-selected' : ''} ${usage.length ? 'has-usage' : ''}" data-action="select-source-color" data-row="${escapeHtml(row.name)}" data-category="${escapeHtml(categoryId)}" data-step="${escapeHtml(step)}" data-hex="${escapeHtml(hex)}" style="background:${escapeHtml(hex)}" ${usageTitle ? `title="${escapeHtml(usageTitle)}"` : ''}>
+    <span>#</span><b>${escapeHtml(step)}</b>
+    ${usage.length ? `<i class="source-palette-usage-marker" aria-label="Связано семантических токенов: ${usage.length}"><svg viewBox="0 0 12 12" aria-hidden="true"><circle cx="3" cy="6" r="2"></circle><circle cx="9" cy="3" r="2"></circle><circle cx="9" cy="9" r="2"></circle><path d="M4.8 5.2 7.2 3.8M4.8 6.8 7.2 8.2"></path></svg><em>${usage.length}</em></i>` : ''}
+  </button>`;
+}
+
+function sourcePaletteRampCardV3(rowName, categoryId) {
+  const row = sourcePaletteRowByName(rowName);
+  if (!row) return '';
+  const sourceRowName = sourcePaletteSourceRowName(rowName);
+  return `<article class="source-palette-ramp-card">
+    <div class="source-palette-ramp-title">
+      <div><strong>${escapeHtml(row.name)}</strong>
+      <small>${sourceRowName === rowName ? escapeHtml(paletteKindLabel(row.name)) : `Источник: ${escapeHtml(sourceRowName)} · ${escapeHtml(paletteKindLabel(sourceRowName))}`}</small></div>
+      <button data-action="request-remove-source-family" data-row="${escapeHtml(rowName)}" data-category="${escapeHtml(categoryId)}" title="Убрать из группы" aria-label="Убрать ${escapeHtml(rowName)} из группы">×</button>
+    </div>
+    <div class="source-palette-ramp-stack">
+      ${sourcePaletteDisplaySteps().map((step) => sourcePaletteRampStepV3(row, step, categoryId)).join('')}
+    </div>
+  </article>`;
+}
+
+function sourcePaletteCountLabel(count) {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  const noun = mod10 === 1 && mod100 !== 11 ? 'палитра' : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? 'палитры' : 'палитр';
+  return `${count} ${noun}`;
+}
+
+function sourcePaletteRampBoardV3() {
+  const categories = sourcePaletteVisibleCategoriesV3();
+  return `<section class="source-palette-ramp-board">
+    ${categories.map((category) => {
+      const rows = category.rows;
+      const collapsed = Boolean(state.sourcePaletteCollapsedGroups?.[category.id]);
+      return `<section class="source-palette-ramp-section">
+        <div class="source-palette-ramp-section-head">
+          <div><h2>${escapeHtml(category.label)}</h2><p>${escapeHtml(category.helper)}</p></div>
+          <div><span>${sourcePaletteCountLabel(rows.length)}</span><button data-action="toggle-source-palette-group" data-category="${escapeHtml(category.id)}" aria-label="${collapsed ? 'Развернуть' : 'Свернуть'} группу ${escapeHtml(category.label)}" aria-expanded="${collapsed ? 'false' : 'true'}">${collapsed ? '⌄' : '⌃'}</button></div>
+        </div>
+        ${collapsed ? '' : `<div class="source-palette-ramp-row">
+          ${rows.map((rowName) => sourcePaletteRampCardV3(rowName, category.id)).join('')}
+        </div>`}
+      </section>`;
+    }).join('') || '<div class="source-palette-board-empty"><strong>Нет палитр по выбранному фильтру</strong><span>Сбросьте поиск или выберите «Все».</span><button data-action="reset-source-palette-filters">Показать все</button></div>'}
+  </section>`;
+}
+
+function sourcePaletteQualityV3(rowName, selectedHex) {
+  const row = sourcePaletteRowByName(rowName);
+  const values = (row?.values || []).map((value, index) => paletteValue(rowName, SDDS_ADDITIONAL_PALETTE.steps[index]) || value).filter(Boolean);
+  const luminances = values.map(hexLuminance);
+  const tonalBreaks = luminances.slice(1).filter((value, index) => value !== null && luminances[index] !== null && value + 0.002 < luminances[index]).length;
+  const duplicates = values.length - new Set(values.map((value) => String(value).toUpperCase())).size;
+  const surfaces = [
+    { mode: 'Light', token: 'Gray 100', hex: paletteValue('Gray', '100') || '#F5F5F5' },
+    { mode: 'Dark', token: 'Gray 1000', hex: paletteValue('Gray', '1000') || '#080808' },
+  ].map((surface) => {
+    const ratio = contrastRatio(selectedHex, surface.hex);
+    const textPass = ratio !== null && ratio >= 4.5;
+    const uiPass = ratio !== null && ratio >= 3;
+    return { ...surface, ratio, textPass, uiPass, status: textPass ? 'AA' : uiPass ? 'UI 3:1' : 'Не проходит' };
+  });
+  return `<section class="form-card source-palette-quality-card">
+    <div class="source-palette-section-head"><div><h2>Проверка палитры</h2><p>Техническое качество растяжки и предварительный контраст.</p></div></div>
+    <div class="source-palette-quality-summary">
+      <span class="${tonalBreaks ? 'is-warning' : 'is-ok'}"><i>${tonalBreaks ? '!' : '✓'}</i><b>Светлота</b><em>${tonalBreaks ? `${tonalBreaks} наруш.` : 'Последовательно'}</em></span>
+      <span class="${duplicates ? 'is-warning' : 'is-ok'}"><i>${duplicates ? '!' : '✓'}</i><b>Дубли</b><em>${duplicates ? `${duplicates} знач.` : 'Нет'}</em></span>
+    </div>
+    <div class="source-palette-contrast-list">
+      ${surfaces.map((item) => `<div class="source-palette-contrast-row">
+        <span class="source-palette-contrast-preview" style="background:${escapeHtml(item.hex)};color:${escapeHtml(selectedHex)}">Aa</span>
+        <span><b>${escapeHtml(item.mode)}</b><em>${escapeHtml(item.token)}</em></span>
+        <strong>${item.ratio === null ? '—' : item.ratio.toFixed(2)}</strong>
+        <i class="${item.textPass ? 'is-ok' : item.uiPass ? 'is-warning' : 'is-bad'}">${escapeHtml(item.status)}</i>
+      </div>`).join('')}
+    </div>
+    <p class="source-palette-quality-note">Цвет сам по себе не проходит WCAG. Итоговая проверка выполняется для пары семантических токенов в Color tokens.</p>
+  </section>`;
+}
+
+function sourcePaletteSelectedPanelV3(viewer = false) {
+  const selected = state.sourcePaletteSelected || { row: 'Hue120', step: '500', hex: '#15A315' };
+  const rowName = selected.row || 'Hue120';
+  const step = String(selected.step || '500');
+  const hex = paletteValue(rowName, step) || selected.hex || '#15A315';
+  const category = sourcePaletteDefaultCategoryDefs().find((item) => item.id === selected.categoryId)
+    || sourcePaletteCategoryForRow(rowName);
+  const usageScope = state.sourcePaletteUsageScope === 'family' ? 'family' : 'swatch';
+  const swatchUsage = sourcePaletteUsageForScope(rowName, step, category.id, 'swatch');
+  const familyUsage = sourcePaletteUsageForScope(rowName, step, category.id, 'family');
+  const usage = usageScope === 'family' ? familyUsage : swatchUsage;
+  const groups = sourcePaletteGroupsForRow(rowName);
+  const enabled = sourcePaletteIsRowEnabled(rowName);
+  const overridden = Boolean(state.sourcePaletteOverrides?.[rowName]?.[step]);
+  const sourceRowName = sourcePaletteSourceRowName(rowName);
+  return `<aside class="source-palette-inspector-v3">
+    <section class="form-card source-palette-selected-card-v3">
+      ${!enabled || overridden ? `<div class="source-palette-side-head">
+        ${!enabled ? '<span class="source-palette-state is-warning">Не добавлена</span>' : ''}
+        ${overridden ? '<span class="source-palette-state is-custom">Изменена</span>' : ''}
+      </div>` : ''}
+      <span class="source-palette-selected-swatch-v2" style="background:${escapeHtml(hex)}"></span>
+      <div class="source-palette-selected-copy">
+        <h2>${escapeHtml(sourcePaletteTokenLabelV2(rowName, step))}</h2>
+        <code>${escapeHtml(sourcePaletteTokenPathV2(rowName, step))}</code>
+        <p>${escapeHtml(category.label)} · ${escapeHtml(paletteKindLabel(rowName))}</p>
+      </div>
+      <label class="source-palette-hex-field">
+        <span>Цвет палитры · изменение действует во всех группах</span>
+        <div>
+          <span class="source-palette-swatch-picker" style="background:${escapeHtml(hex)}"><input type="color" data-action="source-color-swatch" data-row="${escapeHtml(rowName)}" data-step="${escapeHtml(step)}" value="${escapeHtml(hex)}" ${viewer ? 'disabled' : ''} aria-label="Выбрать цвет ступени ${escapeHtml(step)}" /></span>
+          <input data-action="source-color-input" data-row="${escapeHtml(rowName)}" data-step="${escapeHtml(step)}" value="${escapeHtml(hex.replace('#', '').toUpperCase())}" ${viewer ? 'readonly' : ''} />
+        </div>
+      </label>
+      <div class="source-palette-selected-actions">
+        <button class="secondary source-palette-change-source" data-action="request-replace-source-family-in-group" data-row="${escapeHtml(rowName)}" data-category="${escapeHtml(category.id)}" ${viewer ? 'disabled' : ''}>Заменить в группе ${escapeHtml(category.label)}</button>
+        <button class="secondary" data-action="open-source-palette-rebuild" data-row="${escapeHtml(rowName)}" data-step="${escapeHtml(step)}" ${viewer ? 'disabled' : ''}>Перестроить палитру от цвета</button>
+        <button class="secondary" data-action="open-source-palette-replace" data-row="${escapeHtml(rowName)}" ${viewer ? 'disabled' : ''}>Заменить значения палитры</button>
+        <button class="secondary source-palette-remove-family" data-action="request-remove-source-family" data-row="${escapeHtml(rowName)}" data-category="${escapeHtml(category.id)}" ${viewer ? 'disabled' : ''}>Убрать из группы</button>
+        <button class="secondary" data-action="reset-source-color" data-row="${escapeHtml(rowName)}" data-step="${escapeHtml(step)}" ${viewer || !overridden ? 'disabled' : ''}>Сбросить цвет</button>
+      </div>
+      ${groups.length > 1 ? `<p class="source-palette-shared-note">Палитра также используется в группах: ${groups.filter((item) => item.id !== category.id).map((item) => escapeHtml(item.label)).join(', ')}.</p>` : ''}
+    </section>
+    <section class="form-card source-palette-usage-card">
+      <div class="source-palette-section-head">
+        <div><h2>Используется в</h2><p>Связи только внутри группы ${escapeHtml(category.label)}.</p></div>
+      </div>
+      <div class="source-palette-usage-scope" role="tablist" aria-label="Область связей">
+        <button class="${usageScope === 'swatch' ? 'is-active' : ''}" data-action="set-source-usage-scope" data-scope="swatch">Цвет · ${swatchUsage.length}</button>
+        <button class="${usageScope === 'family' ? 'is-active' : ''}" data-action="set-source-usage-scope" data-scope="family">Все оттенки · ${familyUsage.length}</button>
+      </div>
+      ${usage.length
+        ? `<div class="source-palette-usage-list">${usage.map((item) => `<button class="source-palette-usage-link" data-action="open-linked-color-token" data-id="${escapeHtml(item.tokenId)}" title="${escapeHtml(item.modes.map((mode) => mode === 'dark' ? 'Dark' : 'Light').join(' + '))}"><span class="source-palette-usage-swatch" style="background:${escapeHtml(item.hex || hex)}"></span><strong>${escapeHtml(item.title)}</strong><i aria-hidden="true">→</i></button>`).join('')}</div>`
+        : `<div class="source-palette-empty-category">Пока нет связанных семантических токенов.${category.isCustom ? '<button data-action="open-color-tokens">Перейти в Color tokens</button>' : ''}</div>`}
+    </section>
+    ${sourcePaletteQualityV3(rowName, hex)}
+  </aside>`;
+}
+
+function sourcePaletteLibraryPreview(row) {
+  return `<span class="source-palette-library-preview">${[...row.values].reverse().map((value) => `<i style="background:${escapeHtml(value || '#25282d')}"></i>`).join('')}</span>`;
+}
+
+function sourcePaletteGroupModal() {
+  if (!state.sourcePaletteGroupModalOpen) return '';
+  return `<div class="modal-backdrop source-palette-manage-backdrop">
+    <section class="entity-modal source-palette-manage-modal source-palette-group-modal" role="dialog" aria-modal="true" aria-labelledby="source-palette-group-title">
+      <header>
+        <div><span>Палитра дизайн-системы</span><h2 id="source-palette-group-title">Создать группу</h2></div>
+        <button class="source-palette-modal-close" data-action="close-source-palette-group-add" aria-label="Закрыть">×</button>
+      </header>
+      <div class="source-palette-manage-copy">
+        <p>Соберите палитры для отдельной продуктовой области. Семантические токены назначаются после этого в разделе Color tokens.</p>
+        <label class="source-palette-group-field"><span>Название группы</span><input data-action="source-palette-group-name" placeholder="Например, Avatars" autofocus /></label>
+      </div>
+      <footer><button class="secondary" data-action="close-source-palette-group-add">Отмена</button><button data-action="create-source-palette-group">Создать группу</button></footer>
+    </section>
+  </div>`;
+}
+
+function sourcePaletteReplaceModal() {
+  const targetRow = state.sourcePaletteReplaceTarget;
+  if (!targetRow) return '';
+  const currentSource = sourcePaletteSourceRowName(targetRow);
+  const impactedGroups = sourcePaletteGroupsForRow(targetRow);
+  const impactedTokens = [...new Set(sourcePaletteFamilyBindings(targetRow).map(({ token }) => token.id))];
+  const rows = SDDS_ADDITIONAL_PALETTE.rows.filter((row) => row.values.some(Boolean));
+  const neutralRows = rows.filter((row) => row.name === 'Gray' || row.name === 'Cool Gray');
+  const hueRows = rows.filter((row) => row.name.startsWith('Hue'));
+  const section = (title, items) => `<section class="source-palette-library-section">
+    <h3>${escapeHtml(title)}</h3>
+    <div class="source-palette-library-grid">${items.map((row) => `<button class="source-palette-library-option ${row.name === currentSource ? 'is-current' : ''}" data-action="replace-source-palette" data-row="${escapeHtml(targetRow)}" data-source="${escapeHtml(row.name)}">
+      ${sourcePaletteLibraryPreview(row)}
+      <span><strong>${escapeHtml(row.name)}</strong><small>${escapeHtml(paletteKindLabel(row.name))}</small></span>
+      ${row.name === currentSource ? '<em>Текущая</em>' : ''}
+    </button>`).join('')}</div>
+  </section>`;
+  return `<div class="modal-backdrop source-palette-replace-backdrop">
+    <section class="entity-modal source-palette-replace-modal" role="dialog" aria-modal="true" aria-labelledby="source-palette-replace-title">
+      <header>
+        <div><span>Глобальное изменение</span><h2 id="source-palette-replace-title">Заменить значения ${escapeHtml(targetRow)}</h2></div>
+        <button class="source-palette-modal-close" data-action="close-source-palette-replace" aria-label="Закрыть">×</button>
+      </header>
+      <div class="source-palette-replace-note">
+        <strong>Изменение затронет общую палитру</strong>
+        <p>Связи сохранятся, но значения изменятся во всех группах: ${impactedGroups.map((item) => escapeHtml(item.label)).join(', ') || 'нет групп'}. Связано семантических токенов: ${impactedTokens.length}.</p>
+      </div>
+      <div class="source-palette-library-scroll">
+        ${section('Neutral', neutralRows)}
+        ${section('Hue', hueRows)}
+      </div>
+    </section>
+  </div>`;
+}
+
+function sourcePaletteRebuildModal() {
+  const rebuild = state.sourcePaletteRebuild;
+  if (!rebuild) return '';
+  const rowName = rebuild.row;
+  const step = String(rebuild.step);
+  const hex = rebuild.hex;
+  const impactedGroups = sourcePaletteGroupsForRow(rowName);
+  const impactedTokens = [...new Set(sourcePaletteFamilyBindings(rowName).map(({ token }) => token.id))];
+  const next = sourcePaletteRebuildValues(rowName, step, hex);
+  const current = {};
+  SDDS_ADDITIONAL_PALETTE.steps.forEach((stepName) => { current[stepName] = paletteValue(rowName, stepName); });
+  const ramp = (values) => `<span class="source-palette-library-preview source-palette-rebuild-ramp">${sourcePaletteDisplaySteps().map((stepName) => `<i class="${stepName === step ? 'is-anchor' : ''}" style="background:${escapeHtml(values[stepName] || '#25282d')}" title="${escapeHtml(stepName)}"></i>`).join('')}</span>`;
+  return `<div class="modal-backdrop source-palette-replace-backdrop">
+    <section class="entity-modal source-palette-rebuild-modal" role="dialog" aria-modal="true" aria-labelledby="source-palette-rebuild-title">
+      <header>
+        <div><span>Глобальное изменение</span><h2 id="source-palette-rebuild-title">Перестроить ${escapeHtml(rowName)} от одного цвета</h2></div>
+        <button class="source-palette-modal-close" data-action="close-source-palette-rebuild" aria-label="Закрыть">×</button>
+      </header>
+      <div class="source-palette-rebuild-body">
+        <p class="source-palette-rebuild-hint">Выберите опорный цвет для ступени ${escapeHtml(step)} — остальные ступени пересчитаются: тон и насыщенность возьмут от нового цвета, кривая светлоты палитры сохранится.</p>
+        <label class="source-palette-hex-field">
+          <span>Опорный цвет · ступень ${escapeHtml(step)}</span>
+          <div>
+            <span class="source-palette-swatch-picker" style="background:${escapeHtml(hex)}"><input type="color" data-action="source-rebuild-swatch" value="${escapeHtml(hex)}" aria-label="Выбрать опорный цвет" /></span>
+            <input data-action="source-rebuild-hex" value="${escapeHtml(hex.replace('#', '').toUpperCase())}" />
+          </div>
+        </label>
+        <div class="source-palette-rebuild-preview">
+          <div><span>Сейчас</span>${ramp(current)}</div>
+          <div><span>Станет</span>${ramp(next)}</div>
+        </div>
+        <div class="source-palette-replace-note">
+          <strong>Изменение затронет общую палитру</strong>
+          <p>Связи сохранятся, но значения изменятся во всех группах: ${impactedGroups.map((item) => escapeHtml(item.label)).join(', ') || 'нет групп'}. Связано семантических токенов: ${impactedTokens.length}.</p>
+        </div>
+      </div>
+      <footer class="source-palette-rebuild-footer">
+        <button class="secondary" data-action="close-source-palette-rebuild">Отмена</button>
+        <button class="source-palette-rebuild-apply" data-action="apply-source-palette-rebuild">Перестроить палитру</button>
+      </footer>
+    </section>
+  </div>`;
+}
+
+function sourcePaletteAddModal() {
+  const categoryId = state.sourcePaletteAddCategory;
+  if (!categoryId) return '';
+  const category = sourcePaletteDefaultCategoryDefs().find((item) => item.id === categoryId);
+  if (!category) return '';
+  const rows = sourcePaletteLibraryRows()
+    .filter((rowName) => !category.rows.includes(rowName))
+    .map(sourcePaletteRowByName)
+    .filter(Boolean);
+  return `<div class="modal-backdrop source-palette-manage-backdrop">
+    <section class="entity-modal source-palette-manage-modal" role="dialog" aria-modal="true" aria-labelledby="source-palette-add-title">
+      <header>
+        <div><span>Группа ${escapeHtml(category.label)}</span><h2 id="source-palette-add-title">Добавить палитру</h2></div>
+        <button class="source-palette-modal-close" data-action="close-source-palette-add" aria-label="Закрыть">×</button>
+      </header>
+      <div class="source-palette-manage-copy"><p>Добавьте растяжку в группу. Семантические токены назначаются отдельно в Color tokens.</p></div>
+      ${rows.length
+        ? `<div class="source-palette-manage-options">${rows.map((row) => `<button class="source-palette-library-option" data-action="add-source-family" data-row="${escapeHtml(row.name)}">${sourcePaletteLibraryPreview(row)}<span><strong>${escapeHtml(row.name)}</strong><small>${escapeHtml(paletteKindLabel(row.name))}</small></span></button>`).join('')}</div>`
+        : '<div class="source-palette-manage-empty">Все доступные палитры уже добавлены в эту группу.</div>'}
+      <footer><button class="secondary" data-action="close-source-palette-add">Отмена</button></footer>
+    </section>
+  </div>`;
+}
+
+function sourcePaletteRemoveModalLegacy() {
+  const rowName = state.sourcePaletteRemoveTarget;
+  if (!rowName) return '';
+  const bindings = sourcePaletteFamilyBindings(rowName);
+  const tokens = [...new Map(bindings.map(({ token }) => [token.id, token])).values()];
+  const category = sourcePaletteCategoryForRow(rowName);
+  const replacements = category.rows.filter((candidate) => candidate !== rowName && sourcePaletteIsRowEnabled(candidate));
+  return `<div class="modal-backdrop source-palette-manage-backdrop">
+    <section class="entity-modal source-palette-manage-modal source-palette-remove-modal" role="alertdialog" aria-modal="true" aria-labelledby="source-palette-remove-title">
+      <header>
+        <div><span>${escapeHtml(category.label)} group</span><h2 id="source-palette-remove-title">Remove ${escapeHtml(rowName)}?</h2></div>
+        <button class="source-palette-modal-close" data-action="close-source-palette-remove" aria-label="Close">×</button>
+      </header>
+      <div class="source-palette-remove-warning">
+        <strong>${tokens.length} semantic ${tokens.length === 1 ? 'token uses' : 'tokens use'} this palette</strong>
+        <p>Removing it cannot leave broken links. Reassign the tokens to another palette or preserve their current colors as Custom values.</p>
+        <div>${tokens.slice(0, 8).map((token) => `<span>${escapeHtml(colorTokenDisplayName(token))}</span>`).join('')}${tokens.length > 8 ? `<span>+${tokens.length - 8} more</span>` : ''}</div>
+      </div>
+      ${replacements.length ? `<section class="source-palette-reassign-section"><h3>Reassign and remove</h3><div class="source-palette-manage-options">${replacements.map((rowNameOption) => {
+        const row = sourcePaletteRowByName(rowNameOption);
+        return `<button class="source-palette-library-option" data-action="reassign-and-remove-source-family" data-row="${escapeHtml(rowName)}" data-replacement="${escapeHtml(rowNameOption)}">${sourcePaletteLibraryPreview(row)}<span><strong>${escapeHtml(rowNameOption)}</strong><small>Keep the same steps and semantic links</small></span><em>Reassign</em></button>`;
+      }).join('')}</div></section>` : ''}
+      <section class="source-palette-custom-fallback">
+        <div><strong>Keep colors as Custom</strong><p>Tokens keep their current visual values, but they will no longer be linked to a library palette.</p></div>
+        <button class="danger" data-action="confirm-remove-source-family" data-row="${escapeHtml(rowName)}">Remove palette</button>
+      </section>
+      <footer><button class="secondary" data-action="close-source-palette-remove">Cancel</button></footer>
+    </section>
+  </div>`;
+}
+
+function sourcePaletteRemoveModal() {
+  const target = state.sourcePaletteRemoveTarget;
+  if (!target) return '';
+  const rowName = typeof target === 'string' ? target : target.row;
+  const categoryId = typeof target === 'string' ? sourcePaletteSelectionCategoryId(rowName) : target.categoryId;
+  const category = sourcePaletteDefaultCategoryDefs().find((item) => item.id === categoryId) || sourcePaletteCategoryForRow(rowName);
+  const bindings = sourcePaletteFamilyBindings(rowName, category.id);
+  const tokens = [...new Map(bindings.map(({ token }) => [token.id, token])).values()];
+  const otherGroups = sourcePaletteGroupsForRow(rowName).filter((item) => item.id !== category.id);
+  const replacements = sourcePaletteLibraryRows().filter((candidate) => candidate !== rowName).map(sourcePaletteRowByName).filter(Boolean);
+  const replaceIntent = state.sourcePaletteRemoveIntent === 'replace';
+  return `<div class="modal-backdrop source-palette-manage-backdrop">
+    <section class="entity-modal source-palette-manage-modal source-palette-remove-modal" role="alertdialog" aria-modal="true" aria-labelledby="source-palette-remove-title">
+      <header>
+        <div><span>Группа ${escapeHtml(category.label)}</span><h2 id="source-palette-remove-title">${replaceIntent ? `Заменить ${escapeHtml(rowName)} в группе` : `Убрать ${escapeHtml(rowName)} из группы?`}</h2></div>
+        <button class="source-palette-modal-close" data-action="close-source-palette-remove" aria-label="Закрыть">×</button>
+      </header>
+      <div class="source-palette-remove-warning">
+        <strong>${tokens.length ? `${tokens.length} семантических токенов связаны с палитрой в этой группе` : 'В этой группе нет связанных токенов'}</strong>
+        <p>${replaceIntent ? 'Выберите другую палитру. Шаги и режимы токенов сохранятся.' : 'Можно переназначить токены или сохранить текущие цвета как Custom.'}</p>
+        ${otherGroups.length ? `<p>Остальные группы не изменятся: ${otherGroups.map((item) => escapeHtml(item.label)).join(', ')}.</p>` : ''}
+        <div>${tokens.slice(0, 8).map((token) => `<span>${escapeHtml(colorTokenDisplayName(token))}</span>`).join('')}${tokens.length > 8 ? `<span>+${tokens.length - 8}</span>` : ''}</div>
+      </div>
+      <section class="source-palette-reassign-section"><h3>Выбрать замену</h3><div class="source-palette-manage-options">${replacements.map((row) => `<button class="source-palette-library-option" data-action="reassign-and-remove-source-family" data-row="${escapeHtml(rowName)}" data-category="${escapeHtml(category.id)}" data-replacement="${escapeHtml(row.name)}">${sourcePaletteLibraryPreview(row)}<span><strong>${escapeHtml(row.name)}</strong><small>${escapeHtml(paletteKindLabel(row.name))}</small></span><em>Заменить</em></button>`).join('')}</div></section>
+      ${replaceIntent ? '' : `<section class="source-palette-custom-fallback"><div><strong>Сохранить как Custom</strong><p>Токены сохранят текущий вид, но потеряют связь с библиотечной палитрой.</p></div><button class="danger" data-action="confirm-remove-source-family" data-row="${escapeHtml(rowName)}" data-category="${escapeHtml(category.id)}">Убрать из группы</button></section>`}
+      <footer><button class="secondary" data-action="close-source-palette-remove">Отмена</button></footer>
+    </section>
+  </div>`;
+}
+
+function paletteEditorV3() {
+  const viewer = state.role === 'viewer';
+  const templateRows = sourcePaletteTemplateRows();
+  const enabledRows = templateRows.filter(sourcePaletteIsRowEnabled);
+  if (!sourcePaletteIsRowEnabled(state.sourcePaletteSelected?.row)) {
+    const rowName = enabledRows[0] || templateRows[0] || 'Hue120';
+    const step = '500';
+    state.sourcePaletteSelected = { row: rowName, categoryId: sourcePaletteSelectionCategoryId(rowName), step, hex: paletteValue(rowName, step) };
+  }
+  const editedCount = Object.values(state.sourcePaletteOverrides || {}).reduce((sum, row) => sum + Object.keys(row || {}).length, 0);
+  const disabledCount = templateRows.length - enabledRows.length;
+  return `<section class="workspace-page palette-page source-palette-page source-palette-v3">
+    ${draftStatusBanner()}
+    <div class="workspace-page-header source-palette-hero">
+      <div>
+        <span class="source-palette-eyebrow">${escapeHtml(SDDS_ADDITIONAL_PALETTE.source)}</span>
+        <h1>Palette</h1>
+        <p>Настройка цветовых растяжек выбранного шаблона. Здесь не назначаем semantic tokens — только добавляем или удаляем palettes и правим их значения.</p>
+      </div>
+      <div class="source-palette-stats">
+        <span><b>Палитра</b> дизайн-системы</span>
+        <span><b>${enabledRows.length}</b> added</span>
+        <span><b>${disabledCount}</b> removed</span>
+        <span><b>${editedCount}</b> edits</span>
+      </div>
+    </div>
+    ${viewer ? `<div class="viewer-banner">Read-only access ${state.accessRequested ? '· request sent' : '<button data-action="request-access">Request edit access</button>'}</div>` : ''}
+    <section class="source-palette-template-note">
+      <article>
+        <strong>Что здесь настраивается</strong>
+        <p>Neutral, Accent, Status и Data растяжки, которые входят в стартовый шаблон темы.</p>
+      </article>
+      <article>
+        <strong>Что здесь не делаем</strong>
+        <p>Не назначаем semantic tokens. Связи и контрастные пары живут в разделе Colors.</p>
+      </article>
+      <article class="is-brand">
+        <strong>Brand warning</strong>
+        <p>Если меняете значения Sber palette, тема становится Custom copy и требует отдельной проверки.</p>
+      </article>
+    </section>
+    <section class="source-palette-editor-grid">
+      ${sourcePaletteFamilyMenuV3()}
+      <div class="source-palette-ramp-shell form-card">${sourcePaletteRampBoardV3()}</div>
+      ${sourcePaletteSelectedPanelV3(viewer)}
+    </section>
+    ${colorPickerView()}
+    ${sourcePaletteReplaceModal()}
+    ${sourcePaletteRebuildModal()}
+    ${sourcePaletteGroupModal()}
+    ${sourcePaletteAddModal()}
+    ${sourcePaletteRemoveModal()}
+  </section>`;
+}
+
+function paletteEditorV2() {
+  const viewer = state.role === 'viewer';
+  const rows = SDDS_ADDITIONAL_PALETTE.rows;
+  const swatchCount = rows.reduce((sum, row) => sum + row.values.filter(Boolean).length, 0);
+  const missingCount = rows.reduce((sum, row) => sum + row.values.filter((value) => !value).length, 0);
+  const mode = state.sourcePaletteMode || 'sber';
+  const changedRoles = Object.keys(state.sourcePaletteMapping || {}).length;
+  return `<section class="workspace-page palette-page source-palette-page source-palette-v2">
+    ${draftStatusBanner()}
+    <div class="workspace-page-header source-palette-hero">
+      <div>
+        <span class="source-palette-eyebrow">${escapeHtml(SDDS_ADDITIONAL_PALETTE.source)}</span>
+        <h1>Palette</h1>
+        <p>Библиотека базовых цветов темы. Здесь выбираем источник цвета и явно назначаем его на semantic anchors.</p>
+      </div>
+      <div class="source-palette-stats">
+        <span><b>${swatchCount}</b> swatches</span>
+        <span><b>${rows.length}</b> families</span>
+        <span><b>${changedRoles}</b> overrides</span>
+      </div>
+    </div>
+    ${viewer ? `<div class="viewer-banner">Read-only access ${state.accessRequested ? '· request sent' : '<button data-action="request-access">Request edit access</button>'}</div>` : ''}
+    <section class="source-palette-summary">
+      <article class="is-brand">
+        <strong>${mode === 'custom' ? 'Custom palette copy' : 'Sber palette'}</strong>
+        <p>${mode === 'custom' ? 'Палитра больше не считается полностью бренд-соответствующей.' : 'Рекомендована для продуктов, которые взаимодействуют с внешними пользователями.'}</p>
+      </article>
+      <article>
+        <strong>Как работает экран</strong>
+        <p>Сватч выбирается без применения. Чтобы изменить тему, назначьте выбранный цвет на semantic role.</p>
+      </article>
+      <article>
+        <strong>Quality gate</strong>
+        <p>WCAG и impact считаются по semantic anchors, а не по “сырой” матрице цветов.</p>
+      </article>
+      <article>
+        <strong>${missingCount}</strong>
+        <p>missing values из исходной палитры. Они отображаются как пустые ячейки.</p>
+      </article>
+    </section>
+    <section class="source-palette-workbench">
+      <div class="source-palette-main">
+        ${sourcePaletteMatrix('Sber palette library', rows, 'Color families из Plasma Additional Palette. Выберите ячейку, чтобы увидеть детали и назначить её на роль.')}
+      </div>
+      ${sourcePaletteSelectedPanelV2(viewer)}
+    </section>
+    ${sourcePaletteValidationV2()}
+    ${colorPickerView()}
+  </section>`;
+}
+
 function editor() {
-  if (state.editorTab === 'palette') return paletteEditor();
+  if (state.editorTab === 'palette') return paletteEditorV3();
   // Предохранитель: сессия могла сохранить вкладку, которой больше нет (например,
   // убранную swatches) — без отката рендер падал и оставлял чёрный экран.
   if (!state.tokens.some((token) => token.group === state.editorTab)) state.editorTab = 'colors';
   const viewer = state.role === 'viewer';
-  const allTokens = state.tokens.filter((token) => token.group === state.editorTab);
+  const allTokens = state.tokens.filter((token) => token.group === state.editorTab && !token.isInternalAlias);
   const tokens = allTokens.filter((token) => token.name.toLowerCase().includes(state.tokenSearch.toLowerCase()) && (!state.issueFilter || (findChange('token', token.id) && findChange('token', token.id).severity !== 'Passed'))).sort((a, b) => state.tokenSort === 'az' ? a.name.localeCompare(b.name) : 0);
   const selected = allTokens.find((token) => token.id === state.selectedTokenId) || tokens[0] || allTokens[0];
   state.selectedTokenId = selected.id;
   const draft = tokenDraftValue(selected.id), change = findChange('token', selected.id);
-  const groupLabel = state.editorTab === 'colors' ? 'Text & Icons' : tokenGroupLabels[state.editorTab] || state.editorTab;
+  const groupLabel = state.editorTab === 'colors' ? 'Color tokens' : tokenGroupLabels[state.editorTab] || state.editorTab;
   const groupIssues = allTokens.filter((token) => { const entry = findChange('token', token.id); return entry && entry.severity !== 'Passed'; }).length;
   const inspectorTitle = state.editorTab === 'colors' ? colorTokenDisplayName(selected) : selected.name;
   // Шапка панели токенов одна на всех вкладках: имя реальной Design System (был
@@ -2571,8 +4488,13 @@ function editor() {
 }
 function tokenDraftValue(id, mode = 'light') {
   const token = state.tokens.find((item) => item.id === id);
-  const baseline = mode === 'dark' ? (token?.darkValue ?? token?.value ?? '') : (token?.value ?? '');
-  return findChange('token', id, mode)?.to ?? baseline;
+  const original = mode === 'dark' ? (token?.darkValue ?? token?.value ?? '') : (token?.value ?? '');
+  const libraryLink = token ? sourcePaletteLinkFromLabel(currentColorLibraryValueLabel(token.id, mode, original)) : null;
+  if (libraryLink) return sourcePaletteLinkedValue(libraryLink, original);
+  const change = findChange('token', id, mode);
+  if (change) return change.to;
+  const paletteLink = token && !token.isInternalAlias ? token.paletteLinks?.[mode] : null;
+  return paletteLink ? sourcePaletteLinkedValue(paletteLink, original) : original;
 }
 function colorTokenCanvas() {
   const groups = [
@@ -2683,6 +4605,55 @@ const linkedColorContextValues = {
 // значения соответствующего режима. Наследование живое: правка Default сразу меняет
 // контексты. Ручная правка контекста открепляет его (unlink), клик по иконке связи
 // возвращает наследование и сбрасывает ручные значения.
+function groupedColorTokens(tokens) {
+  const map = new Map();
+  tokens.filter((token) => !token.isInternalAlias).forEach((token) => {
+    const section = token.colorSection || 'Other';
+    if (!map.has(section)) map.set(section, []);
+    map.get(section).push(token);
+  });
+  return [...map.entries()]
+    .sort(([a], [b]) => {
+      const ai = colorSectionOrder.indexOf(a);
+      const bi = colorSectionOrder.indexOf(b);
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi) || a.localeCompare(b);
+    })
+    .map(([section, entries]) => [
+      colorSectionLabels[section] || section,
+      entries.sort((a, b) => (a.sourceIndex ?? 0) - (b.sourceIndex ?? 0) || colorTokenDisplayName(a).localeCompare(colorTokenDisplayName(b))),
+    ]);
+}
+
+function colorTokenCategoryLabel(token) {
+  const path = String(token.sourcePath || token.name || '').replace(/^color\./, '').split('.');
+  const [section, context, ...rest] = path;
+  if (!rest.length) return 'General';
+  if (section === 'Text&Icons') return rest[0] || 'General';
+  if (section === 'Surfaces' || section === 'Outlines') {
+    return rest.slice(0, 2).filter(Boolean).join(' / ') || 'General';
+  }
+  if (section === 'BG' || section === 'Data' || section === 'Syntax' || section === 'TechnicalTokens') return 'Default';
+  return rest[0] || context || 'General';
+}
+
+function groupedColorTokenCategories(tokens) {
+  return groupedColorTokens(tokens).map(([sectionLabel, entries]) => {
+    const categories = new Map();
+    entries.forEach((token) => {
+      const category = colorTokenCategoryLabel(token);
+      if (!categories.has(category)) categories.set(category, []);
+      categories.get(category).push(token);
+    });
+    return [sectionLabel, [...categories.entries()].map(([categoryLabel, categoryEntries]) => [
+      categoryLabel,
+      categoryEntries.sort((a, b) => (a.sourceIndex ?? 0) - (b.sourceIndex ?? 0) || colorTokenDisplayName(a).localeCompare(colorTokenDisplayName(b))),
+    ])];
+  });
+}
+
+function tokenTreeGroupKey(label) {
+  return String(label || '').replace(/&/g, 'and').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase();
+}
 const colorContexts = [['ondark', 'OnDark'], ['onlight', 'OnLight'], ['inverse', 'Inverse']];
 function contextInherits(tokenId, context) {
   return !state.contextUnlinked?.[`${tokenId}::${context}`];
@@ -2711,26 +4682,48 @@ function linkedColorContextValue(id, context) {
   return contextFieldValue(id, key, key === 'ondark' ? 'dark' : 'light');
 }
 function linkedColorTokenCanvas() {
-  const tokenById = new Map(state.tokens.map((token) => [token.id, token]));
+  const groups = groupedColorTokenCategories(state.tokens.filter((token) => token.group === 'colors'));
   return `<div class="token-canvas">
     <div class="token-swatch-board">
-      ${linkedColorTokenGroups.map(([label, ids]) => `<section class="token-swatch-group">
+      ${groups.map(([label, categories]) => `<section class="token-swatch-group token-swatch-section">
         <div class="token-swatch-head token-swatch-head-default"><h3>${label}</h3></div>
-        <div class="token-default-grid">
-          ${ids.map((id) => {
-            const token = tokenById.get(id);
-            if (!token) return '';
-            const value = tokenDraftValue(id, 'light');
-            const selected = state.selectedTokenId === id ? 'is-selected' : '';
-            return `<button class="token-swatch-card ${selected}" data-action="select-token" data-id="${id}" title="${escapeHtml(token.name)} - Default - ${escapeHtml(value)}"><span class="token-swatch-fill" style="background:${escapeHtml(value)}"></span></button>`;
-          }).join('')}
-        </div>
+        ${categories.map(([categoryLabel, entries]) => `<div class="token-swatch-category">
+          <div class="token-swatch-category-title">${escapeHtml(categoryLabel)}</div>
+          <div class="token-default-grid">
+            ${entries.map((token, index) => {
+              const lightValue = tokenDraftValue(token.id, 'light');
+              const darkValue = tokenDraftValue(token.id, 'dark');
+              const selected = state.selectedTokenId === token.id ? 'is-selected' : '';
+              const labelText = escapeHtml(colorTokenDisplayName(token));
+              return `<button class="token-swatch-card token-swatch-card-split ${selected}" data-action="select-token" data-id="${token.id}" title="${labelText} - Light ${escapeHtml(lightValue)} / Dark ${escapeHtml(darkValue)}">
+                <span class="token-swatch-half token-swatch-light" style="background:${escapeHtml(lightValue)}"><b>Light</b></span>
+                <span class="token-swatch-half token-swatch-dark-mode" style="background:${escapeHtml(darkValue)}"><b>Dark</b></span>
+              </button>`;
+            }).join('')}
+          </div>
+        </div>`).join('')}
       </section>`).join('')}
     </div>
   </div>`;
 }
 
 function linkedColorTokenTree(tokens, selected) {
+  const dynamicGroups = groupedColorTokens(tokens);
+  if (dynamicGroups.length) return dynamicGroups.map(([label, entries]) => {
+    const key = tokenTreeGroupKey(label);
+    const collapsed = Boolean(state.collapsedTokenGroups?.[key]);
+    const rows = entries.map((token) => {
+      const light = tokenDraftValue(token.id, 'light');
+      const dark = tokenDraftValue(token.id, 'dark');
+      const preview = dark && dark !== light ? `linear-gradient(180deg, ${escapeHtml(light)} 0 50%, ${escapeHtml(dark)} 50% 100%)` : escapeHtml(light);
+      const labelText = colorTokenDisplayName(token);
+      return `<button class="token-row ${selected.id === token.id ? 'is-selected' : ''}" data-action="select-token" data-id="${token.id}"><i class="token-status token-color-preview ${tokenSeverityClass(token.id)}" style="background:${preview}"></i><span>${escapeHtml(labelText)}</span>${selected.id === token.id ? '<b class="token-row-eye">◊</b>' : ''}</button>`;
+    }).join('');
+    return `<div class="token-tree-group ${rows && !collapsed ? 'is-open' : 'is-collapsed'}">
+      <button type="button" class="token-tree-heading" data-action="toggle-token-group" data-group="${escapeHtml(key)}" aria-expanded="${collapsed ? 'false' : 'true'}"><span class="token-tree-chevron">${collapsed ? '›' : '⌄'}</span><span>${escapeHtml(label)}</span></button>
+      ${collapsed ? '' : rows}
+    </div>`;
+  }).join('');
   const visible = new Set(tokens.map((token) => token.id));
   const tokenById = new Map(tokens.map((token) => [token.id, token]));
   return linkedColorTokenGroups.map(([label, ids]) => {
@@ -2750,7 +4743,12 @@ function linkedColorTokenTree(tokens, selected) {
       const labelText = linkedColorTokenLabels[token.id] || token.name.replace(/^color\./, '');
       return `<button class="token-row ${selected.id === token.id ? 'is-selected' : ''}" data-action="select-token" data-id="${token.id}"><i class="token-status token-color-preview ${tokenSeverityClass(token.id)}" style="background:${preview}"></i><span>${escapeHtml(labelText)}</span>${selected.id === token.id ? '<b class="token-row-eye">◌</b>' : ''}</button>`;
     }).join('');
-    return `<div class="token-tree-group ${rows ? 'is-open' : 'is-collapsed'}"><span>${rows ? '⌄' : '›'} ${label}</span>${rows}</div>`;
+    const key = tokenTreeGroupKey(label);
+    const collapsed = Boolean(state.collapsedTokenGroups?.[key]);
+    return `<div class="token-tree-group ${rows && !collapsed ? 'is-open' : 'is-collapsed'}">
+      <button type="button" class="token-tree-heading" data-action="toggle-token-group" data-group="${escapeHtml(key)}" aria-expanded="${collapsed ? 'false' : 'true'}"><span class="token-tree-chevron">${collapsed ? '›' : '⌄'}</span><span>${escapeHtml(label)}</span></button>
+      ${collapsed ? '' : rows}
+    </div>`;
   }).join('');
 }
 // Борд-обзор шкалы шрифтов: вкладка Typography показывает саму шкалу (как Colors —
@@ -2965,9 +4963,9 @@ function changes() {
 function publishView() {
   if (!canPublish()) return `<section class="workspace-page"><div class="empty"><h1>Publish недоступен</h1><p>Viewer может просматривать Theme и Versions, но не публиковать изменения.</p><div class="actions">${state.accessRequested ? '<span class="status">Запрос Editor отправлен</span>' : '<button data-action="request-access">Request edit access</button>'}<button class="secondary" data-route="versions">Открыть Versions</button></div></div></section>`;
   if (draftIsStale()) return `<section class="workspace-page">${draftStatusBanner()}<div class="empty"><h1>Сначала обновите draft</h1><p>Перед Publish нужно применить текущую Published Version как новую базу.</p><button data-action="rebase-draft">Обновить draft</button><button class="secondary" data-route="changes">Открыть Changes</button></div></section>`;
-  if (!state.changes.length) return `<section class="workspace-page"><div class="empty"><h1>Публиковать нечего</h1><button data-route="editor">Открыть Editor</button></div></section>`;
+  if (!totalChangeCount()) return `<section class="workspace-page"><div class="empty"><h1>Публиковать нечего</h1><button data-route="editor">Открыть Editor</button></div></section>`;
   const hasIssues = issueCount() > 0;
-  return `<section class="workspace-page"><div class="workspace-page-header"><div><h1>Publish Version</h1><p>Прямая публикация · review и approve не требуются</p></div></div>${state.publicationError?`<div class="notice error-notice">${escapeHtml(state.publicationError)}</div>`:''}${canPublish()?'':'<div class="viewer-banner">Publish недоступен для Viewer. Запросите доступ Editor.</div>'}<div class="summary-grid"><article><span>Theme</span><strong>${escapeHtml(selectedTheme()?.name||'')}</strong></article><article><span>Changes</span><strong>${state.changes.length}</strong></article><article><span>Issues</span><strong>${issueCount()}</strong></article></div><form id="publish-form" class="form-card"><label>Version<input name="version" value="${nextVersion()}" required pattern="\\d+\\.\\d+\\.\\d+"></label><label>Changelog<textarea name="changelog" required>Theme configuration updated.</textarea></label>${hasIssues?`<label class="checkbox"><input type="checkbox" name="confirmIssues" required> Я понимаю риски и публикую с ${issueCount()} validation issues</label><p class="risk-note">Issues не блокируют публикацию: они сохранятся в Version snapshot и будут видны разработчикам при получении конфигурации через CLI.</p>`:''}<details class="prototype-debug"><summary>Отладка прототипа</summary><label class="checkbox prototype-control"><input type="checkbox" name="simulateFailure"> Симулировать сбой сохранения конфигурации — для демонстрации сценария ошибки публикации</label></details><div class="publication-snapshot"><strong>Validation snapshot</strong>${state.changes.map((c)=>`<div class="snapshot-line"><span class="status ${c.severity.toLowerCase()}">${c.severity}</span><span class="snapshot-body">${escapeHtml(c.label)}: <span class="diff-pair">${diffPair(c)}</span></span>${c.message?`<small>${escapeHtml(c.message)}</small>`:''}${c.suggestion?`<small class="snapshot-hint">Рекомендация: ${escapeHtml(c.suggestion.label)}</small>`:''}</div>`).join('')}</div><div class="form-actions"><button type="button" class="secondary" data-route="changes">Отмена</button><button type="submit" ${canPublish()?'':'disabled'}>Publish Version</button></div></form></section>`;
+  return `<section class="workspace-page"><div class="workspace-page-header"><div><h1>Publish Version</h1><p>Прямая публикация · review и approve не требуются</p></div></div>${state.publicationError?`<div class="notice error-notice">${escapeHtml(state.publicationError)}</div>`:''}${canPublish()?'':'<div class="viewer-banner">Publish недоступен для Viewer. Запросите доступ Editor.</div>'}<div class="summary-grid"><article><span>Theme</span><strong>${escapeHtml(selectedTheme()?.name||'')}</strong></article><article><span>Changes</span><strong>${totalChangeCount()}</strong></article><article><span>Issues</span><strong>${issueCount()}</strong></article></div><form id="publish-form" class="form-card"><label>Version<input name="version" value="${nextVersion()}" required pattern="\\d+\\.\\d+\\.\\d+"></label><label>Changelog<textarea name="changelog" required>Theme configuration updated.</textarea></label>${hasIssues?`<label class="checkbox"><input type="checkbox" name="confirmIssues" required> Я понимаю риски и публикую с ${issueCount()} validation issues</label><p class="risk-note">Issues не блокируют публикацию: они сохранятся в Version snapshot и будут видны разработчикам при получении конфигурации через CLI.</p>`:''}<details class="prototype-debug"><summary>Отладка прототипа</summary><label class="checkbox prototype-control"><input type="checkbox" name="simulateFailure"> Симулировать сбой сохранения конфигурации — для демонстрации сценария ошибки публикации</label></details><div class="publication-snapshot"><strong>Validation snapshot</strong>${paletteEditCount()?`<div class="snapshot-line"><span class="status passed">Passed</span><span class="snapshot-body">Source palette: изменено значений — ${paletteEditCount()}</span><small>Правки палитры войдут в snapshot версии.</small></div>`:''}${state.changes.map((c)=>`<div class="snapshot-line"><span class="status ${c.severity.toLowerCase()}">${c.severity}</span><span class="snapshot-body">${escapeHtml(c.label)}: <span class="diff-pair">${diffPair(c)}</span></span>${c.message?`<small>${escapeHtml(c.message)}</small>`:''}${c.suggestion?`<small class="snapshot-hint">Рекомендация: ${escapeHtml(c.suggestion.label)}</small>`:''}</div>`).join('')}</div><div class="form-actions"><button type="button" class="secondary" data-route="changes">Отмена</button><button type="submit" ${canPublish()?'':'disabled'}>Publish Version</button></div></form></section>`;
 }
 function nextVersion() {
   // Semver свой у каждой темы: следующая версия считается от текущей версии ЭТОЙ темы
@@ -2995,11 +4993,18 @@ function configurationSnapshot() {
       ...(item.group === 'colors' ? { darkValue: tokenChanges.has(`${item.id}:dark`) ? tokenChanges.get(`${item.id}:dark`) : (item.darkValue ?? item.value) } : {}),
     })),
     components: state.components.map((item)=>({ ...item, value: componentChanges.has(item.id) ? componentChanges.get(item.id) : item.value })),
+    sourcePalette: { overrides: structuredClone(state.sourcePaletteOverrides || {}), rowSources: structuredClone(state.sourcePaletteRowSources || {}) },
   };
 }
 function applyPublishedSnapshot(release) {
   state.tokens = structuredClone(release.configuration.tokens);
   state.components = structuredClone(release.configuration.components);
+  if (release.configuration.sourcePalette) {
+    state.sourcePaletteOverrides = structuredClone(release.configuration.sourcePalette.overrides || {});
+    state.sourcePaletteRowSources = structuredClone(release.configuration.sourcePalette.rowSources || {});
+    state.sourcePaletteMode = Object.keys(state.sourcePaletteOverrides).length || Object.keys(state.sourcePaletteRowSources).length ? 'custom' : 'sber';
+  }
+  state.publishedPalette = { overrides: structuredClone(state.sourcePaletteOverrides || {}), rowSources: structuredClone(state.sourcePaletteRowSources || {}) };
   const publishedChanges = new Map((release.changesSnapshot || []).map((change)=>[change.key,change.to]));
   state.changes = state.changes.filter((change)=>!publishedChanges.has(change.key) || publishedChanges.get(change.key) !== change.to);
 }
@@ -3097,7 +5102,7 @@ function validateChange(kind, item, value, mode = 'light') {
   const text = String(value ?? '').trim();
   const fallback = kind === 'token' && mode === 'dark' ? (item.darkValue ?? item.value) : item.value;
   if (!text) return { severity: 'Error', message: 'Значение не может быть пустым.', suggestion: { label: `Вернуть ${fallback}`, value: String(fallback) } };
-  if (kind === 'token' && item.group === 'colors' && !hexToRgba(text)) {
+  if (kind === 'token' && item.group === 'colors' && !hexToRgba(text) && !isGradientValue(text)) {
     return { severity: 'Error', message: 'Введите цвет в формате Hex: #RGB, #RRGGBB или #RRGGBBAA.', suggestion: { label: `Вернуть ${fallback}`, value: String(fallback) } };
   }
   if (kind === 'token' && item.group === 'sizes' && !Number.isFinite(Number(text))) {
@@ -3138,12 +5143,17 @@ app.addEventListener('click', async (event) => {
   if (event.target.matches('.modal-backdrop')) {
     state.entityModal = null;
     state.versionModal = null;
+    state.sourcePaletteReplaceTarget = '';
+    state.sourcePaletteRebuild = null;
+    state.sourcePaletteRemoveTarget = '';
+    state.sourcePaletteAddCategory = '';
+    state.resetConfirm = null;
     persist();
     render();
     return;
   }
   if (event.target.closest('.inline-card-rename') && !event.target.closest('button')) return;
-  const target = event.target.closest('button, .clickable-card');
+  const target = event.target.closest('button, .clickable-card, input[data-action="open-color-picker"]');
   if (!target) {
     const insidePicker = event.target.closest('.color-picker-popover');
     const shouldClosePicker = state.colorPicker && !insidePicker;
@@ -3159,24 +5169,44 @@ app.addEventListener('click', async (event) => {
     pendingFocusSelector = '';
   }
   if (target.type === 'submit' && target.form) return;
-  if (['fix-contrast', 'save-token', 'revert', 'reset-token', 'apply-suggestion', 'restore-version', 'open-color-picker', 'open-palette-step', 'cp-preset', 'toggle-reset-menu', 'reset-section', 'reset-all', 'rebase-draft'].includes(target.dataset.action) && !canEditTheme()) return;
+  if (['fix-contrast', 'save-token', 'revert', 'reset-token', 'apply-suggestion', 'restore-version', 'open-color-picker', 'open-palette-step', 'cp-preset', 'set-source-palette-mode', 'map-source-color', 'reset-source-palette-mapping', 'toggle-source-family', 'request-remove-source-family', 'confirm-remove-source-family', 'reassign-and-remove-source-family', 'add-source-family', 'reset-source-color', 'open-source-palette-rebuild', 'apply-source-palette-rebuild', 'toggle-reset-menu', 'reset-section', 'reset-all', 'confirm-reset', 'rebase-draft'].includes(target.dataset.action) && !canEditTheme()) return;
   if (target.dataset.action === 'toggle-reset-menu') {
     state.resetMenuOpen = !state.resetMenuOpen;
     state.accountMenuOpen = false;
     state.notificationMenuOpen = false;
   }
   if (target.dataset.action === 'reset-section') {
-    const section = sectionTokenChanges();
-    const label = tokenGroupLabels[state.editorTab] || state.editorTab;
-    if (section.length && window.confirm(`Сбросить ${section.length} изменений раздела ${label}? Действие можно отменить через Undo.`)) {
-      const keys = new Set(section.map((entry) => entry.key));
-      replaceChanges(state.changes.filter((entry) => !keys.has(entry.key)));
-    }
+    const count = state.editorTab === 'palette' ? paletteEditCount() : sectionTokenChanges().length;
+    if (count) state.resetConfirm = { scope: 'section' };
     state.resetMenuOpen = false;
   }
   if (target.dataset.action === 'reset-all') {
-    if (state.changes.length && window.confirm(`Сбросить все изменения (${state.changes.length})? Действие можно отменить через Undo.`)) replaceChanges([]);
+    if (totalChangeCount()) state.resetConfirm = { scope: 'all' };
     state.resetMenuOpen = false;
+  }
+  if (target.dataset.action === 'close-reset-confirm') {
+    state.resetConfirm = null;
+  }
+  if (target.dataset.action === 'confirm-reset') {
+    const scope = state.resetConfirm?.scope;
+    if (scope === 'all') {
+      const total = totalChangeCount();
+      replaceChanges([]);
+      resetPaletteEdits();
+      state.toastMessage = `Сброшено изменений: ${total}. Тема вернулась к последней публикации.`;
+    } else if (scope === 'section') {
+      if (state.editorTab === 'palette') {
+        const count = paletteEditCount();
+        resetPaletteEdits();
+        state.toastMessage = `Палитра: сброшено значений — ${count}.`;
+      } else {
+        const section = sectionTokenChanges();
+        const keys = new Set(section.map((entry) => entry.key));
+        replaceChanges(state.changes.filter((entry) => !keys.has(entry.key)));
+        state.toastMessage = `Раздел ${tokenGroupLabels[state.editorTab] || state.editorTab}: сброшено изменений — ${section.length}.`;
+      }
+    }
+    state.resetConfirm = null;
   }
   if (target.dataset.action === 'reset-token') replaceChanges(state.changes.filter((entry) => !(entry.kind === 'token' && entry.id === target.dataset.id)));
   if (target.dataset.action === 'rebase-draft') {
@@ -3353,6 +5383,221 @@ app.addEventListener('click', async (event) => {
     state.route = 'editor';
   }
   if (target.dataset.action === 'tab') state.editorTab = target.dataset.tab;
+  if (target.dataset.action === 'open-source-palette-group-add') {
+    state.sourcePaletteGroupModalOpen = true;
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'close-source-palette-group-add') {
+    state.sourcePaletteGroupModalOpen = false;
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'create-source-palette-group') {
+    const input = target.closest('.source-palette-group-modal')?.querySelector('[data-action="source-palette-group-name"]');
+    const label = String(input?.value || '').trim();
+    if (!label) { input?.focus(); return; }
+    const id = `custom-${Date.now()}`;
+    state.sourcePaletteCustomCategories = [...(state.sourcePaletteCustomCategories || []), { id, label }];
+    state.sourcePaletteAddedRowsByCategory ||= {};
+    state.sourcePaletteAddedRowsByCategory[id] = [];
+    state.sourcePaletteGroupModalOpen = false;
+    state.toastMessage = `Группа ${label} создана. Добавьте в неё палитры.`;
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'open-color-tokens') {
+    state.editorTab = 'colors';
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'set-source-usage-scope') {
+    state.sourcePaletteUsageScope = target.dataset.scope === 'family' ? 'family' : 'swatch';
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'set-source-palette-filter') {
+    state.sourcePaletteFilter = ['used', 'changed'].includes(target.dataset.filter) ? target.dataset.filter : 'all';
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'clear-source-palette-search') {
+    state.sourcePaletteSearch = '';
+    persist(); render();
+    requestAnimationFrame(() => document.querySelector('[data-action="source-palette-search"]')?.focus());
+    return;
+  }
+  if (target.dataset.action === 'reset-source-palette-filters') {
+    state.sourcePaletteSearch = '';
+    state.sourcePaletteFilter = 'all';
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'toggle-source-palette-group') {
+    const categoryId = target.dataset.category;
+    state.sourcePaletteCollapsedGroups = { ...(state.sourcePaletteCollapsedGroups || {}) };
+    if (state.sourcePaletteCollapsedGroups[categoryId]) delete state.sourcePaletteCollapsedGroups[categoryId];
+    else state.sourcePaletteCollapsedGroups[categoryId] = true;
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'open-source-palette-add') {
+    state.sourcePaletteAddCategory = target.dataset.category;
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'close-source-palette-add') {
+    state.sourcePaletteAddCategory = '';
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'add-source-family') {
+    const rowName = target.dataset.row;
+    const categoryId = state.sourcePaletteAddCategory;
+    const disabled = new Set(state.sourcePaletteDisabledRows || []);
+    disabled.delete(rowName);
+    state.sourcePaletteDisabledRows = [...disabled];
+    state.sourcePaletteAddedRowsByCategory ||= {};
+    state.sourcePaletteAddedRowsByCategory[categoryId] = [...new Set([...(state.sourcePaletteAddedRowsByCategory[categoryId] || []), rowName])];
+    const step = '500';
+    state.sourcePaletteSelected = { row: rowName, categoryId, step, hex: paletteValue(rowName, step) };
+    state.sourcePaletteAddCategory = '';
+    state.toastMessage = `${rowName} добавлена в группу ${sourcePaletteDefaultCategoryDefs().find((item) => item.id === categoryId)?.label || ''}.`;
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'request-remove-source-family') {
+    const rowName = target.dataset.row;
+    if (!sourcePaletteIsRowEnabled(rowName)) return;
+    state.sourcePaletteRemoveTarget = { row: rowName, categoryId: target.dataset.category || sourcePaletteSelectionCategoryId(rowName, state.sourcePaletteSelected?.categoryId) };
+    state.sourcePaletteRemoveIntent = 'remove';
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'request-replace-source-family-in-group') {
+    const rowName = target.dataset.row;
+    state.sourcePaletteRemoveTarget = { row: rowName, categoryId: target.dataset.category || sourcePaletteSelectionCategoryId(rowName, state.sourcePaletteSelected?.categoryId) };
+    state.sourcePaletteRemoveIntent = 'replace';
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'close-source-palette-remove') {
+    state.sourcePaletteRemoveTarget = '';
+    state.sourcePaletteRemoveIntent = 'remove';
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'confirm-remove-source-family') {
+    sourcePaletteReassignGroup(target.dataset.row, target.dataset.category);
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'reassign-and-remove-source-family') {
+    sourcePaletteReassignGroup(target.dataset.row, target.dataset.category, target.dataset.replacement);
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'open-source-palette-replace') {
+    state.sourcePaletteReplaceTarget = target.dataset.row;
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'open-source-palette-rebuild') {
+    const rowName = target.dataset.row;
+    const step = String(target.dataset.step || '500');
+    state.sourcePaletteRebuild = { row: rowName, step, hex: paletteValue(rowName, step) || '#21A038' };
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'close-source-palette-rebuild') {
+    state.sourcePaletteRebuild = null;
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'apply-source-palette-rebuild') {
+    const rebuild = state.sourcePaletteRebuild;
+    if (!rebuild) return;
+    const rowName = rebuild.row;
+    const step = String(rebuild.step);
+    const values = sourcePaletteRebuildValues(rowName, step, rebuild.hex);
+    if (!Object.keys(values).length) return;
+    state.sourcePaletteOverrides = { ...(state.sourcePaletteOverrides || {}), [rowName]: { ...values } };
+    state.sourcePaletteMode = 'custom';
+    state.sourcePaletteSelected = { row: rowName, categoryId: sourcePaletteSelectionCategoryId(rowName, state.sourcePaletteSelected?.categoryId), step, hex: values[step] };
+    state.sourcePaletteRebuild = null;
+    state.toastMessage = `${rowName}: палитра перестроена от ${values[step]}. Связи семантических токенов сохранены.`;
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'close-source-palette-replace') {
+    state.sourcePaletteReplaceTarget = '';
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'replace-source-palette') {
+    const rowName = target.dataset.row;
+    const sourceRowName = target.dataset.source;
+    if (!sourcePaletteTemplateRows().includes(rowName) || !sourcePaletteRowByName(sourceRowName)) return;
+    state.sourcePaletteRowSources = { ...(state.sourcePaletteRowSources || {}) };
+    if (sourceRowName === rowName) delete state.sourcePaletteRowSources[rowName];
+    else state.sourcePaletteRowSources[rowName] = sourceRowName;
+    if (state.sourcePaletteOverrides?.[rowName]) delete state.sourcePaletteOverrides[rowName];
+    const step = String(state.sourcePaletteSelected?.row === rowName ? state.sourcePaletteSelected.step : '500');
+    state.sourcePaletteSelected = { row: rowName, categoryId: sourcePaletteSelectionCategoryId(rowName, state.sourcePaletteSelected?.categoryId), step, hex: paletteValue(rowName, step) };
+    state.sourcePaletteMode = !Object.keys(state.sourcePaletteRowSources || {}).length && !Object.keys(state.sourcePaletteOverrides || {}).length ? 'sber' : 'custom';
+    state.sourcePaletteReplaceTarget = '';
+    state.toastMessage = `${rowName}: загружены значения ${sourceRowName}. Связи семантических токенов сохранены.`;
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'toggle-token-group') {
+    const key = target.dataset.group;
+    state.collapsedTokenGroups = { ...(state.collapsedTokenGroups || {}) };
+    if (state.collapsedTokenGroups[key]) delete state.collapsedTokenGroups[key];
+    else state.collapsedTokenGroups[key] = true;
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'select-source-color') {
+    state.sourcePaletteSelected = { row: target.dataset.row, categoryId: target.dataset.category, step: target.dataset.step, hex: target.dataset.hex };
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'select-source-family') {
+    const rowName = target.dataset.row;
+    const currentStep = String(state.sourcePaletteSelected?.step || '500');
+    const step = SDDS_ADDITIONAL_PALETTE.steps.includes(currentStep) ? currentStep : '500';
+    state.sourcePaletteSelected = { row: rowName, categoryId: target.dataset.category, step, hex: paletteValue(rowName, step) };
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'toggle-source-family') {
+    const rowName = target.dataset.row;
+    const disabled = new Set(state.sourcePaletteDisabledRows || []);
+    if (disabled.has(rowName)) disabled.delete(rowName);
+    else disabled.add(rowName);
+    state.sourcePaletteDisabledRows = [...disabled];
+    state.toastMessage = disabled.has(rowName) ? `${rowName}: растяжка выключена.` : `${rowName}: растяжка включена.`;
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'reset-source-color') {
+    const rowName = target.dataset.row;
+    const step = String(target.dataset.step);
+    if (state.sourcePaletteOverrides?.[rowName]) {
+      delete state.sourcePaletteOverrides[rowName][step];
+      if (!Object.keys(state.sourcePaletteOverrides[rowName]).length) delete state.sourcePaletteOverrides[rowName];
+    }
+    state.sourcePaletteSelected = { row: rowName, categoryId: sourcePaletteSelectionCategoryId(rowName, state.sourcePaletteSelected?.categoryId), step, hex: paletteValue(rowName, step) };
+    state.toastMessage = `${rowName} ${step}: вернули значение шаблона.`;
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'set-source-palette-mode') {
+    state.sourcePaletteMode = target.dataset.mode === 'custom' ? 'custom' : 'sber';
+    state.toastMessage = state.sourcePaletteMode === 'custom'
+      ? 'Создана Custom copy. Палитра больше не считается соответствующей брендбуку Сбера.'
+      : 'Вернулись к брендовой палитре Сбера.';
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'reset-source-palette-mapping') {
+    state.sourcePaletteMode = 'sber';
+    state.sourcePaletteMapping = {};
+    state.toastMessage = 'Semantic anchors вернулись к рекомендованным значениям Sber palette.';
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'map-source-color') {
+    const selected = state.sourcePaletteSelected || {};
+    if (!selected.hex) return;
+    state.sourcePaletteMode = 'custom';
+    state.sourcePaletteMapping = { ...(state.sourcePaletteMapping || {}), [target.dataset.role]: selected };
+    const role = sourcePaletteRoleDefs.find((item) => item.id === target.dataset.role);
+    state.toastMessage = `${role?.label || target.dataset.role}: назначен ${selected.row} ${selected.step} · ${selected.hex}`;
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'open-linked-color-token') {
+    const token = state.tokens.find((item) => item.id === target.dataset.id && item.group === 'colors');
+    if (!token) return;
+    state.editorTab = 'colors';
+    state.selectedTokenId = token.id;
+    state.workspaceMode = 'overview';
+    state.canvasComponent = 'palette';
+    state.colorPicker = null;
+    persist(); render(); return;
+  }
   if (target.dataset.action === 'select-token') {
     state.selectedTokenId = target.dataset.id;
     if (state.colorPicker) {
@@ -3382,13 +5627,88 @@ app.addEventListener('click', async (event) => {
     }
     state.colorPicker = null;
   }
-  if (target.dataset.action === 'cp-tab' && state.colorPicker) state.colorPicker.tab = target.dataset.tab;
+  if (target.dataset.action === 'cp-tab' && state.colorPicker) {
+    state.colorPicker.tab = target.dataset.tab;
+    if (state.colorPicker.tab === 'library') {
+      state.colorPicker.libraryScrollTop = null;
+      state.colorPicker.libraryEnsureActive = true;
+    }
+  }
+  if (target.dataset.action === 'cp-paint' && state.colorPicker) {
+    state.colorPicker.tab = 'custom';
+    state.colorPicker.paint = target.dataset.paint === 'gradient' ? 'gradient' : 'solid';
+    if (state.colorPicker.paint === 'gradient') {
+      state.colorPicker.gradient ||= defaultGradientFromColor(rgbaToHex({ ...hsvToRgb(state.colorPicker), a: state.colorPicker.a }));
+      syncPickerToGradientStop(state.colorPicker);
+      commitGradientPicker();
+    } else {
+      commitColorPicker();
+    }
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'cp-gradient-stop' && state.colorPicker?.paint === 'gradient') {
+    state.colorPicker.gradient ||= defaultGradientFromColor(rgbaToHex({ ...hsvToRgb(state.colorPicker), a: state.colorPicker.a }));
+    state.colorPicker.gradient.activeStop = Math.max(0, Math.min((state.colorPicker.gradient.stops?.length || 1) - 1, Number(target.dataset.index) || 0));
+    syncPickerToGradientStop(state.colorPicker);
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'cp-open-stop-picker' && state.colorPicker?.paint === 'gradient') {
+    state.colorPicker.gradient ||= defaultGradientFromColor(rgbaToHex({ ...hsvToRgb(state.colorPicker), a: state.colorPicker.a }));
+    state.colorPicker.gradient.activeStop = Math.max(0, Math.min((state.colorPicker.gradient.stops?.length || 1) - 1, Number(target.dataset.index) || 0));
+    state.colorPicker.stopPickerOpen = true;
+    state.colorPicker.stopPickerTab ||= 'custom';
+    syncPickerToGradientStop(state.colorPicker);
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'cp-close-stop-picker' && state.colorPicker?.paint === 'gradient') {
+    state.colorPicker.stopPickerOpen = false;
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'cp-stop-tab' && state.colorPicker?.paint === 'gradient') {
+    state.colorPicker.stopPickerOpen = true;
+    state.colorPicker.stopPickerTab = target.dataset.tab === 'library' ? 'library' : 'custom';
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'cp-gradient-add-stop' && state.colorPicker?.paint === 'gradient') {
+    state.colorPicker.gradient ||= defaultGradientFromColor(rgbaToHex({ ...hsvToRgb(state.colorPicker), a: state.colorPicker.a }));
+    const stops = state.colorPicker.gradient.stops ||= [];
+    const nextColor = rgbaToHex({ ...hsvToRgb(state.colorPicker), a: state.colorPicker.a }).toUpperCase();
+    stops.push({ color: nextColor, position: 50 });
+    stops.sort((a, b) => (Number(a.position) || 0) - (Number(b.position) || 0));
+    state.colorPicker.gradient.activeStop = stops.findIndex((stop) => stop.color === nextColor && Number(stop.position) === 50);
+    state.colorPicker.stopPickerOpen = true;
+    commitGradientPicker();
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'cp-gradient-remove-stop' && state.colorPicker?.paint === 'gradient') {
+    state.colorPicker.gradient ||= defaultGradientFromColor(rgbaToHex({ ...hsvToRgb(state.colorPicker), a: state.colorPicker.a }));
+    const stops = state.colorPicker.gradient.stops ||= [];
+    if (stops.length > 2) {
+      stops.splice(Math.max(0, Math.min(stops.length - 1, Number(target.dataset.index) || 0)), 1);
+      state.colorPicker.gradient.activeStop = Math.max(0, Math.min(stops.length - 1, state.colorPicker.gradient.activeStop || 0));
+      syncPickerToGradientStop(state.colorPicker);
+      commitGradientPicker();
+    }
+    persist(); render(); return;
+  }
   if (target.dataset.action === 'cp-preset' && state.colorPicker) {
+    const libraryList = target.closest('.cp-library-list');
+    if (libraryList) {
+      state.colorPicker.libraryScrollTop = libraryList.scrollTop;
+      state.colorPicker.libraryEnsureActive = false;
+    }
     const rgba = hexToRgba(target.dataset.value);
     if (rgba) {
       const hsv = rgbToHsv(rgba);
-      Object.assign(state.colorPicker, { h: hsv.h, s: hsv.s, v: hsv.v, a: rgba.a });
-      commitColorPicker();
+      Object.assign(state.colorPicker, { h: hsv.h, s: hsv.s, v: hsv.v, a: colorHexParts(target.dataset.value)?.alphaHex ? rgba.a : 1 });
+      if (state.colorPicker.paint === 'gradient' && target.closest('.cp-stop-popover')) {
+        state.colorPicker.stopPickerOpen = true;
+        state.colorPicker.stopPickerTab = 'library';
+        updateActiveGradientStopColor(state.colorPicker, target.dataset.label || '');
+        commitGradientPicker();
+      } else {
+        commitColorPicker(target.dataset.label || '');
+      }
     }
   }
   if (target.dataset.action === 'cp-copy') {
@@ -3398,6 +5718,10 @@ app.addEventListener('click', async (event) => {
   if (target.dataset.action === 'toggle-issue-filter') state.issueFilter = !state.issueFilter;
   if (target.dataset.action === 'toggle-token-sort') state.tokenSort = state.tokenSort === 'az' ? 'source' : 'az';
   if (target.dataset.action === 'workspace-tab') state.workspaceMode = target.dataset.mode;
+  if (target.dataset.action === 'toggle-context-panel') {
+    state.contextPanelCollapsed = !state.contextPanelCollapsed;
+    persist(); render(); return;
+  }
   if (target.dataset.action === 'toggle-context-link') {
     const key = `${target.dataset.id}::${target.dataset.context}`;
     const unlinked = { ...(state.contextUnlinked || {}) };
@@ -3593,8 +5917,8 @@ app.addEventListener('keydown', (event) => {
     }
     return;
   }
-  if (event.key === 'Escape' && (state.entityModal || state.versionModal || state.cardMenuKey || state.accountMenuOpen || state.notificationMenuOpen || state.colorPicker || state.resetMenuOpen)) {
-    state.entityModal=null; state.versionModal=null; state.cardMenuKey=''; state.accountMenuOpen=false; state.notificationMenuOpen=false; state.colorPicker=null; state.resetMenuOpen=false; persist(); render(); return;
+  if (event.key === 'Escape' && (state.entityModal || state.versionModal || state.sourcePaletteReplaceTarget || state.sourcePaletteRebuild || state.sourcePaletteRemoveTarget || state.sourcePaletteAddCategory || state.sourcePaletteGroupModalOpen || state.cardMenuKey || state.accountMenuOpen || state.notificationMenuOpen || state.colorPicker || state.resetMenuOpen || state.resetConfirm)) {
+    state.entityModal=null; state.versionModal=null; state.sourcePaletteReplaceTarget=''; state.sourcePaletteRebuild=null; state.sourcePaletteRemoveTarget=''; state.sourcePaletteAddCategory=''; state.sourcePaletteGroupModalOpen=false; state.cardMenuKey=''; state.accountMenuOpen=false; state.notificationMenuOpen=false; state.colorPicker=null; state.resetMenuOpen=false; state.resetConfirm=null; persist(); render(); return;
   }
   const isFormField = event.target.matches('input, textarea, select, [contenteditable="true"]');
   if (!isFormField && canEditTheme() && ['editor', 'components'].includes(state.route) && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
@@ -3613,6 +5937,74 @@ app.addEventListener('keydown', (event) => {
 
 app.addEventListener('input', (event) => {
   if (event.target.closest('#project-general-form, #design-system-general-form, #theme-general-form')) state.settingsDirty = true;
+  const sourcePaletteSearch = event.target.closest('[data-action=source-palette-search]');
+  if (sourcePaletteSearch) {
+    state.sourcePaletteSearch = sourcePaletteSearch.value;
+    persist(); render();
+    const nextSearch = document.querySelector('[data-action="source-palette-search"]');
+    if (nextSearch) {
+      nextSearch.focus();
+      nextSearch.setSelectionRange(nextSearch.value.length, nextSearch.value.length);
+    }
+    return;
+  }
+  const gradientPositionField = event.target.closest('[data-action=cp-gradient-position]');
+  if (gradientPositionField && state.colorPicker?.paint === 'gradient') {
+    applyGradientStopField(gradientPositionField.dataset.index, 'position', gradientPositionField.value);
+    return;
+  }
+  const gradientStopAlphaField = event.target.closest('[data-action=cp-gradient-stop-alpha]');
+  if (gradientStopAlphaField && state.colorPicker?.paint === 'gradient') {
+    if (!Number.isFinite(Number.parseFloat(gradientStopAlphaField.value))) return;
+    applyGradientStopField(gradientStopAlphaField.dataset.index, 'alpha', gradientStopAlphaField.value);
+    return;
+  }
+  const pickerField = event.target.closest('[data-action=cp-input]');
+  if (pickerField && state.colorPicker) {
+    if (!canEditTheme()) return;
+    const field = pickerField.dataset.field;
+    const raw = pickerField.value.trim();
+    if (field === 'hex' && !/^#?[0-9a-f]{6}([0-9a-f]{2})?$/i.test(raw)) return;
+    if (field === 'a' && !Number.isFinite(Number.parseFloat(raw))) return;
+    if (['r', 'g', 'b', 'h', 's', 'l'].includes(field) && !Number.isFinite(Number(raw))) return;
+    applyPickerField(field, raw);
+    return;
+  }
+  const rebuildHexField = event.target.closest('[data-action=source-rebuild-hex]');
+  if (rebuildHexField && state.sourcePaletteRebuild) {
+    if (!canEditTheme()) return;
+    const raw = rebuildHexField.value.trim();
+    if (!/^#?[0-9a-f]{6}$/i.test(raw)) return;
+    state.sourcePaletteRebuild.hex = `#${raw.replace('#', '').toUpperCase()}`;
+    persist(); render();
+    const fieldAfterRender = document.querySelector('[data-action=source-rebuild-hex]');
+    if (fieldAfterRender) {
+      fieldAfterRender.focus();
+      fieldAfterRender.setSelectionRange(fieldAfterRender.value.length, fieldAfterRender.value.length);
+    }
+    return;
+  }
+  const sourceColorField = event.target.closest('[data-action=source-color-input]');
+  if (sourceColorField) {
+    if (!canEditTheme()) return;
+    const raw = sourceColorField.value.trim();
+    if (!/^#?[0-9a-f]{6}$/i.test(raw)) return;
+    const rowName = sourceColorField.dataset.row;
+    const step = String(sourceColorField.dataset.step);
+    const hex = `#${raw.replace('#', '').toUpperCase()}`;
+    state.sourcePaletteOverrides ||= {};
+    state.sourcePaletteOverrides[rowName] ||= {};
+    state.sourcePaletteOverrides[rowName][step] = hex;
+    state.sourcePaletteMode = 'custom';
+    state.sourcePaletteSelected = { row: rowName, categoryId: sourcePaletteSelectionCategoryId(rowName, state.sourcePaletteSelected?.categoryId), step, hex };
+    persist(); render();
+    const fieldAfterRender = document.querySelector(`[data-action=source-color-input][data-row="${CSS.escape(rowName)}"][data-step="${CSS.escape(step)}"]`);
+    if (fieldAfterRender) {
+      fieldAfterRender.focus();
+      fieldAfterRender.setSelectionRange(fieldAfterRender.value.length, fieldAfterRender.value.length);
+    }
+    return;
+  }
   if (!['token-search', 'component-search'].includes(event.target.dataset.action)) return;
   const isComponentSearch = event.target.dataset.action === 'component-search';
   if (isComponentSearch) state.componentSearch = event.target.value;
@@ -3640,12 +6032,37 @@ function resizeImageToDataUrl(file, maxSize) {
   });
 }
 
+function applyGradientStopField(index, field, raw) {
+  const picker = state.colorPicker;
+  if (!picker || picker.paint !== 'gradient' || !canEditTheme()) return;
+  picker.gradient ||= defaultGradientFromColor(rgbaToHex({ ...hsvToRgb(picker), a: picker.a }));
+  const stopIndex = Math.max(0, Math.min((picker.gradient.stops?.length || 1) - 1, Number(index) || 0));
+  const stop = picker.gradient.stops[stopIndex];
+  if (!stop) return;
+  if (field === 'position') {
+    stop.position = Math.max(0, Math.min(100, Number.parseFloat(raw) || 0));
+  }
+  if (field === 'alpha') {
+    const rgba = hexToRgba(stop.color) || { r: 35, g: 35, b: 35, a: 1 };
+    const alpha = Math.max(0, Math.min(100, Number.parseFloat(raw) || 0)) / 100;
+    stop.color = rgbaToHex({ ...rgba, a: alpha }).toUpperCase();
+  }
+  picker.gradient.activeStop = stopIndex;
+  syncPickerToGradientStop(picker);
+  commitGradientPicker();
+  persist(); render();
+}
+
 function applyPickerField(field, raw) {
   const picker = state.colorPicker;
   if (!picker) return;
   if (field === 'hex') {
     const rgba = hexToRgba(raw);
-    if (rgba) { const hsv = rgbToHsv(rgba); Object.assign(picker, { h: hsv.h, s: hsv.s, v: hsv.v, a: rgba.a }); }
+    if (rgba) {
+      const explicitAlpha = /^[#]?[0-9a-f]{4}$|^[#]?[0-9a-f]{8}$/i.test(String(raw).trim());
+      const hsv = rgbToHsv(rgba);
+      Object.assign(picker, { h: hsv.h, s: hsv.s, v: hsv.v, a: explicitAlpha ? rgba.a : picker.a });
+    }
   } else if (field === 'a') {
     const numeric = parseFloat(raw);
     if (!Number.isNaN(numeric)) picker.a = Math.max(0, Math.min(100, numeric)) / 100;
@@ -3660,17 +6077,58 @@ function applyPickerField(field, raw) {
     const hsv = rgbToHsv(hslToRgb(hsl));
     Object.assign(picker, { h: hsv.h, s: hsv.s, v: hsv.v });
   }
-  commitColorPicker();
+  if (picker.paint === 'gradient') {
+    updateActiveGradientStopColor(picker);
+    commitGradientPicker();
+  } else {
+    commitColorPicker(field === 'a' ? currentColorLibraryValueLabel(picker.tokenId, picker.mode || 'light') : '');
+  }
   persist(); render();
 }
 
 app.addEventListener('change', (event) => {
+  const sourceColorSwatch = event.target.closest('[data-action=source-color-swatch]');
+  if (sourceColorSwatch) {
+    if (!canEditTheme()) return;
+    const rowName = sourceColorSwatch.dataset.row;
+    const step = String(sourceColorSwatch.dataset.step);
+    const hex = sourceColorSwatch.value.toUpperCase();
+    state.sourcePaletteOverrides ||= {};
+    state.sourcePaletteOverrides[rowName] ||= {};
+    state.sourcePaletteOverrides[rowName][step] = hex;
+    state.sourcePaletteMode = 'custom';
+    state.sourcePaletteSelected = { row: rowName, categoryId: sourcePaletteSelectionCategoryId(rowName, state.sourcePaletteSelected?.categoryId), step, hex };
+    persist(); render(); return;
+  }
+  const rebuildSwatch = event.target.closest('[data-action=source-rebuild-swatch]');
+  if (rebuildSwatch && state.sourcePaletteRebuild) {
+    if (!canEditTheme()) return;
+    state.sourcePaletteRebuild.hex = rebuildSwatch.value.toUpperCase();
+    persist(); render(); return;
+  }
   const collectionFilterSelect = event.target.closest('[data-action=collection-filter-select]');
   if (collectionFilterSelect) { state.collectionFilter = collectionFilterSelect.value; persist(); render(); return; }
   const collectionSortSelect = event.target.closest('[data-action=collection-sort-select]');
   if (collectionSortSelect) { state.collectionSort = collectionSortSelect.value; persist(); render(); return; }
   const formatSelect = event.target.closest('[data-action=cp-format]');
   if (formatSelect && state.colorPicker) { state.colorPicker.format = formatSelect.value; persist(); render(); return; }
+  const gradientAngle = event.target.closest('[data-action=cp-gradient-angle]');
+  if (gradientAngle && state.colorPicker?.paint === 'gradient') {
+    state.colorPicker.gradient ||= defaultGradientFromColor(rgbaToHex({ ...hsvToRgb(state.colorPicker), a: state.colorPicker.a }));
+    state.colorPicker.gradient.angle = Math.max(0, Math.min(360, Number.parseFloat(gradientAngle.value) || 0));
+    commitGradientPicker();
+    persist(); render(); return;
+  }
+  const gradientPositionField = event.target.closest('[data-action=cp-gradient-position]');
+  if (gradientPositionField && state.colorPicker?.paint === 'gradient') {
+    applyGradientStopField(gradientPositionField.dataset.index, 'position', gradientPositionField.value);
+    return;
+  }
+  const gradientStopAlphaField = event.target.closest('[data-action=cp-gradient-stop-alpha]');
+  if (gradientStopAlphaField && state.colorPicker?.paint === 'gradient') {
+    applyGradientStopField(gradientStopAlphaField.dataset.index, 'alpha', gradientStopAlphaField.value);
+    return;
+  }
   const pickerField = event.target.closest('[data-action=cp-input]');
   if (pickerField && state.colorPicker) { if (canEditTheme()) applyPickerField(pickerField.dataset.field, pickerField.value); return; }
   const coverInput = event.target.closest('[data-action=upload-cover]');
@@ -3721,6 +6179,25 @@ app.addEventListener('change', (event) => {
     state.auditLog.unshift({ projectId: state.projectId, action: `${member.email}: ${previous} → ${member.role}`, actor: state.userName, date: new Date().toLocaleString('ru-RU') });
     persist(); render(); return;
   }
+  const alphaInput = event.target.closest('[data-action=edit-token-alpha]');
+  if (alphaInput) {
+    if (!canEditTheme()) { render(); return; }
+    const mode = alphaInput.dataset.mode || 'light';
+    const nextColor = colorWithOpacity(tokenValueForMode(alphaInput.dataset.id, mode), alphaInput.value.trim());
+    const contextMode = /^(ondark|onlight|inverse)-(light|dark)$/.exec(mode || '');
+    if (contextMode) {
+      const [, context, contextColorMode] = contextMode;
+      state.contextUnlinked = { ...(state.contextUnlinked || {}), [`${alphaInput.dataset.id}::${context}`]: true };
+      state.contextOverrides = { ...(state.contextOverrides || {}), [`${alphaInput.dataset.id}::${context}::${contextColorMode}`]: nextColor };
+    } else {
+      addChange('token', alphaInput.dataset.id, nextColor, mode);
+      if (state.colorPicker?.tokenId === alphaInput.dataset.id && (state.colorPicker.mode || 'light') === mode) {
+        const rgba = hexToRgba(nextColor);
+        if (rgba) state.colorPicker.a = rgba.a;
+      }
+    }
+    persist(); render(); return;
+  }
   const input = event.target.closest('[data-action=edit-token], [data-action=edit-component]');
   if (!input) return;
   if (!canEditTheme()) { render(); return; }
@@ -3730,10 +6207,18 @@ app.addEventListener('change', (event) => {
   if (contextMode) {
     const [, context, mode] = contextMode;
     state.contextUnlinked = { ...(state.contextUnlinked || {}), [`${input.dataset.id}::${context}`]: true };
-    state.contextOverrides = { ...(state.contextOverrides || {}), [`${input.dataset.id}::${context}::${mode}`]: input.value.trim() };
+    const nextColor = colorWithRgbPreservingAlpha(input.value.trim(), contextFieldValue(input.dataset.id, context, mode));
+    state.contextOverrides = { ...(state.contextOverrides || {}), [`${input.dataset.id}::${context}::${mode}`]: nextColor };
+    clearColorLibraryValueLabel(input.dataset.id, input.dataset.mode || '');
     persist(); render(); return;
   }
-  addChange(input.dataset.action === 'edit-component' ? 'component' : 'token', input.dataset.id, input.value.trim(), input.dataset.mode || 'light');
+  const kind = input.dataset.action === 'edit-component' ? 'component' : 'token';
+  const token = kind === 'token' ? state.tokens.find((entry) => entry.id === input.dataset.id) : null;
+  const nextValue = token?.group === 'colors'
+    ? colorWithRgbPreservingAlpha(input.value.trim(), tokenDraftValue(input.dataset.id, input.dataset.mode || 'light'))
+    : input.value.trim();
+  if (token?.group === 'colors') clearColorLibraryValueLabel(input.dataset.id, input.dataset.mode || 'light');
+  addChange(kind, input.dataset.id, nextValue, input.dataset.mode || 'light');
   persist(); render();
 });
 
@@ -3785,13 +6270,14 @@ function paintPickerPreview() {
   if (!picker) return;
   const rgb = hsvToRgb(picker);
   const hex = rgbaToHex({ ...rgb, a: picker.a });
+  const previewValue = picker.paint === 'gradient' ? gradientToCss(picker.gradient) : hex;
   const popover = app.querySelector('.color-picker-popover');
   if (popover) {
     const sv = popover.querySelector('[data-cp-sv]');
     if (sv) {
       sv.style.backgroundColor = rgbaToHex({ ...hsvToRgb({ h: picker.h, s: 1, v: 1 }), a: 1 });
       const cursor = sv.querySelector('.cp-cursor');
-      if (cursor) { cursor.style.left = `${picker.s * 100}%`; cursor.style.top = `${(1 - picker.v) * 100}%`; }
+      if (cursor) { cursor.style.left = `clamp(7px, ${picker.s * 100}%, calc(100% - 7px))`; cursor.style.top = `clamp(7px, ${(1 - picker.v) * 100}%, calc(100% - 7px))`; }
     }
     const hueCursor = popover.querySelector('[data-cp-hue] i');
     if (hueCursor) hueCursor.style.left = `${picker.h / 360 * 100}%`;
@@ -3801,11 +6287,19 @@ function paintPickerPreview() {
       const alphaCursor = alphaTrack.querySelector('i');
       if (alphaCursor) alphaCursor.style.left = `${picker.a * 100}%`;
     }
+    const hexField = popover.querySelector('[data-action="cp-input"][data-field="hex"]');
+    if (hexField) hexField.value = pickerDisplayHex(hex).toUpperCase();
+    const pickerAlphaInput = popover.querySelector('[data-action="cp-input"][data-field="a"]');
+    if (pickerAlphaInput) pickerAlphaInput.value = `${Math.round((colorHexParts(hex)?.alphaPercent ?? 100))}%`;
+    const gradientPreview = popover.querySelector('.cp-gradient-preview');
+    if (gradientPreview) gradientPreview.style.background = previewValue;
   }
   const swatch = app.querySelector(`[data-action=open-color-picker][data-id="${picker.tokenId}"][data-mode="${picker.mode || 'light'}"]`);
-  if (swatch) swatch.style.background = hex;
+  if (swatch) swatch.style.background = previewValue;
   const tokenInput = app.querySelector(`[data-action=edit-token][data-id="${picker.tokenId}"][data-mode="${picker.mode || 'light'}"]`);
-  if (tokenInput) tokenInput.value = hex;
+  if (tokenInput) tokenInput.value = picker.paint === 'gradient' ? 'Linear gradient' : ((pickerDrag?.kind === 'alpha' ? currentColorLibraryValueLabel(picker.tokenId, picker.mode || 'light') : '') || colorValueLabel(hex));
+  const alphaInput = app.querySelector(`[data-action=edit-token-alpha][data-id="${picker.tokenId}"][data-mode="${picker.mode || 'light'}"]`);
+  if (alphaInput) alphaInput.value = String(Math.round((colorHexParts(hex)?.alphaPercent ?? 100)));
 }
 
 function updatePickerFromPointer(event) {
@@ -3817,6 +6311,7 @@ function updatePickerFromPointer(event) {
   if (pickerDrag.kind === 'sv') { picker.s = x; picker.v = 1 - y; }
   if (pickerDrag.kind === 'hue') picker.h = x * 360;
   if (pickerDrag.kind === 'alpha') picker.a = x;
+  updateActiveGradientStopColor(picker);
   paintPickerPreview();
 }
 
@@ -3830,11 +6325,17 @@ app.addEventListener('pointerdown', (event) => {
   pickerDrag = { kind: sv ? 'sv' : hue ? 'hue' : 'alpha', el: sv || hue || alpha };
   updatePickerFromPointer(event);
 });
+app.addEventListener('focusin', (event) => {
+  const pickerField = event.target.closest?.('[data-action=cp-input]');
+  if (pickerField) pickerField.select?.();
+});
 window.addEventListener('pointermove', (event) => { if (pickerDrag) updatePickerFromPointer(event); });
 window.addEventListener('pointerup', () => {
   if (!pickerDrag) return;
+  const sourceLabel = pickerDrag.kind === 'alpha' && state.colorPicker ? currentColorLibraryValueLabel(state.colorPicker.tokenId, state.colorPicker.mode || 'light') : '';
   pickerDrag = null;
-  commitColorPicker();
+  if (state.colorPicker?.paint === 'gradient') commitGradientPicker();
+  else commitColorPicker(sourceLabel);
   persist(); render();
 });
 
@@ -3852,7 +6353,7 @@ app.addEventListener('submit', (event) => {
     const account = state.accounts.find((item) => item.email.toLowerCase() === identifier || item.login.toLowerCase() === identifier);
     if (!account || account.password !== data.get('password')) {
       state.authenticated = false;
-      state.authError = 'Неверный email/логин или пароль.';
+      state.authError = 'Неверный логин или пароль.';
       state.route = 'auth';
     } else {
       state.authenticated = true;
@@ -3936,7 +6437,9 @@ app.addEventListener('submit', (event) => {
     state.themeId = id;
     state.theme = theme.name;
     activateThemeWorkspace(id);
-    state.editorTab = 'colors';
+    // Новая тема открывается на Palette: сценарий «создал тему → настраиваешь палитру»
+    // (стартовая палитра выбрана в форме — логично сразу увидеть и донастроить её)
+    state.editorTab = 'palette';
     applyPalette(palette);
     state.changes = [];
     state.route = 'editor';
@@ -4074,7 +6577,7 @@ app.addEventListener('submit', (event) => {
     state.route = 'support';
   }
   if (event.target.id === 'publish-form') {
-    if (!canPublish() || !state.changes.length) { persist(); render(); return; }
+    if (!canPublish() || !totalChangeCount()) { persist(); render(); return; }
     const failed = data.get('simulateFailure') === 'on';
     const version = String(data.get('version') || '').trim();
     if (state.versions.some((item)=>item.version===version)) {
@@ -4082,7 +6585,7 @@ app.addEventListener('submit', (event) => {
       state.route = 'publish'; persist(); render(); return;
     }
     const release = {
-      version, changelog: data.get('changelog'), changeCount: state.changes.length,
+      version, changelog: data.get('changelog'), changeCount: totalChangeCount(),
       issueCount: issueCount(), projectId: state.projectId, designSystemId: state.designSystemId,
       themeId: state.themeId, status: failed ? 'Failed' : 'Published',
       date: new Date().toISOString().slice(0, 10),
@@ -4148,4 +6651,4 @@ function initSmoothScroll() {
 initSmoothScroll();
 
 render();
-
+loadBaseTokens();

@@ -7,6 +7,7 @@
 | Область | Статус | Следующий шаг |
 |---|---|---|
 | Color tokens editing | Реализовано | Добавить diff, validation и history |
+| Gradient editing | Реализовано в прототипе/Builder | Перенести в финальный UI и handoff |
 | Typography editing | Реализовано | Унифицировать UX и preview |
 | Rounding editing | Реализовано | Добавить component preview |
 | Components | Частично добавлены | Определить editable properties и ограничения |
@@ -19,14 +20,14 @@
 
 ## Текущий уровень зрелости
 
-Builder соответствует `Level 1: Basic Editing`: пользователь может менять отдельные значения, но жизненный цикл изменений и результат для разработки ещё не формализованы.
+Builder соответствует `Level 1: Basic Editing` с расширением визуальных значений: пользователь может менять отдельные цвета, градиенты, типографику и скругления, но жизненный цикл изменений и результат для разработки ещё не формализованы.
 
 ## Покрытие UX-прототипом
 
 Целевые механики проверены интерактивным прототипом
 [portal/apps/portal-flow-prototype](../../apps/portal-flow-prototype/README.md):
 иерархия Project → Design System → Theme, роли Owner/Editor/Viewer с per-project membership,
-draft Changes с per-user изоляцией, advisory validation с fix suggestions, color picker,
+draft Changes с per-user изоляцией, advisory validation с fix suggestions, color picker и gradient picker,
 direct Publish c immutable Versions, diff/rollback Versions, уведомления (доступ и публикация),
 failed-publish flow и CLI handoff. Таблица Current state выше описывает фактическую
 реализацию продукта и обновляется отдельно по результатам проверки у команды.
@@ -51,7 +52,7 @@ failed-publish flow и CLI handoff. Таблица Current state выше опи
 
 ### Не формализована граница проекта
 
-Нужно обеспечить изоляцию `Project → Design System → Theme` и роли пользователя на уровне Project Membership.
+Нужно обеспечить изоляцию `Project → Design System → Theme` и роли пользователя на уровне Project Membership. Design System и Theme наследуют доступы Project.
 
 ## Что нужно проверить у команды
 
