@@ -104,6 +104,7 @@ const initialState = {
   sourcePaletteAddedRowsByCategory: {},
   sourcePaletteCustomCategories: [],
   sourcePaletteGroupModalOpen: false,
+  sourcePaletteDeleteCategory: '',
   sourcePaletteDisabledRows: [],
   issueFilter: false,
   workspaceMode: 'overview',
@@ -4196,8 +4197,12 @@ function sourcePaletteVisibleCategoriesV3() {
         || Boolean(state.sourcePaletteAddedRowsByCategory?.[category.id]?.includes(rowName));
       return true;
     });
-    return { ...category, rows };
-  }).filter((category) => category.rows.length);
+    return {
+      ...category,
+      rows,
+      showWhenEmpty: category.isCustom && filter === 'all' && categoryMatches,
+    };
+  }).filter((category) => category.rows.length || category.showWhenEmpty);
 }
 
 function sourcePaletteFamilyMenuV3() {
@@ -4207,7 +4212,7 @@ function sourcePaletteFamilyMenuV3() {
   return `<aside class="source-palette-family-menu form-card">
     <div class="source-palette-family-head">
       <strong>Палитра дизайн-системы</strong>
-      <button data-action="open-source-palette-group-add" title="Создать группу" aria-label="Создать группу">+</button>
+      <button class="source-palette-group-add" data-action="open-source-palette-group-add" title="Создать группу" aria-label="Создать группу">+</button>
     </div>
     ${state.sourcePaletteMode === 'custom' ? '<div class="source-palette-brand-status"><span>Custom</span><strong>Не соответствует брендовой палитре</strong></div>' : ''}
     <div class="source-palette-family-tools">
@@ -4224,9 +4229,10 @@ function sourcePaletteFamilyMenuV3() {
     </div>
     <div class="source-palette-family-categories">
       ${categories.map((category) => `<section>
-        <div class="source-palette-family-category">
+        <div class="source-palette-family-category ${category.isCustom ? 'is-custom' : ''}">
           <button class="source-palette-family-category-toggle" data-action="toggle-source-palette-group" data-category="${escapeHtml(category.id)}" aria-expanded="${state.sourcePaletteCollapsedGroups?.[category.id] ? 'false' : 'true'}"><span>${state.sourcePaletteCollapsedGroups?.[category.id] ? '›' : '⌄'}</span><strong>${escapeHtml(category.label)}</strong></button>
-          <button data-action="open-source-palette-add" data-category="${escapeHtml(category.id)}" title="Добавить палитру в ${escapeHtml(category.label)}" aria-label="Добавить палитру в ${escapeHtml(category.label)}">+</button>
+          <button class="source-palette-group-add" data-action="open-source-palette-add" data-category="${escapeHtml(category.id)}" title="Добавить палитру в ${escapeHtml(category.label)}" aria-label="Добавить палитру в ${escapeHtml(category.label)}">+</button>
+          ${category.isCustom ? `<button class="source-palette-group-delete" data-action="request-delete-source-palette-group" data-category="${escapeHtml(category.id)}" title="Удалить группу ${escapeHtml(category.label)}" aria-label="Удалить группу ${escapeHtml(category.label)}">×</button>` : ''}
         </div>
         ${state.sourcePaletteCollapsedGroups?.[category.id] ? '' : category.rows.map((rowName) => {
           const active = selected.row === rowName && selected.categoryId === category.id;
@@ -4413,6 +4419,35 @@ function sourcePaletteGroupModal() {
         <label class="source-palette-group-field"><span>Название группы</span><input data-action="source-palette-group-name" placeholder="Например, Avatars" autofocus /></label>
       </div>
       <footer><button class="secondary" data-action="close-source-palette-group-add">Отмена</button><button data-action="create-source-palette-group">Создать группу</button></footer>
+    </section>
+  </div>`;
+}
+
+function sourcePaletteDeleteGroupModal() {
+  const categoryId = state.sourcePaletteDeleteCategory;
+  if (!categoryId) return '';
+  const category = (state.sourcePaletteCustomCategories || []).find((item) => item.id === categoryId);
+  if (!category) return '';
+  const tokenCount = new Set(state.tokens
+    .filter((token) => token.group === 'colors' && !token.isInternalAlias)
+    .filter((token) => sourcePaletteCategoryIdForToken(token) === categoryId)
+    .map((token) => token.id)).size;
+  const tokenLabel = tokenCount % 10 === 1 && tokenCount % 100 !== 11
+    ? 'семантический токен'
+    : tokenCount % 10 >= 2 && tokenCount % 10 <= 4 && !(tokenCount % 100 >= 12 && tokenCount % 100 <= 14)
+      ? 'семантических токена'
+      : 'семантических токенов';
+  return `<div class="modal-backdrop source-palette-manage-backdrop">
+    <section class="entity-modal source-palette-manage-modal source-palette-delete-group-modal" role="dialog" aria-modal="true" aria-labelledby="source-palette-delete-group-title">
+      <header>
+        <div><span>Палитра дизайн-системы</span><h2 id="source-palette-delete-group-title">Удалить группу ${escapeHtml(category.label)}?</h2></div>
+        <button class="source-palette-modal-close" data-action="close-delete-source-palette-group" aria-label="Закрыть">×</button>
+      </header>
+      <div class="source-palette-manage-copy">
+        <p>Палитры и их значения останутся в дизайн-системе. Будет удалена только эта группа.</p>
+        ${tokenCount ? `<p class="source-palette-delete-group-note">${tokenCount} ${tokenLabel} сохранят связи и будут отображаться в группе Neutral.</p>` : ''}
+      </div>
+      <footer><button class="secondary" data-action="close-delete-source-palette-group">Отмена</button><button class="danger" data-action="confirm-delete-source-palette-group" data-category="${escapeHtml(categoryId)}">Удалить группу</button></footer>
     </section>
   </div>`;
 }
@@ -4606,6 +4641,7 @@ function paletteEditorV3() {
     ${sourcePaletteReplaceModal()}
     ${sourcePaletteRebuildModal()}
     ${sourcePaletteGroupModal()}
+    ${sourcePaletteDeleteGroupModal()}
     ${sourcePaletteAddModal()}
     ${sourcePaletteRemoveModal()}
   </section>`;
@@ -6114,7 +6150,7 @@ app.addEventListener('click', async (event) => {
     pendingFocusSelector = '';
   }
   if (target.type === 'submit' && target.form) return;
-  if (['fix-contrast', 'save-token', 'revert', 'reset-token', 'apply-suggestion', 'restore-version', 'open-color-picker', 'open-palette-step', 'cp-preset', 'toggle-source-family', 'request-remove-source-family', 'confirm-remove-source-family', 'reassign-and-remove-source-family', 'add-source-family', 'reset-source-color', 'open-source-palette-rebuild', 'apply-source-palette-rebuild', 'toggle-reset-menu', 'reset-section', 'reset-all', 'confirm-reset', 'rebase-draft'].includes(target.dataset.action) && !canEditTheme()) return;
+  if (['fix-contrast', 'save-token', 'revert', 'reset-token', 'apply-suggestion', 'restore-version', 'open-color-picker', 'open-palette-step', 'cp-preset', 'toggle-source-family', 'request-remove-source-family', 'confirm-remove-source-family', 'reassign-and-remove-source-family', 'add-source-family', 'request-delete-source-palette-group', 'confirm-delete-source-palette-group', 'reset-source-color', 'open-source-palette-rebuild', 'apply-source-palette-rebuild', 'toggle-reset-menu', 'reset-section', 'reset-all', 'confirm-reset', 'rebase-draft'].includes(target.dataset.action) && !canEditTheme()) return;
   if (target.dataset.action === 'toggle-font-family-menu') {
     if (!canEditTheme()) return;
     state.fontFamilyMenuOpen = !state.fontFamilyMenuOpen;
@@ -6388,6 +6424,10 @@ app.addEventListener('click', async (event) => {
     state.sourcePaletteCustomCategories = [...(state.sourcePaletteCustomCategories || []), { id, label }];
     state.sourcePaletteAddedRowsByCategory ||= {};
     state.sourcePaletteAddedRowsByCategory[id] = [];
+    state.sourcePaletteFilter = 'all';
+    state.sourcePaletteSearch = '';
+    state.sourcePaletteCollapsedGroups ||= {};
+    state.sourcePaletteCollapsedGroups[id] = false;
     state.sourcePaletteGroupModalOpen = false;
     state.toastMessage = `Группа ${label} создана. Добавьте в неё палитры.`;
     persist(); render(); return;
@@ -6398,6 +6438,41 @@ app.addEventListener('click', async (event) => {
   }
   if (target.dataset.action === 'set-source-usage-scope') {
     state.sourcePaletteUsageScope = target.dataset.scope === 'family' ? 'family' : 'swatch';
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'request-delete-source-palette-group') {
+    const categoryId = target.dataset.category;
+    if (!(state.sourcePaletteCustomCategories || []).some((category) => category.id === categoryId)) return;
+    state.sourcePaletteDeleteCategory = categoryId;
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'close-delete-source-palette-group') {
+    state.sourcePaletteDeleteCategory = '';
+    persist(); render(); return;
+  }
+  if (target.dataset.action === 'confirm-delete-source-palette-group') {
+    const categoryId = target.dataset.category;
+    const category = (state.sourcePaletteCustomCategories || []).find((item) => item.id === categoryId);
+    if (!category) return;
+    state.sourcePaletteCustomCategories = (state.sourcePaletteCustomCategories || []).filter((item) => item.id !== categoryId);
+    state.sourcePaletteAddedRowsByCategory = { ...(state.sourcePaletteAddedRowsByCategory || {}) };
+    delete state.sourcePaletteAddedRowsByCategory[categoryId];
+    state.sourcePaletteCollapsedGroups = { ...(state.sourcePaletteCollapsedGroups || {}) };
+    delete state.sourcePaletteCollapsedGroups[categoryId];
+    if (state.sourcePaletteSelected?.categoryId === categoryId) {
+      const nextCategoryId = sourcePaletteSelectionCategoryId(state.sourcePaletteSelected.row);
+      const fallbackCategory = sourcePaletteDefaultCategoryDefs().find((item) => item.rows.length);
+      const nextRow = nextCategoryId ? state.sourcePaletteSelected.row : fallbackCategory?.rows[0];
+      const nextCategory = nextCategoryId || fallbackCategory?.id;
+      const step = String(state.sourcePaletteSelected.step || '500');
+      if (nextRow && nextCategory) {
+        state.sourcePaletteSelected = { row: nextRow, categoryId: nextCategory, step, hex: paletteValue(nextRow, step) };
+      }
+    }
+    if (state.sourcePaletteAddCategory === categoryId) state.sourcePaletteAddCategory = '';
+    if (state.sourcePaletteRemoveTarget?.categoryId === categoryId) state.sourcePaletteRemoveTarget = '';
+    state.sourcePaletteDeleteCategory = '';
+    state.toastMessage = `Группа ${category.label} удалена. Палитры и значения сохранены.`;
     persist(); render(); return;
   }
   if (target.dataset.action === 'set-source-inspector-tab') {

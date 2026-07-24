@@ -497,6 +497,8 @@ input,select,textarea{background:#20252c;border-color:#444d59}
 .source-palette-family-head span{color:#8f98a6;font-size:11px;font-weight:700}
 .source-palette-family-head button{width:24px;min-width:24px;max-width:24px;height:24px;min-height:24px;max-height:24px;flex:0 0 24px;box-sizing:border-box;display:grid;place-items:center;padding:0;border:0;border-radius:6px;background:transparent;color:#a8b2bf;font-size:18px;line-height:1}
 .source-palette-family-head button:hover{background:#2b333d;color:#fff}
+.source-palette-family-head .source-palette-group-add{opacity:0;pointer-events:none}
+.source-palette-family-head:hover .source-palette-group-add,.source-palette-family-head:focus-within .source-palette-group-add{opacity:1;pointer-events:auto}
 .source-palette-family-tools{position:sticky;top:40px;z-index:3;display:grid;gap:6px;padding:4px 12px 8px;background:#202327;border-bottom:1px solid #30343a}
 .source-palette-family-search{height:28px;display:flex;align-items:center;gap:6px;padding:0 6px;border:1px solid #3d434c;border-radius:6px;background:#252a31;color:#8f98a6}
 .source-palette-family-search:focus-within{border-color:#5d87dd;box-shadow:0 0 0 1px #2d78ff55}
@@ -511,10 +513,16 @@ input,select,textarea{background:#20252c;border-color:#444d59}
 .source-palette-family-filters button.is-active{background:#343a44;color:#f0f3f7}
 .source-palette-family-categories{display:grid;gap:4px;padding-bottom:10px}
 .source-palette-family-category{display:grid;grid-template-columns:minmax(0,1fr) 24px;align-items:center;gap:2px 8px;padding:10px 12px 4px 16px}
+.source-palette-family-category.is-custom{grid-template-columns:minmax(0,1fr) 24px 24px;gap:2px}
 .source-palette-family-category strong{display:block;color:#dfe2e7;font-size:12px;font-weight:600}
 .source-palette-family-category small{grid-column:1/-1;display:block;color:#858e9d;font-size:10.5px;line-height:1.3}
 .source-palette-family-category button{width:24px;height:24px;display:grid;place-items:center;padding:0;border:0;border-radius:6px;background:transparent;color:#a8b2bf;font-size:18px;font-weight:400;line-height:1}
 .source-palette-family-category button:hover{background:#2b333d;color:#fff}
+.source-palette-family-category .source-palette-group-add{opacity:0;pointer-events:none}
+.source-palette-family-category:hover .source-palette-group-add,.source-palette-family-category:focus-within .source-palette-group-add{opacity:1;pointer-events:auto}
+.source-palette-family-category .source-palette-group-delete{opacity:0;pointer-events:none;color:#8793a3}
+.source-palette-family-category:hover .source-palette-group-delete,.source-palette-family-category:focus-within .source-palette-group-delete{opacity:1;pointer-events:auto}
+.source-palette-family-category .source-palette-group-delete:hover{background:#3a2a2f;color:#ff9ca5}
 .source-palette-family-category .source-palette-family-category-toggle{width:auto;min-width:0;justify-content:start;display:flex;align-items:center;gap:5px;text-align:left;font-size:12px}
 /* Текстовые глифы «⌄»/«›» сидят криво в шрифте — прячем их и рисуем шеврон CSS-ом;
    направление берём из aria-expanded кнопки */
@@ -538,7 +546,7 @@ input,select,textarea{background:#20252c;border-color:#444d59}
 .source-palette-family-chip{width:18px;height:18px;flex:none;border:1px solid #ffffff26;border-radius:4px}
 .source-palette-family-eye{width:24px;height:24px;display:flex;align-items:center;justify-content:center;padding:0 0 2px;border:0;border-radius:6px;background:transparent;color:#a8b2bf;font-size:16px;font-family:Arial,sans-serif;line-height:1;opacity:0;pointer-events:none;transition:opacity .12s ease,background .12s ease,color .12s ease}
 .source-palette-family-item:hover .source-palette-family-eye,.source-palette-family-item:focus-within .source-palette-family-eye{opacity:1;pointer-events:auto}
-.source-palette-family-eye:hover{background:#2b333d;color:#fff}
+.source-palette-family-eye:hover{background:#3a2a2f;color:#ff9ca5}
 .source-palette-ramp-shell{height:100%;display:block;margin:0;padding:0;border:0;border-radius:0;background:#212327;overflow:auto}
 .source-palette-ramp-board{width:100%;min-width:900px;min-height:100%;display:flex;flex-direction:column;align-items:stretch;gap:24px;padding:16px 20px 24px 16px}
 .source-palette-ramp-section{width:100%;display:grid;align-content:start;gap:10px}
@@ -693,6 +701,10 @@ input,select,textarea{background:#20252c;border-color:#444d59}
 .source-palette-group-field input{height:42px;padding:0 12px;border:1px solid #4a5260;border-radius:8px;background:#1e242b;color:#f3f6fa;font:inherit;font-size:14px;outline:none}
 .source-palette-group-field input:focus{border-color:#4284ff;box-shadow:0 0 0 2px rgba(66,132,255,.18)}
 .source-palette-group-modal>footer{gap:8px}
+.source-palette-delete-group-modal>footer{gap:8px}
+.source-palette-delete-group-modal>footer .danger{border-color:#934957;background:#7c3441;color:#fff}
+.source-palette-delete-group-modal>footer .danger:hover{background:#9a3e4f}
+.source-palette-delete-group-note{padding:10px 12px;border-radius:8px;background:#20262e;color:#b6bfcb}
 .source-palette-empty-category button{display:block;margin-top:12px}
 .source-palette-manage-options{display:grid;gap:10px;padding:16px 20px;overflow:auto}
 .source-palette-manage-empty{margin:16px 20px;padding:18px;border:1px dashed #49515c;border-radius:10px;color:#929dac;text-align:center}
