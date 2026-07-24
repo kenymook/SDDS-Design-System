@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "check": "node --check app.js && node --check server.js && node --check api/prototype.js"
+    "check": "node --check app.js && node --check server.js && node --check api/prototype.js && node tests/builder-modules.test.mjs && node tests/palette-cascade.test.mjs",
+    "test:palette-cascade": "node tests/palette-cascade.test.mjs"
   }
 }
