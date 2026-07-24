@@ -33,7 +33,7 @@ import {
   normalizeTokenPart,
   slugFromTokenPath,
 } from './builder/token-naming.js';
-import { paletteLabel, themePaletteProfiles } from './builder/theme-profiles.js';
+import { themePaletteProfiles } from './builder/theme-profiles.js';
 import {
   hydratePersistedState,
   readJson,
@@ -526,6 +526,8 @@ state = loadState();
 const app = document.querySelector('#app');
 let pendingFocusSelector = '';
 let pendingPickerFocusSelector = '';
+let pendingCanvasTokenScrollId = '';
+let pendingSourcePaletteScrollTarget = null;
 let toastDismissTimer = null;
 let toastDismissMessage = '';
 
@@ -658,8 +660,6 @@ function workspaceContextBar() {
   if (state.route === 'editor' || state.route === 'components') {
     const tabTitles = { palette: 'Palette', colors: 'Color tokens editor', fonts: 'Typography', sizes: 'Corner radius' };
     const editorTitle = state.route === 'components' ? 'Components' : (tabTitles[state.editorTab] || 'Editor');
-    const currentPaletteLabel = paletteLabel(state.themeWorkspaces?.[theme.id]?.palette || theme.palette);
-    const showPaletteLabel = String(currentPaletteLabel).trim().toLowerCase() !== String(theme.name).trim().toLowerCase();
     const settingsIcon = 'https://www.figma.com/api/mcp/asset/3268525a-8eb3-4182-9ed7-cbf828bafee4';
     const caretIcon = 'https://www.figma.com/api/mcp/asset/287d01e6-80f2-4341-b281-ca24ab1670a3';
     return `<div class="workspace-context-bar workspace-context-bar-editor" aria-label="Theme editor context" style="position:relative">
@@ -668,7 +668,6 @@ function workspaceContextBar() {
         <button data-route="design-system" data-tour="context-system">${escapeHtml(system.name)}</button><span class="workspace-breadcrumb-separator">/</span>
         <strong data-tour="context-theme">${escapeHtml(theme.name)}</strong>
         <span class="workspace-breadcrumb-theme-meta">
-          ${showPaletteLabel ? `<span class="context-role">${escapeHtml(currentPaletteLabel)}</span>` : ''}
           <span class="context-version">v${escapeHtml(card.version)}</span>
           <span class="status ${card.status === 'draft' ? '' : 'passed'}">${card.status === 'draft' ? 'Draft' : 'Published'}</span>
         </span>
@@ -858,6 +857,46 @@ function restoreScrollPositions(entries) {
   });
 }
 
+function scrollElementToContainerCenter(container, element) {
+  if (!container || !element) return;
+  const containerRect = container.getBoundingClientRect();
+  const elementRect = element.getBoundingClientRect();
+  const centeredTop = container.scrollTop
+    + elementRect.top
+    - containerRect.top
+    - (container.clientHeight - elementRect.height) / 2;
+  const maxTop = Math.max(0, container.scrollHeight - container.clientHeight);
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  container.scrollTo({
+    top: Math.max(0, Math.min(maxTop, centeredTop)),
+    left: container.scrollLeft,
+    behavior: reduceMotion ? 'auto' : 'smooth',
+  });
+}
+
+function revealPendingCanvasSelection() {
+  const tokenId = pendingCanvasTokenScrollId;
+  const paletteTarget = pendingSourcePaletteScrollTarget;
+  pendingCanvasTokenScrollId = '';
+  pendingSourcePaletteScrollTarget = null;
+  if (!tokenId && !paletteTarget) return;
+
+  requestAnimationFrame(() => {
+    if (tokenId) {
+      const canvas = app.querySelector('.playground-workbench:not(.component-workbench) .preview-canvas');
+      const card = [...(canvas?.querySelectorAll('.token-swatch-card[data-id]') || [])]
+        .find((item) => item.dataset.id === tokenId);
+      scrollElementToContainerCenter(canvas, card);
+    }
+    if (paletteTarget) {
+      const canvas = app.querySelector('.source-palette-ramp-shell');
+      const card = [...(canvas?.querySelectorAll('.source-palette-ramp-card[data-row]') || [])]
+        .find((item) => item.dataset.row === paletteTarget.row && item.dataset.category === paletteTarget.categoryId);
+      scrollElementToContainerCenter(canvas, card);
+    }
+  });
+}
+
 function scheduleToastDismiss() {
   if (!state.toastMessage) {
     if (toastDismissTimer) clearTimeout(toastDismissTimer);
@@ -924,6 +963,7 @@ function render() {
   app.innerHTML = portalShell(view()) + resetConfirmModal();
   scheduleToastDismiss();
   restoreScrollPositions(scrollKeep);
+  revealPendingCanvasSelection();
   if (state.route === 'portal-home' || state.route === 'builder-about') {
     // Эти страницы используют те же landing-секции (reveal); hero-canvas есть только на главной.
     mountHero(app.querySelector('#hero-canvas'));
@@ -4159,10 +4199,20 @@ function sourcePaletteTokenLabelV2(row, step) {
 }
 
 function paletteSwatchLabelStyle(background) {
-  const dark = '#1F2329';
-  const light = '#F4F7FB';
-  const darkRatio = contrastRatio(dark, background) || 0;
-  const lightRatio = contrastRatio(light, background) || 0;
+  const foreground = hexToRgba(background);
+  const backdrop = hexToRgba('#202327');
+  const effectiveBackground = foreground && backdrop && foreground.a < 1
+    ? rgbaToHex({
+      r: foreground.r * foreground.a + backdrop.r * (1 - foreground.a),
+      g: foreground.g * foreground.a + backdrop.g * (1 - foreground.a),
+      b: foreground.b * foreground.a + backdrop.b * (1 - foreground.a),
+      a: 1,
+    })
+    : background;
+  const dark = '#000000';
+  const light = '#FFFFFF';
+  const darkRatio = contrastRatio(dark, effectiveBackground) || 0;
+  const lightRatio = contrastRatio(light, effectiveBackground) || 0;
   const useDark = darkRatio >= lightRatio;
   const ratio = useDark ? darkRatio : lightRatio;
   return {
@@ -4268,7 +4318,7 @@ function sourcePaletteRampCardV3(rowName, categoryId) {
   const row = sourcePaletteRowByName(rowName);
   if (!row) return '';
   const sourceRowName = sourcePaletteSourceRowName(rowName);
-  return `<article class="source-palette-ramp-card">
+  return `<article class="source-palette-ramp-card" data-row="${escapeHtml(rowName)}" data-category="${escapeHtml(categoryId)}">
     <div class="source-palette-ramp-title">
       <div><strong>${escapeHtml(paletteDisplayName(row.name))}</strong>
       <small>${sourceRowName === rowName ? escapeHtml(paletteMetaLabel(row.name)) : `Источник: ${escapeHtml(paletteDisplayName(sourceRowName))} · ${escapeHtml(sourceRowName)}`}</small></div>
@@ -4922,11 +4972,13 @@ function linkedColorTokenCanvas() {
             ${entries.map((token, index) => {
               const lightValue = tokenDraftValue(token.id, 'light');
               const darkValue = tokenDraftValue(token.id, 'dark');
+              const lightLabel = paletteSwatchLabelStyle(lightValue);
+              const darkLabel = paletteSwatchLabelStyle(darkValue);
               const selected = state.selectedTokenId === token.id ? 'is-selected' : '';
               const labelText = escapeHtml(colorTokenDisplayName(token));
               return `<button class="token-swatch-card token-swatch-card-split ${selected}" data-action="select-token" data-id="${token.id}" title="${labelText} - Light ${escapeHtml(lightValue)} / Dark ${escapeHtml(darkValue)}">
-                <span class="token-swatch-half token-swatch-light" style="background:${escapeHtml(lightValue)}"><b>Light</b></span>
-                <span class="token-swatch-half token-swatch-dark-mode" style="background:${escapeHtml(darkValue)}"><b>Dark</b></span>
+                <span class="token-swatch-half token-swatch-light ${lightLabel.className}" style="background:${escapeHtml(lightValue)};--token-swatch-label-color:${lightLabel.color}"><b>Light</b></span>
+                <span class="token-swatch-half token-swatch-dark-mode ${darkLabel.className}" style="background:${escapeHtml(darkValue)};--token-swatch-label-color:${darkLabel.color}"><b>Dark</b></span>
               </button>`;
             }).join('')}
           </div>
@@ -6612,6 +6664,7 @@ app.addEventListener('click', async (event) => {
     const currentStep = String(state.sourcePaletteSelected?.step || '500');
     const step = SDDS_ADDITIONAL_PALETTE.steps.includes(currentStep) ? currentStep : '500';
     state.sourcePaletteSelected = { row: rowName, categoryId: target.dataset.category, step, hex: paletteValue(rowName, step) };
+    pendingSourcePaletteScrollTarget = { row: rowName, categoryId: target.dataset.category };
     persist(); render(); return;
   }
   if (target.dataset.action === 'toggle-source-family') {
@@ -6646,6 +6699,9 @@ app.addEventListener('click', async (event) => {
   }
   if (target.dataset.action === 'select-token') {
     state.selectedTokenId = target.dataset.id;
+    if (state.editorTab === 'colors' && target.closest('.token-tree')) {
+      pendingCanvasTokenScrollId = target.dataset.id;
+    }
     if (state.colorPicker) {
       const token = state.tokens.find((item) => item.id === target.dataset.id);
       if (token?.group === 'colors') openColorPickerFor(token.id);

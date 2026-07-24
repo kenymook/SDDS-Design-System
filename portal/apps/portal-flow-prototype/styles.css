@@ -497,8 +497,6 @@ input,select,textarea{background:#20252c;border-color:#444d59}
 .source-palette-family-head span{color:#8f98a6;font-size:11px;font-weight:700}
 .source-palette-family-head button{width:24px;min-width:24px;max-width:24px;height:24px;min-height:24px;max-height:24px;flex:0 0 24px;box-sizing:border-box;display:grid;place-items:center;padding:0;border:0;border-radius:6px;background:transparent;color:#a8b2bf;font-size:18px;line-height:1}
 .source-palette-family-head button:hover{background:#2b333d;color:#fff}
-.source-palette-family-head .source-palette-group-add{opacity:0;pointer-events:none}
-.source-palette-family-head:hover .source-palette-group-add,.source-palette-family-head:focus-within .source-palette-group-add{opacity:1;pointer-events:auto}
 .source-palette-family-tools{position:sticky;top:40px;z-index:3;display:grid;gap:6px;padding:4px 12px 8px;background:#202327;border-bottom:1px solid #30343a}
 .source-palette-family-search{height:28px;display:flex;align-items:center;gap:6px;padding:0 6px;border:1px solid #3d434c;border-radius:6px;background:#252a31;color:#8f98a6}
 .source-palette-family-search:focus-within{border-color:#5d87dd;box-shadow:0 0 0 1px #2d78ff55}
@@ -1511,12 +1509,12 @@ body.is-resizing-panel{cursor:col-resize;user-select:none}
 .token-swatch-card-split:hover,.token-swatch-card-split:focus-visible{border-color:#8f9aa8}
 .token-swatch-card-split.is-selected{border-color:#2d78ff}
 .token-swatch-card-split.is-selected:hover,.token-swatch-card-split.is-selected:focus-visible{border-color:#7fb0ff}
-.token-swatch-card-split .token-swatch-half{position:relative;display:flex;align-items:flex-end;padding:6px 8px;overflow:hidden;color:#d4d9e2;font-size:10px;font-weight:500;line-height:16px;text-align:left}
+.token-swatch-card-split .token-swatch-half{position:relative;display:flex;align-items:flex-end;padding:6px 8px;overflow:hidden;color:var(--token-swatch-label-color,#fff);font-size:10px;font-weight:500;line-height:16px;text-align:left}
 .token-swatch-card-split .token-swatch-half::after{content:none}
 .token-swatch-card-split .token-swatch-half b{position:relative;z-index:1;font:inherit;color:currentColor;opacity:0;transform:translateY(3px);transition:opacity .12s ease,transform .12s ease}
 .token-swatch-card-split:hover .token-swatch-half b,.token-swatch-card-split:focus-visible .token-swatch-half b,.token-swatch-card-split.is-selected .token-swatch-half b{opacity:1;transform:translateY(0)}
 .token-swatch-light{border-bottom:1px solid #0000001a}
-.token-swatch-dark-mode{color:#16181d}
+.token-swatch-dark-mode{color:var(--token-swatch-label-color,#000)}
 @media(max-width:900px){.token-swatch-board{width:100%;max-width:none}.token-default-grid{grid-template-columns:repeat(auto-fill,minmax(96px,1fr))}}
 
 /* Pixel pass: Figma node 714:17802 / builder icon rail sections. */
